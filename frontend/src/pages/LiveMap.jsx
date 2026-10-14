@@ -39,7 +39,7 @@ export default function LiveMap() {
 
   useEffect(() => {
     const handleRoomStatus = (e) => {
-      const { room_id, hazard_level, current_hazard_level } = e.detail || {}
+      const { room_id, hazard_level, current_hazard_level } = e.detail?.data ?? e.detail ?? {}  // WebSocket envelope: {event_type, data, timestamp}
       const level = hazard_level || current_hazard_level
       if (!room_id || !level) return
       setRooms(prev => prev.map(r =>
@@ -47,7 +47,7 @@ export default function LiveMap() {
       ))
     }
     const handleRouteUpdate = (e) => {
-      const data = e.detail
+      const data = e.detail?.data ?? e.detail  // WebSocket envelope: {event_type, data, timestamp}
       const incoming = data?.route || data
       if (incoming?.status) setRoute(incoming)
     }

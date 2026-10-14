@@ -1,78 +1,164 @@
 """
-Room / decision-engine endpoints (Member 2's domain).
+Room / decision-engine endpoints (Member 2's domain — room state is written by
+the decision engine).
 GET /api/v1/rooms
 GET /api/v1/rooms/{room_id}
 GET /api/v1/rooms/{room_id}/hazard
-GET /api/v1/notifications
+GET /api/v1/rooms/{room_id}/data-quality
 """
-from datetime import datetime, timezone
+from typing import Dict, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
+
+from api.dependencies import not_found, with_fallback
+from database import demo_data
+from database.connection import db_manager
+from utils.serialization import to_jsonable
 
 router = APIRouter()
 
-_now = datetime.now(timezone.utc).isoformat
-
-def _room(room_id, name, hazard="UNKNOWN", quality="NO_DATA", pos=None):
-    return {
-        "room_id": room_id,
-        "name": name,
-        "current_hazard_level": hazard,
-        "data_quality_status": quality,
-        "last_updated_at": datetime.now(timezone.utc).isoformat(),
-        "map_position": pos or {"x": 0, "y": 0},
-    }
-
-MOCK_ROOMS = [
-    _room("icu",               "ICU (4 Beds)",              "UNKNOWN", "NO_DATA"),
-    _room("isolation_room",    "Isolation Room",             "UNKNOWN", "NO_DATA"),
-    _room("patient_room",      "Patient Room (2 Beds)",      "UNKNOWN", "NO_DATA"),
-    _room("operation_theater", "Operating Theatre (OT)",     "NORMAL",  "FRESH"),
-    _room("radiology",         "Radiology (X-Ray)",          "UNKNOWN", "NO_DATA"),
-    _room("lab",               "Lab",                        "UNKNOWN", "NO_DATA"),
-    _room("pharmacy",          "Pharmacy",                   "NORMAL",  "FRESH"),
-    _room("waiting_area",      "Waiting Area",               "NORMAL",  "FRESH"),
-    _room("administration",    "Administration",             "UNKNOWN", "NO_DATA"),
-    _room("records",           "Records",                    "UNKNOWN", "NO_DATA"),
-    _room("general_ward",      "General Ward (6 Beds)",      "UNKNOWN", "NO_DATA"),
-    _room("maternity_ward",    "Maternity Ward (4 Beds)",    "UNKNOWN", "NO_DATA"),
-    _room("cafeteria",         "Cafeteria",                  "NORMAL",  "FRESH"),
-    _room("main_lobby",        "Main Lobby & Reception",     "NORMAL",  "FRESH"),
-    _room("emergency_dept",    "Emergency Department",       "UNKNOWN", "NO_DATA"),
-    _room("blood_bank",        "Blood Bank",                 "UNKNOWN", "NO_DATA"),
-]
+# SELECT * on purpose: a column the owning member adds in a later migration
+# shows up in the API without touching this file.
+ROOM_COLUMNS = "*"
 
 
-@router.get("/rooms", summary="List all rooms with current hazard state")
-async def get_rooms():
-    # TODO: replace with real DB query
-    return {"rooms": MOCK_ROOMS, "total": len(MOCK_ROOMS)}
+def _demo_rooms() -> List[Dict]:
+    return [
+        {
+            "room_id": r["room_id"],
+            "name": r["name"],
+            "map_position": r["map_position"],
+            "dimensions": r["dimensions"],
+            "current_hazard_level": "UNKNOWN",
+            "data_quality_status": "NO_DATA",
+            "last_updated_at": None,
+            "demo_data": True,
+        }
+        for r in demo_data.rooms()
+    ]
 
 
-@router.get("/rooms/{room_id}", summary="Get a single room's state")
-async def get_room(room_id: str):
-    room = next((r for r in MOCK_ROOMS if r["room_id"] == room_id), None)
-    if not room:
-        raise HTTPException(status_code=404, detail=f"Room '{room_id}' not found")
+def _demo_room(room_id: str) -> Dict:
+    room = next((r for r in _demo_rooms() if r["room_id"] == room_id), None)
+    if room is None:
+        raise not_found("Room", room_id)
     return room
 
 
-@router.get("/rooms/{room_id}/hazard", summary="Hazard detail for a room")
-async def get_room_hazard(room_id: str):
-    room = next((r for r in MOCK_ROOMS if r["room_id"] == room_id), None)
-    if not room:
-        raise HTTPException(status_code=404, detail=f"Room '{room_id}' not found")
-    return {
-        "room_id": room_id,
-        "hazard_level": room["current_hazard_level"],
-        "reason_codes": [],
-        "source_sensor_ids": [],
-        "detected_at": None,
-        "demo_data": True,
-    }
+def _room_or_404(room_id: str) -> Dict:
+    room = db_manager.fetch_one(f"SELECT {ROOM_COLUMNS} FROM rooms WHERE room_id = %s", (room_id,))
+    if room is None:
+        raise not_found("Room", room_id)
+    return room
 
 
-@router.get("/notifications", summary="Active notifications")
-async def get_notifications(status: str = "ACTIVE"):
-    # TODO: query notifications table
-    return {"notifications": [], "total": 0, "demo_data": True}
+def _latest_readings_by_measurement(rows: List[Dict]) -> Dict:
+    """Flatten per-sensor rows into {measurement: {value, unit, timestamp, sensor_id}},
+    keeping the most recent value when several sensors measure the same thing."""
+    result: Dict[str, Dict] = {}
+    for row in sorted(rows, key=lambda r: r["timestamp"]):
+        units = row.get("units") or {}
+        for measurement, value in (row.get("values") or {}).items():
+            result[measurement] = {
+                "value": value,
+                "unit": units.get(measurement),
+                "timestamp": row["timestamp"],
+                "sensor_id": row["sensor_id"],
+                "validation_status": row["validation_status"],
+            }
+    return result
+
+
+@router.get("/rooms", summary="List all rooms with current hazard state")
+def get_rooms():
+    def query():
+        rows = db_manager.fetch_all(f"SELECT {ROOM_COLUMNS} FROM rooms ORDER BY name")
+        return {"rooms": to_jsonable(rows), "total": len(rows), "demo_data": False}
+
+    def fallback():
+        rooms = _demo_rooms()
+        return {"rooms": rooms, "total": len(rooms), "demo_data": True}
+
+    return with_fallback(query, fallback)
+
+
+@router.get("/rooms/{room_id}", summary="Room state with latest readings and active events")
+def get_room(room_id: str):
+    def query():
+        room = _room_or_404(room_id)
+        readings = db_manager.fetch_all(
+            'SELECT sensor_id, "timestamp", "values", units, validation_status '
+            "FROM latest_sensor_readings WHERE room_id = %s",
+            (room_id,),
+        )
+        events = db_manager.fetch_all(
+            "SELECT event_id, hazard_level, reason_codes, source_sensor_ids, detected_at "
+            "FROM hazard_events WHERE room_id = %s AND status = 'ACTIVE' "
+            "ORDER BY detected_at DESC",
+            (room_id,),
+        )
+        room["latest_readings"] = _latest_readings_by_measurement(readings)
+        room["active_events"] = events
+        return {**to_jsonable(room), "demo_data": False}
+
+    def fallback():
+        return {**_demo_room(room_id), "latest_readings": {}, "active_events": []}
+
+    return with_fallback(query, fallback)
+
+
+@router.get("/rooms/{room_id}/hazard", summary="Current hazard detail for a room")
+def get_room_hazard(room_id: str):
+    def query():
+        room = _room_or_404(room_id)
+        event = db_manager.fetch_one(
+            "SELECT event_id, reason_codes, source_sensor_ids, detected_at "
+            "FROM hazard_events WHERE room_id = %s AND status = 'ACTIVE' "
+            "ORDER BY detected_at DESC LIMIT 1",
+            (room_id,),
+        ) or {}
+        return to_jsonable({
+            "room_id": room_id,
+            "hazard_level": room["current_hazard_level"],
+            "event_id": event.get("event_id"),
+            "reason_codes": event.get("reason_codes") or [],
+            "source_sensor_ids": event.get("source_sensor_ids") or [],
+            "detected_at": event.get("detected_at"),
+            "last_updated_at": room["last_updated_at"],
+            "demo_data": False,
+        })
+
+    def fallback():
+        room = _demo_room(room_id)
+        return {
+            "room_id": room_id, "hazard_level": room["current_hazard_level"],
+            "event_id": None, "reason_codes": [], "source_sensor_ids": [],
+            "detected_at": None, "last_updated_at": None, "demo_data": True,
+        }
+
+    return with_fallback(query, fallback)
+
+
+@router.get("/rooms/{room_id}/data-quality", summary="Sensor freshness for a room")
+def get_room_data_quality(room_id: str):
+    """A sensor counts as fresh if it reported in the last 60 seconds.
+    ``status`` is the value maintained by the decision engine."""
+    def query():
+        row = db_manager.fetch_one(
+            "SELECT * FROM room_sensor_freshness WHERE room_id = %s", (room_id,)
+        )
+        if row is None:
+            raise not_found("Room", room_id)
+        row["status"] = row.pop("data_quality_status")
+        return {**to_jsonable(row), "demo_data": False}
+
+    def fallback():
+        _demo_room(room_id)
+        count = sum(1 for s in demo_data.sensors() if s["room_id"] == room_id)
+        return {
+            "room_id": room_id, "status": "NO_DATA", "sensor_count": count,
+            "fresh_sensors": 0, "stale_sensors": 0, "never_reported": count,
+            "last_update": None, "demo_data": True,
+        }
+
+    return with_fallback(query, fallback)

@@ -1,0 +1,16 @@
+# Docker build context = repository root; only backend/ and shared-contracts/ are needed
+.git
+.kiro
+.agents
+docs
+frontend
+
+**/venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+backend/logs
+
+# Never bake secrets into the image
+**/.env
+!**/.env.example

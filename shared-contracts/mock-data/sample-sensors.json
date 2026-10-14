@@ -1,0 +1,25 @@
+{
+  "_note": "Demo sensor registry for the sample hospital (sample-building.json) — illustrative data, not a real installation. Replaced by the sensor export from Member 1's 3D editor. Every room_id must exist in sample-building.json (checked by backend/tests/test_demo_data_contract.py).",
+  "sensors": [
+    { "sensor_id": "SMOKE-ICU-01", "room_id": "icu",               "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "CO-ICU-01",    "room_id": "icu",               "sensor_type": "co",         "unit_config": { "co": "ppm" } },
+    { "sensor_id": "SMOKE-ISO-01", "room_id": "isolation_room",    "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-PAT-01", "room_id": "patient_room",      "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-OT-01",  "room_id": "operation_theater", "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "CUR-OT-01",    "room_id": "operation_theater", "sensor_type": "current",    "unit_config": { "current": "A" } },
+    { "sensor_id": "SMOKE-RAD-01", "room_id": "radiology",         "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "CUR-RAD-01",   "room_id": "radiology",         "sensor_type": "current",    "unit_config": { "current": "A" } },
+    { "sensor_id": "SMOKE-LAB-01", "room_id": "lab",               "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-PH-01",  "room_id": "pharmacy",          "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-WA-01",  "room_id": "waiting_area",      "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-ADM-01", "room_id": "administration",    "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-REC-01", "room_id": "records",           "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-GW-01",  "room_id": "general_ward",      "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-MAT-01", "room_id": "maternity_ward",    "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-CAF-01", "room_id": "cafeteria",         "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "CO-CAF-01",    "room_id": "cafeteria",         "sensor_type": "co",         "unit_config": { "co": "ppm" } },
+    { "sensor_id": "SMOKE-LOB-01", "room_id": "main_lobby",        "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-ED-01",  "room_id": "emergency_dept",    "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-BB-01",  "room_id": "blood_bank",        "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } }
+  ]
+}

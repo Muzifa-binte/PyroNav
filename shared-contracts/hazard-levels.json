@@ -1,0 +1,24 @@
+{
+  "_doc": "Enum definitions shared by the database (migration 001), the REST API, WebSocket events and the frontend. Change a value here AND in a new migration.",
+  "hazard_level": {
+    "values": ["NORMAL", "WARNING", "HIGH_RISK", "CRITICAL", "UNKNOWN"],
+    "severity_order": ["CRITICAL", "HIGH_RISK", "WARNING", "NORMAL", "UNKNOWN"],
+    "blocks_evacuation_route": ["HIGH_RISK", "CRITICAL"],
+    "_note": "UNKNOWN = no fresh sensor data; it is not treated as safe or unsafe by default"
+  },
+  "data_quality": {
+    "values": ["FRESH", "PARTIAL", "STALE", "NO_DATA"],
+    "fresh_window_seconds": 60
+  },
+  "sensor_type":       { "values": ["current", "smoke_heat", "co"] },
+  "sensor_status":     { "values": ["active", "inactive", "error", "stale"] },
+  "validation_status": { "values": ["valid", "invalid", "stale", "duplicate"] },
+  "event_status":      { "values": ["ACTIVE", "RESOLVED"] },
+  "notification_status": { "values": ["ACTIVE", "ACKNOWLEDGED", "DISMISSED"] },
+  "node_type":         { "values": ["room", "junction", "exit"] },
+  "algorithm":         { "values": ["dijkstra", "bfs"] },
+  "route_status": {
+    "values": ["ROUTE_FOUND", "NO_VALID_ROUTE", "NO_AVAILABLE_EXIT", "INVALID_ORIGIN", "RECALCULATION_PENDING"]
+  },
+  "log_level": { "values": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] }
+}

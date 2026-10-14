@@ -6,6 +6,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Set
 
+from psycopg2.extras import Json
+
 from pathfinding.dijkstra import DijkstraPathfinder
 from pathfinding.bfs import BFSPathfinder
 from pathfinding.graph_loader import GraphLoader
@@ -170,7 +172,8 @@ class RouteCalculator:
                     result["algorithm"],
                     result["status"],
                     result["calculated_at"],
-                    str(result["hazard_state_snapshot"]),
+                    # Json(): str(list) gives Python repr like "['icu']", which is not valid JSON
+                    Json(result["hazard_state_snapshot"]),
                 ),
             )
         except Exception as exc:

@@ -46,8 +46,10 @@ class GraphLoader:
                 {"edge_id": edge_id, "to": to_node, "cost": cost, "traversable": traversable}
             )
             if bidirectional:
+                # Same edge_id in both directions: route edge_ids must match the ids
+                # in GET /building, which the 2D map uses to highlight the route.
                 edges.setdefault(to_node, []).append(
-                    {"edge_id": edge_id + "_rev", "to": from_node, "cost": cost, "traversable": traversable}
+                    {"edge_id": edge_id, "to": from_node, "cost": cost, "traversable": traversable}
                 )
         return edges
 
@@ -79,7 +81,7 @@ class GraphLoader:
             )
             if bidirectional:
                 edges.setdefault(to_node, []).append(
-                    {"edge_id": e["edge_id"] + "_rev", "to": from_node, "cost": cost, "traversable": traversable}
+                    {"edge_id": e["edge_id"], "to": from_node, "cost": cost, "traversable": traversable}
                 )
 
         return {"nodes": nodes, "edges": edges}

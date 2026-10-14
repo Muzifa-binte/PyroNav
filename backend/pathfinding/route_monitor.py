@@ -24,7 +24,7 @@ class RouteMonitor:
             return
 
         if self._route_affected(room_id, hazard_level):
-            print(f"[RouteMonitor] Hazard in '{room_id}' ({hazard_level}) affects route — recalculating.")
+            print(f"[RouteMonitor] Hazard in '{room_id}' ({hazard_level}) affects route - recalculating.")
             self._recalculate()
 
     def set_route(self, route: Dict):
@@ -50,4 +50,4 @@ class RouteMonitor:
                 data={**new_route, "reason": "hazard_change"},
             )
         )
-        print(f"[RouteMonitor] Route recalculated → status: {new_route['status']}")
+        print(f"[RouteMonitor] Route recalculated -> status: {new_route['status']}")

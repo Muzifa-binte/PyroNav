@@ -1,56 +1,165 @@
 {
-  "_doc": "WebSocket event schemas — server → client push over ws://host/ws/v1/live",
+  "_doc": "WebSocket contract — ws://<host>:8000/ws/v1/live. Owner: Member 4. Every field listed per event is guaranteed; publishers may add more, and the broadcaster passes extra fields through unchanged.",
+  "connect": {
+    "url": "ws://localhost:8000/ws/v1/live?client_id=<name>[&events=<comma-separated event types>]",
+    "client_id": "optional label shown in GET /api/v1/system/websocket/stats",
+    "events": "optional filter; omit to receive every event"
+  },
   "envelope": {
     "event_type": "string",
-    "data":        "object",
-    "timestamp":   "ISO-8601 UTC string"
+    "data": "object",
+    "timestamp": "ISO-8601 with explicit UTC offset, e.g. 2026-10-14T10:30:00+00:00"
+  },
+  "delivery": [
+    "Events reach each client in the order they were published.",
+    "A client that cannot receive within 5 s is disconnected; clients should reconnect (the frontend hook retries after 3 s).",
+    "All timestamps are UTC with an explicit +00:00 offset."
+  ],
+  "system_events": {
+    "connection_established": {
+      "_when": "first frame after connecting",
+      "session_id": "UUID",
+      "client_id": "string",
+      "server_time": "ISO-8601",
+      "available_events": [
+        "string"
+      ],
+      "subscriptions": [
+        "string — ['*'] means all"
+      ]
+    },
+    "heartbeat": {
+      "_when": "every WS_HEARTBEAT_SECONDS (default 30)",
+      "connected_clients": "integer"
+    }
   },
   "events": {
     "sensor_reading_updated": {
+      "_published_by": "Member 1 — internal event name: sensor_reading_received",
       "sensor_id": "string",
-      "room_id":   "string",
-      "values":    "object  (e.g. {smoke: 45, temperature: 22})",
-      "units":     "object  (e.g. {smoke: 'ppm', temperature: 'degC'})",
+      "room_id": "string",
+      "values": "object  (e.g. {smoke: 45, temperature: 22})",
+      "units": "object  (e.g. {smoke: 'ppm', temperature: 'degC'})",
       "validation_status": "valid | invalid | stale | duplicate",
       "timestamp": "ISO-8601"
     },
+    "sensor_status_changed": {
+      "_published_by": "Member 1 — e.g. a sensor goes stale",
+      "sensor_id": "string",
+      "room_id": "string",
+      "status": "active | inactive | error | stale",
+      "previous_status": "string | null"
+    },
     "room_status_changed": {
-      "room_id":        "string",
-      "hazard_level":   "NORMAL | WARNING | HIGH_RISK | CRITICAL | UNKNOWN",
+      "_published_by": "Member 2",
+      "room_id": "string",
+      "hazard_level": "NORMAL | WARNING | HIGH_RISK | CRITICAL | UNKNOWN",
       "previous_level": "string | null"
     },
     "hazard_event_created": {
-      "event_id":    "UUID",
-      "room_id":     "string",
+      "_published_by": "Member 2",
+      "event_id": "UUID",
+      "room_id": "string",
       "hazard_level": "string",
-      "reason_codes": ["string"],
+      "reason_codes": [
+        "string"
+      ],
       "detected_at": "ISO-8601"
     },
+    "hazard_event_resolved": {
+      "_published_by": "Member 2",
+      "event_id": "UUID",
+      "room_id": "string",
+      "resolved_at": "ISO-8601"
+    },
     "notification_created": {
+      "_published_by": "Member 2",
       "notification_id": "UUID",
-      "event_id":        "UUID",
-      "room_id":         "string",
-      "severity":        "string",
-      "message":         "string"
+      "event_id": "UUID",
+      "room_id": "string",
+      "severity": "string",
+      "message": "string"
+    },
+    "notification_acknowledged": {
+      "_published_by": "Member 4 — POST /api/v1/notifications/{id}/acknowledge",
+      "notification_id": "UUID",
+      "event_id": "UUID",
+      "room_id": "string",
+      "status": "ACKNOWLEDGED",
+      "acknowledged_at": "ISO-8601"
     },
     "route_updated": {
-      "route_id":       "UUID",
+      "_published_by": "Member 3 (reason hazard_change) and the route API (reason manual_request)",
+      "route_id": "UUID",
       "origin_node_id": "string",
-      "exit_id":        "string | null",
-      "node_ids":       ["string"],
-      "edge_ids":       ["string"],
-      "total_cost":     "number | null",
-      "algorithm":      "dijkstra | bfs",
-      "status":         "ROUTE_FOUND | NO_VALID_ROUTE | NO_AVAILABLE_EXIT | RECALCULATION_PENDING",
-      "reason":         "string (e.g. hazard_change)"
+      "exit_id": "string | null",
+      "node_ids": [
+        "string"
+      ],
+      "edge_ids": [
+        "string"
+      ],
+      "total_cost": "number | null",
+      "algorithm": "dijkstra | bfs",
+      "status": "ROUTE_FOUND | NO_VALID_ROUTE | NO_AVAILABLE_EXIT | INVALID_ORIGIN | RECALCULATION_PENDING",
+      "hazard_state_snapshot": [
+        "room_id blocked when the route was calculated"
+      ],
+      "reason": "hazard_change | manual_request"
     },
     "ids_event_detected": {
-      "event_id":    "UUID",
-      "category":    "string",
-      "source":      "string",
-      "severity":    "string",
+      "_published_by": "security / IDS monitoring",
+      "event_id": "UUID",
+      "category": "string",
+      "source": "string",
+      "severity": "string",
       "description": "string",
-      "timestamp":   "ISO-8601"
+      "timestamp": "ISO-8601"
     }
+  },
+  "client_messages": {
+    "_doc": "Optional JSON text frames a client may send.",
+    "ping": {
+      "send": {
+        "type": "ping"
+      },
+      "reply": {
+        "type": "pong",
+        "timestamp": "ISO-8601"
+      }
+    },
+    "subscribe": {
+      "send": {
+        "type": "subscribe",
+        "event_types": [
+          "route_updated",
+          "room_status_changed"
+        ]
+      },
+      "reply": {
+        "type": "subscribed",
+        "event_types": [
+          "room_status_changed",
+          "route_updated"
+        ]
+      },
+      "_note": "[\"*\"] restores all events; unknown names are ignored"
+    },
+    "other": {
+      "reply": {
+        "type": "ack",
+        "message": "received"
+      }
+    }
+  },
+  "publishing_from_python": {
+    "_doc": "How Members 1-3 publish (see backend/events/event_bus.py). Safe from any thread.",
+    "example": "from events.event_bus import event_bus, Event; from events import event_types as ev; event_bus.publish_sync(Event(ev.ROOM_STATUS_CHANGED, {'room_id': 'icu', 'hazard_level': 'CRITICAL', 'previous_level': 'WARNING'}))"
+  },
+  "custom_events": {
+    "_doc": "Teammates can add their own event types without changing Member 4's code.",
+    "register": "from events.event_types import register_event_type; register_event_type('evacuation_ordered')",
+    "effect": "The event is then broadcast to WebSocket clients, appears in connection_established.available_events, can be subscribed to, and is accepted by POST /api/v1/system/events/publish. Unregistered event types stay internal (never sent to browsers).",
+    "contract": "Add the new event and its required fields to the 'events' section of this file."
   }
 }

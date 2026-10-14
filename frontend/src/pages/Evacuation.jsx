@@ -28,7 +28,7 @@ export default function Evacuation() {
   // WebSocket route updates
   useEffect(() => {
     const handleRouteUpdate = (e) => {
-      const data = e.detail
+      const data = e.detail?.data ?? e.detail  // WebSocket envelope: {event_type, data, timestamp}
       const incoming = data?.route || data
       if (incoming?.status) {
         setRoute(incoming)
