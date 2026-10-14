@@ -11,7 +11,7 @@ Real-time events use the WebSocket contract in [`websocket-events.json`](websock
 
 | Topic | Rule |
 | --- | --- |
-| **Field names** | Response fields use the database column names (`current_hazard_level`, `data_quality_status`, `last_updated_at`, `from_node_id`, …). |
+| **Field names** | Response fields use the database column names (`current_hazard_level`, `data_quality_status`, `last_updated_at`, `from_node_id`, …). Domain endpoints return **every** column of their table, so columns a member adds later appear automatically; clients must ignore fields they don't know. |
 | **Timestamps** | ISO-8601, always UTC with an explicit offset: `2026-10-14T15:23:32+00:00`. Query parameters accept any ISO-8601 value; a value without an offset is treated as UTC. |
 | **`demo_data`** | `false` means the data came from PostgreSQL. `true` means the database is unreachable and the response comes from `shared-contracts/mock-data` (only when `DEMO_FALLBACK=true`). |
 | **Request ID** | Every response carries `X-Request-ID`, and the same ID appears in error bodies and the audit log. Send your own `X-Request-ID` header to trace a request. |
@@ -208,27 +208,28 @@ Sets `status=ACKNOWLEDGED` and `acknowledged_at`, then broadcasts `notification_
 ### `GET /building`
 ```json
 {
-  "nodes": [{"node_id": "reception", "node_type": "room", "room_id": "reception",
-             "position": {"x": 100, "y": 240}, "traversable": true, "metadata": null}],
-  "edges": [{"edge_id": "EDGE-01", "from_node_id": "reception", "to_node_id": "corridor_1",
-             "cost": 10.0, "bidirectional": true, "traversable": true, "metadata": null}],
-  "exits": [{"exit_id": "EXIT-A", "node_id": "EXIT-A", "name": "EXIT A — Main Entrance",
-             "position": {"x": 0, "y": 200}, "available": true, "capacity": null}],
+  "nodes": [{"node_id": "icu", "node_type": "room", "room_id": "icu",
+             "position": {"x": 140, "y": 115}, "traversable": true, "metadata": null}],
+  "edges": [{"edge_id": "EDGE-01", "from_node_id": "icu", "to_node_id": "isolation_room",
+             "from_node": "icu", "to_node": "isolation_room",
+             "cost": 8.0, "bidirectional": true, "traversable": true, "metadata": null}],
+  "exits": [{"exit_id": "EXIT-S", "node_id": "EXIT-S", "name": "EXIT S  — Main Entrance",
+             "position": {"x": 360, "y": 580}, "available": true, "capacity": null}],
   "demo_data": false
 }
 ```
 
 ### `POST /routes/calculate`
 ```json
-{"origin_room_id": "emergency_ward", "algorithm": "dijkstra", "target_exit_id": null}
+{"origin_room_id": "isolation_room", "algorithm": "dijkstra", "target_exit_id": null}
 ```
 `algorithm` is `dijkstra` (minimum cost) or `bfs` (fewest hops). Rooms at `HIGH_RISK` or `CRITICAL` are avoided. `edge_ids` are the IDs from `GET /building` (a bidirectional edge keeps its ID in either direction), so the map can highlight them directly.
 ```json
 {
-  "route_id": "6ef34bf2-…", "origin_node_id": "emergency_ward", "exit_id": "EXIT-A",
-  "node_ids": ["emergency_ward", "corridor_1", "reception", "EXIT-A"],
-  "edge_ids": ["EDGE-03", "EDGE-01", "EDGE-06"],
-  "total_cost": 32.0, "algorithm": "dijkstra", "status": "ROUTE_FOUND",
+  "route_id": "6ef34bf2-…", "origin_node_id": "isolation_room", "exit_id": "EXIT-NW",
+  "node_ids": ["isolation_room", "icu", "EXIT-NW"],
+  "edge_ids": ["EDGE-01", "EDGE-18"],
+  "total_cost": 13.0, "algorithm": "dijkstra", "status": "ROUTE_FOUND",
   "calculated_at": "2026-10-14T15:23:50+00:00", "hazard_state_snapshot": [],
   "notes": null, "demo_data": false
 }

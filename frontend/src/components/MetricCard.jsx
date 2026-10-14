@@ -1,39 +1,83 @@
 import React from 'react'
 
 /**
- * MetricCard — a summary stat card for the Overview dashboard row.
- * Props: label, value, sub, accent (CSS color), onClick, icon
+ * MetricCard — summary stat card for the Overview dashboard row.
+ * Light modern style with coloured top-strip accent.
  */
 export default function MetricCard({ label, value, sub, accent, onClick, icon }) {
-  const isClickable = typeof onClick === 'function'
+  const clickable = typeof onClick === 'function'
 
   return (
     <div
-      className="card"
       onClick={onClick}
-      role={isClickable ? 'button' : undefined}
-      tabIndex={isClickable ? 0 : undefined}
-      onKeyDown={isClickable ? e => e.key === 'Enter' && onClick() : undefined}
-      aria-label={isClickable ? `${label}: ${value}. Click for details.` : undefined}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? e => e.key === 'Enter' && onClick() : undefined}
+      aria-label={clickable ? `${label}: ${value}. Click for details.` : undefined}
       style={{
-        cursor: isClickable ? 'pointer' : 'default',
-        borderLeft: accent ? `3px solid ${accent}` : undefined,
-        transition: 'background var(--transition-fast)',
+        background: 'var(--surface-base)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-md)',
+        boxShadow: 'var(--shadow-card)',
+        padding: 'var(--space-5)',
         flex: 1,
-        minWidth: 160,
+        minWidth: 150,
+        cursor: clickable ? 'pointer' : 'default',
+        transition: 'all var(--transition-fast)',
+        position: 'relative',
+        overflow: 'hidden',
       }}
+      onMouseEnter={e => { if (clickable) e.currentTarget.style.boxShadow = 'var(--shadow-raised)' }}
+      onMouseLeave={e => { if (clickable) e.currentTarget.style.boxShadow = 'var(--shadow-card)' }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
+      {/* Coloured top strip */}
+      {accent && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0,
+          height: 4, background: accent, borderRadius: '14px 14px 0 0',
+        }} />
+      )}
+
+      {/* Header row */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between',
+        alignItems: 'flex-start', marginBottom: 10, marginTop: accent ? 4 : 0,
+      }}>
         <span className="label">{label}</span>
-        {icon && <span aria-hidden="true" style={{ fontSize: '18px', opacity: 0.7 }}>{icon}</span>}
+        {icon && (
+          <div style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: accent ? `${accent}18` : 'var(--surface-inset)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16,
+          }}>
+            {icon}
+          </div>
+        )}
       </div>
-      <div style={{ fontSize: '28px', fontWeight: 700, color: accent || 'var(--text-primary)', lineHeight: 1 }} className="tabular">
+
+      {/* Value */}
+      <div style={{
+        fontSize: 26, fontWeight: 800,
+        color: accent || 'var(--text-primary)',
+        lineHeight: 1.1, letterSpacing: '-0.02em',
+      }} className="tabular">
         {value ?? '—'}
       </div>
+
+      {/* Sub-label */}
       {sub && (
-        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: 'var(--space-1)' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
           {sub}
         </div>
+      )}
+
+      {/* Arrow indicator if clickable */}
+      {clickable && (
+        <div style={{
+          position: 'absolute', bottom: 14, right: 14,
+          color: accent || 'var(--text-muted)', fontSize: 14, opacity: 0.5,
+        }}>→</div>
       )}
     </div>
   )

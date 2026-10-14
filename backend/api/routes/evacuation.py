@@ -139,15 +139,14 @@ def _demo_route(req: RouteRequest) -> Dict:
 def get_building():
     def query():
         nodes = db_manager.fetch_all(
-            "SELECT node_id, node_type, room_id, position, traversable, metadata "
-            "FROM building_nodes ORDER BY node_id"
+            "SELECT * FROM building_nodes ORDER BY node_id"
         )
         edges = db_manager.fetch_all(
-            "SELECT edge_id, from_node_id, to_node_id, cost, bidirectional, traversable, metadata "
+            "SELECT *, from_node_id AS from_node, to_node_id AS to_node "
             "FROM building_edges ORDER BY edge_id"
         )
         exits = db_manager.fetch_all(
-            "SELECT exit_id, node_id, name, position, available, capacity FROM exits ORDER BY exit_id"
+            "SELECT * FROM exits ORDER BY exit_id"
         )
         return to_jsonable({"nodes": nodes, "edges": edges, "exits": exits, "demo_data": False})
 
@@ -216,7 +215,7 @@ def get_route(route_id: UUID):
 def get_exits():
     def query():
         rows = db_manager.fetch_all(
-            "SELECT exit_id, node_id, name, position, available, capacity FROM exits ORDER BY exit_id"
+            "SELECT * FROM exits ORDER BY exit_id"
         )
         return {"exits": to_jsonable(rows), "demo_data": False}
 

@@ -33,23 +33,22 @@ Points to make:
 
 ## 2. Data flow (3 min)
 
-**a. Calculate a route.** Use Swagger, or:
-```bash
-curl -X POST http://localhost:8000/api/v1/routes/calculate -H "Content-Type: application/json" -d '{"origin_room_id":"emergency_ward"}'
-```
-The route is ward → corridor_1 → reception → EXIT-A. Both terminals receive `route_updated` (`reason: manual_request`).
+Rooms and routes below are for the current demo hospital in `shared-contracts`. If a teammate changes the layout, pick an origin room next to the room you set on fire.
 
-**b. Fire in the corridor.** With Members 1–2's services running, start the simulator's fire scenario. Without them, `scripts/simulate_hazard.py` plays the decision engine's part. It updates the room, opens an alert and publishes the events:
+**a. Calculate a route.** On the **Evacuation** page, choose origin **Isolation Room** and click *Calculate Route*.
+The route is Isolation Room → ICU → EXIT-NW (13 m). Both terminals receive `route_updated` (`reason: manual_request`).
+
+**b. Fire in the ICU.** With Members 1–2's services running, start the simulator's fire scenario. Without them, `scripts/simulate_hazard.py` plays the decision engine's part. It updates the room, opens an alert and publishes the events:
 ```powershell
-.\venv\Scripts\python.exe scripts\simulate_hazard.py corridor_1 CRITICAL
+.\venv\Scripts\python.exe scripts\simulate_hazard.py icu CRITICAL
 ```
-Both terminals receive `room_status_changed`, `hazard_event_created` and `notification_created`. Then, with no further action, Member 3's route monitor recalculates and `route_updated` arrives (`reason: hazard_change`, `status: NO_VALID_ROUTE`): the ward's only other exit (EXIT-C) is out of service.
+Both terminals receive `room_status_changed`, `hazard_event_created` and `notification_created`. Then, with no further action, Member 3's route monitor recalculates and `route_updated` arrives (`reason: hazard_change`). The Evacuation page **redraws by itself** to Isolation Room → Patient Room → OT → EXIT-NE (21 m), with no refresh needed.
 
-*Rerouting variant:* calculate from `operation_theater` (→ ICU → EXIT-B), then run `simulate_hazard.py icu CRITICAL`. The route switches to corridor → reception → EXIT-A.
+*Cut-off variant:* calculate from **Records**, then run `simulate_hazard.py administration CRITICAL`. Records can only be left through Administration, so the result is `NO_VALID_ROUTE`.
 
 Afterwards, run `.\venv\Scripts\python.exe scripts\simulate_hazard.py --reset` to set every room back to NORMAL.
 
-**c. Show it on the dashboard**: Overview / Evacuation pages.
+**c. Show it on the dashboard**: Live Map (the ICU turns red live), Overview (active alert).
 
 ## 3. Resilience (2 min)
 

@@ -17,10 +17,9 @@ from utils.serialization import to_jsonable
 
 router = APIRouter()
 
-ROOM_COLUMNS = (
-    "room_id, name, map_position, dimensions, current_hazard_level, "
-    "data_quality_status, last_updated_at"
-)
+# SELECT * on purpose: a column the owning member adds in a later migration
+# shows up in the API without touching this file.
+ROOM_COLUMNS = "*"
 
 
 def _demo_rooms() -> List[Dict]:

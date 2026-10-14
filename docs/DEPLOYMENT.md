@@ -10,7 +10,7 @@ See the [README quick start](../README.md#quick-start). In short:
 | Database (native, once) | `psql -U postgres -f database/setup_database.sql` |
 | Install | `pip install -r requirements.txt` (in a venv, Python 3.11–3.14) |
 | Migrate | `python -m database.migrations.migrate` |
-| Demo data | `python -m database.seed` |
+| Demo data | `python -m database.seed --replace` (building = exactly `shared-contracts`) |
 | Run | `uvicorn api.main:app --reload --port 8000` |
 
 > **PostgreSQL 15+ permission trap.** If you created the user yourself with `GRANT ALL PRIVILEGES ON DATABASE …`, migrations fail with *permission denied for schema public*. The database must be **owned** by `pyronav_user`, as `setup_database.sql` does: `ALTER DATABASE pyronav_db OWNER TO pyronav_user;`
@@ -19,7 +19,10 @@ See the [README quick start](../README.md#quick-start). In short:
 In Windows PowerShell, write `.\venv\Scripts\python.exe` instead of `python`.
 ```bash
 python -m database.migrations.migrate --status   # applied / pending migrations
+python -m database.seed --replace                # load the demo hospital; removes rooms/graph/sensors not in shared-contracts
+python -m database.seed                          # add/update demo rows only, never deletes (safe next to a real building)
 python -m database.seed --reset-runtime          # wipe readings/events/routes; rooms back to UNKNOWN (demo reset)
+python scripts/simulate_hazard.py icu CRITICAL   # stand-in for the decision engine (API must be running)
 python -m database.maintenance --purge 30        # delete operational data older than 30 days
 python scripts/export_openapi.py                 # refresh shared-contracts/openapi.json
 ```
@@ -32,7 +35,7 @@ docker compose logs -f api
 docker compose down              # keep data      (docker compose down -v deletes it)
 ```
 
-The API container waits for PostgreSQL, applies migrations, loads the demo building (`SEED_DEMO_DATA=true`) and starts uvicorn. Docker restarts it if it crashes, and its health check calls `/api/v1/health/live`.
+The API container waits for PostgreSQL, applies migrations, loads the demo building (`SEED_DEMO_DATA=true` resets the building to `shared-contracts` on **every** start; set it to `false` once a real building has been imported) and starts uvicorn. Docker restarts it if it crashes, and its health check calls `/api/v1/health/live`.
 
 Override values in a `.env` file **at the repository root**, which Docker Compose reads for substitution. This is separate from `backend/.env`:
 ```env

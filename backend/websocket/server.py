@@ -26,16 +26,13 @@ from typing import Optional
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from events.event_types import WEBSOCKET_EVENTS
+from events.event_types import websocket_event_names
 from utils.serialization import utc_now_iso
 from websocket.connection_manager import ClientConnection, manager
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-AVAILABLE_EVENTS = sorted(set(WEBSOCKET_EVENTS.values()))
-
 
 def _parse_subscriptions(event_types) -> Optional[set]:
     """None means "all events". Unknown names are ignored."""
@@ -46,7 +43,7 @@ def _parse_subscriptions(event_types) -> Optional[set]:
     wanted = {str(e) for e in event_types if e}
     if "*" in wanted:
         return None
-    return wanted & set(AVAILABLE_EVENTS)
+    return wanted & set(websocket_event_names())
 
 
 def _handle_client_message(client: ClientConnection, raw: str) -> dict:
@@ -83,7 +80,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str = "anonymous",
                     "session_id": client.session_id,
                     "client_id": client.client_id,
                     "server_time": utc_now_iso(),
-                    "available_events": AVAILABLE_EVENTS,
+                    "available_events": websocket_event_names(),
                     "subscriptions": sorted(client.subscriptions) if client.subscriptions is not None else ["*"],
                 },
                 "timestamp": utc_now_iso(),

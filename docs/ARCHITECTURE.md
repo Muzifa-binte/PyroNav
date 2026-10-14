@@ -248,3 +248,23 @@ Logs go to the console, `backend/logs/pyronav.log` (rotating, 10 MB × 5) and, f
 
 - DB-backed handlers are plain `def` functions. FastAPI runs them in its thread pool, so blocking psycopg2 calls never stall the event loop or the WebSocket clients.
 - `X-Request-ID` is returned on every response, included in error bodies, and stored in `api_audit_log`.
+
+## 8. Room to grow — what teammates can change on their own
+
+The other modules are still being designed. The integration layer is built so each member can make their own decisions and still plug in at the end, **without editing Member 4's code**:
+
+| You want to… | How | Member 4 code touched? |
+| --- | --- | --- |
+| Add a column to your table (e.g. `rooms.occupancy`) | Add a migration (`004_member2_room_occupancy.sql`). The domain endpoints use `SELECT *`, so the column appears in the API automatically | No |
+| Publish a new kind of event (e.g. `evacuation_ordered`) | `register_event_type("evacuation_ordered")` once in your module, then `event_bus.publish_sync(...)`. It reaches WebSocket clients, they can subscribe to it, and the dev publish endpoint accepts it | No |
+| Add fields to an existing event | Just include them in the `data` dict. The broadcaster passes payloads through unchanged | No |
+| Change the demo building, graph or sensors | Edit `shared-contracts/mock-data/*.json`, then run `python -m database.seed --replace`. The API's demo fallback uses the same files | No |
+| Run your service (MQTT, decision loop) | Register it with `@background_service` (§5.3) and list the module in `BACKGROUND_SERVICES` | No |
+| Report your component's health | `register_health_check("mqtt", fn)` (§5.4) | No |
+| Rewrite your domain's endpoints | Each member owns their route file (`sensors.py`, `rooms.py`/`events.py`/`notifications.py`, `evacuation.py`). Member 4's versions are working defaults; change them freely, and keep `shared-contracts/api-endpoints.md` in step | Only your own file |
+| Import a real building | `pathfinding/import_building.py` (Member 3), or your own importer using `db_manager` | No |
+
+**Safety nets that keep the end-to-end integration working:**
+- `tests/test_demo_data_contract.py` checks *your* data. Every sensor's room exists, every edge's nodes exist, no costs are negative, every room can reach an available exit, and the whole building loads into PostgreSQL. It doesn't care what the building looks like, so changing the layout never breaks it, but a typo does.
+- The integration tests use their own fixed building (`tests/fixture_building.py`), so your changes to the demo data never break Member 4's tests.
+- `database.seed` without `--replace` only adds or updates rows; it never deletes your data.

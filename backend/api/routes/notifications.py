@@ -18,10 +18,9 @@ from utils.serialization import to_jsonable
 
 router = APIRouter()
 
-NOTIFICATION_COLUMNS = (
-    "n.notification_id, n.event_id, n.room_id, r.name AS room_name, n.severity, "
-    "n.message, n.created_at, n.acknowledged_at, n.status"
-)
+# SELECT * on purpose: a column the owning member adds in a later migration
+# shows up in the API without touching this file.
+NOTIFICATION_COLUMNS = "n.*, r.name AS room_name"
 
 
 @router.get("/notifications", summary="Notifications (newest first)")
@@ -58,14 +57,12 @@ def acknowledge_notification(notification_id: UUID):
         "UPDATE notifications SET status = 'ACKNOWLEDGED', "
         "acknowledged_at = (now() AT TIME ZONE 'UTC') "
         "WHERE notification_id = %s AND status = 'ACTIVE' "
-        "RETURNING notification_id, event_id, room_id, severity, message, "
-        "created_at, acknowledged_at, status",
+        "RETURNING *",
         (str(notification_id),),
     )
     if updated is None:
         existing = db_manager.fetch_one(
-            "SELECT notification_id, event_id, room_id, severity, message, "
-            "created_at, acknowledged_at, status FROM notifications WHERE notification_id = %s",
+            "SELECT * FROM notifications WHERE notification_id = %s",
             (str(notification_id),),
         )
         if existing is None:

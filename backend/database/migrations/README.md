@@ -13,10 +13,11 @@ The API can also apply them at startup (`AUTO_MIGRATE=true`), and the Docker ima
 | --- | --- |
 | `001_initial_schema.sql` | All tables, enums and views for the four members' domains |
 | `002_performance_and_operations.sql` | Composite indexes, integrity checks, `security_events`, `room_sensor_freshness` view, `purge_old_data()`, UTC database default |
+| `003_seed_demo_building.sql` | Member 3: inserts a demo graph if missing. It is an older 6-room layout, so run `python -m database.seed --replace` to get the current demo hospital |
 
 ## Adding a schema change
 
-1. Create the next number: `003_short_description.sql`.
+1. Create the next number, with your member number in the name so parallel work doesn't collide: `004_member2_room_occupancy.sql`. If two files end up with the same number, both still run (in filename order); just make sure they don't depend on each other.
 2. Write plain SQL. Prefer idempotent forms (`CREATE INDEX IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`).
 3. Run `python -m database.migrations.migrate`, then `pytest`. The test suite migrates a fresh schema from scratch, which catches ordering mistakes.
 4. If the change affects an API response or event, update `shared-contracts/` in the same PR.

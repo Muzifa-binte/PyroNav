@@ -6,10 +6,13 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:8000/ws/v1/live?client_id=frontend`
-
 // Global event bus for WS messages — avoids prop drilling
 export const wsEventBus = new EventTarget()
+
+function getWsUrl() {
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  return `${protocol}://${window.location.hostname}:8000/ws/v1/live?client_id=frontend`
+}
 
 export function useWebSocket() {
   const [connectionState, setConnectionState] = useState('unknown')
@@ -23,7 +26,7 @@ export function useWebSocket() {
     if (!mountedRef.current) return
 
     try {
-      const ws = new WebSocket(WS_URL)
+      const ws = new WebSocket(getWsUrl())
       wsRef.current = ws
 
       ws.onopen = () => {

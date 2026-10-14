@@ -23,7 +23,8 @@ OUTPUT = BACKEND_DIR.parent / "shared-contracts" / "openapi.json"
 
 def main() -> None:
     spec = app.openapi()
-    OUTPUT.write_text(json.dumps(spec, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    OUTPUT.write_text(json.dumps(spec, indent=2, ensure_ascii=False) + "\n",
+                      encoding="utf-8", newline="\n")  # LF on Windows too
     print(f"Wrote {OUTPUT} ({len(spec['paths'])} paths, API version {spec['info']['version']})")
 
 

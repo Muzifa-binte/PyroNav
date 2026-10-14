@@ -7,6 +7,8 @@ writes, and every request when DEMO_FALLBACK=false, get HTTP 503.
 """
 import pytest
 
+from database import demo_data
+
 API = "/api/v1"
 
 pytestmark = pytest.mark.usefixtures("no_database")
@@ -26,10 +28,28 @@ def test_probes(client):
     assert client.get(f"{API}/health/db").status_code == 503
 
 
+def _assert_valid_route(route: dict, building: dict, origin: str) -> None:
+    """Layout-independent route check: works for any building teammates design."""
+    assert route["status"] == "ROUTE_FOUND", route
+    nodes, edge_ids = route["node_ids"], route["edge_ids"]
+    available_exits = {e["node_id"] for e in building["exits"] if e.get("available", True)}
+    assert nodes[0] == origin
+    assert nodes[-1] in available_exits
+    assert len(edge_ids) == len(nodes) - 1
+    edges = {e["edge_id"]: e for e in building["edges"]}
+    for (a, b), edge_id in zip(zip(nodes, nodes[1:]), edge_ids):
+        edge = edges[edge_id]  # every reported edge exists in GET /building
+        forward = (edge["from_node_id"], edge["to_node_id"]) == (a, b)
+        backward = edge.get("bidirectional", True) and (edge["to_node_id"], edge["from_node_id"]) == (a, b)
+        assert forward or backward, f"{edge_id} does not connect {a} -> {b}"
+    if route["algorithm"] == "dijkstra":
+        assert route["total_cost"] == pytest.approx(sum(edges[e]["cost"] for e in edge_ids))
+
+
 def test_rooms_served_from_demo_data(client):
     body = client.get(f"{API}/rooms").json()
     assert body["demo_data"] is True
-    assert body["total"] == 6
+    assert body["total"] == len(demo_data.rooms())
     assert {"room_id", "name", "current_hazard_level", "map_position"} <= set(body["rooms"][0])
 
 
@@ -38,47 +58,53 @@ def test_unknown_room_is_still_404(client):
 
 
 def test_sensor_filters_apply_to_demo_data(client):
-    body = client.get(f"{API}/sensors", params={"room_id": "icu"}).json()
+    room_id = demo_data.sensors()[0]["room_id"]
+    expected = {s["sensor_id"] for s in demo_data.sensors() if s["room_id"] == room_id}
+    body = client.get(f"{API}/sensors", params={"room_id": room_id}).json()
     assert body["demo_data"] is True
-    assert {s["sensor_id"] for s in body["sensors"]} == {"SMOKE-ICU-01", "CO-ICU-01"}
+    assert {s["sensor_id"] for s in body["sensors"]} == expected
 
 
-def test_building_graph_uses_db_column_names(client):
+def test_building_graph_has_both_edge_key_styles(client):
     body = client.get(f"{API}/building").json()
     assert body["demo_data"] is True
     edge = body["edges"][0]
-    assert {"edge_id", "from_node_id", "to_node_id", "cost"} <= set(edge)
-    assert len(body["exits"]) == 3
+    assert {"edge_id", "from_node_id", "to_node_id", "from_node", "to_node", "cost"} <= set(edge)
+    assert len(body["exits"]) == len(demo_data.exits())
 
 
-def test_route_calculated_on_demo_graph(client):
-    body = client.post(f"{API}/routes/calculate", json={"origin_room_id": "icu"}).json()
-    assert body["demo_data"] is True
-    assert body["status"] == "ROUTE_FOUND"
-    assert body["node_ids"] == ["icu", "EXIT-B"]
-    assert body["edge_ids"] == ["EDGE-07"]
-    assert body["total_cost"] == 5.0
-    assert client.get(f"{API}/routes/current").json()["route_id"] == body["route_id"]
-
-
-def test_demo_route_edge_ids_match_building_edges(client):
-    building_edges = {e["edge_id"] for e in client.get(f"{API}/building").json()["edges"]}
-    route = client.post(f"{API}/routes/calculate", json={"origin_room_id": "pharmacy"}).json()
-    assert route["status"] == "ROUTE_FOUND"
-    assert set(route["edge_ids"]) <= building_edges
+def test_every_demo_room_gets_a_valid_route(client):
+    """Real Dijkstra on the demo graph, checked structurally for every room
+    that has a path to an available exit."""
+    building = client.get(f"{API}/building").json()
+    rooms = [n["node_id"] for n in building["nodes"] if n["node_type"] != "exit"]
+    found = 0
+    for origin in rooms:
+        route = client.post(f"{API}/routes/calculate", json={"origin_room_id": origin}).json()
+        assert route["demo_data"] is True
+        if route["status"] == "ROUTE_FOUND":
+            _assert_valid_route(route, building, origin)
+            found += 1
+        else:
+            assert route["status"] == "NO_VALID_ROUTE"
+    assert found > 0
+    assert client.get(f"{API}/routes/current").json()["route_id"] == route["route_id"]
 
 
 def test_bfs_and_invalid_origin_on_demo_graph(client):
+    building = client.get(f"{API}/building").json()
+    origin = next(n["node_id"] for n in building["nodes"] if n["node_type"] == "room")
     bfs = client.post(f"{API}/routes/calculate",
-                      json={"origin_room_id": "pharmacy", "algorithm": "bfs"}).json()
-    assert bfs["status"] == "ROUTE_FOUND" and bfs["node_ids"][-1].startswith("EXIT-")
+                      json={"origin_room_id": origin, "algorithm": "bfs"}).json()
+    if bfs["status"] == "ROUTE_FOUND":
+        _assert_valid_route(bfs, building, origin)
     bad = client.post(f"{API}/routes/calculate", json={"origin_room_id": "nowhere"}).json()
     assert bad["status"] == "INVALID_ORIGIN"
 
 
 def test_unknown_algorithm_is_rejected(client):
     r = client.post(f"{API}/routes/calculate",
-                    json={"origin_room_id": "icu", "algorithm": "astar"})
+                    json={"origin_room_id": demo_data.rooms()[0]["room_id"], "algorithm": "astar"})
     assert r.status_code == 422
 
 

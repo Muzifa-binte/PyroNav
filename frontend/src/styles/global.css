@@ -1,7 +1,7 @@
 @import './tokens.css';
 
-/* Google Fonts — Inter */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* ── Google Fonts ──────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -21,73 +21,78 @@ body {
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbars */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--surface-inset); }
-::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+/* ── Scrollbars ────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--border-medium); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* Focus ring — must remain visible for keyboard navigation */
+/* ── Focus ring ────────────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
-/* Utility: tabular numerals for sensor values */
+/* ── Utility ───────────────────────────────────────────────────────── */
 .tabular { font-variant-numeric: tabular-nums; }
 
-/* Utility: simulation banner */
-.sim-banner {
-  background: #2A1A00;
-  border: 1px solid var(--status-warning);
-  color: var(--status-warning);
-  text-align: center;
-  font-weight: 600;
-  font-size: 13px;
-  padding: var(--space-2) var(--space-4);
-  letter-spacing: 0.05em;
-}
-
-/* Utility: status pill */
+/* ── Status pill ───────────────────────────────────────────────────── */
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
-.pill--normal   { background: rgba(67,197,158,0.15); color: var(--status-normal);   border: 1px solid rgba(67,197,158,0.3); }
-.pill--warning  { background: rgba(245,190,85,0.15);  color: var(--status-warning);  border: 1px solid rgba(245,190,85,0.3); }
-.pill--high     { background: rgba(255,138,76,0.15);  color: var(--status-high);     border: 1px solid rgba(255,138,76,0.3); }
-.pill--critical { background: rgba(255,93,108,0.15);  color: var(--status-critical); border: 1px solid rgba(255,93,108,0.3); }
-.pill--unknown  { background: rgba(154,167,186,0.15); color: var(--status-unknown);  border: 1px solid rgba(154,167,186,0.3); }
-.pill--info     { background: rgba(139,168,255,0.15); color: var(--status-info);     border: 1px solid rgba(139,168,255,0.3); }
+.pill--normal   { background: #C6F6D5; color: #276749; }
+.pill--warning  { background: #FEFCBF; color: #975A16; }
+.pill--high     { background: #FEEBC8; color: #C05621; }
+.pill--critical { background: #FED7D7; color: #9B2C2C; }
+.pill--unknown  { background: #EDF2F7; color: #4A5568; }
+.pill--info     { background: #BEE3F8; color: #2C5282; }
 
-/* Card surface */
+/* ── Card ──────────────────────────────────────────────────────────── */
 .card {
   background: var(--surface-base);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+  transition: box-shadow var(--transition-fast);
+}
+.card:hover {
   box-shadow: var(--shadow-raised);
-  padding: var(--space-4);
 }
 
-/* Section label */
+/* ── Glass card ────────────────────────────────────────────────────── */
+.card-glass {
+  background: var(--surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-glass);
+  padding: var(--space-5);
+}
+
+/* ── Section label ─────────────────────────────────────────────────── */
 .label {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
-/* Empty / loading states */
+/* ── Empty / error states ──────────────────────────────────────────── */
 .empty-state, .error-state {
   display: flex;
   flex-direction: column;
@@ -99,3 +104,24 @@ body {
   text-align: center;
 }
 .error-state { color: var(--status-critical); }
+
+/* ── Simulation banner ─────────────────────────────────────────────── */
+.sim-banner {
+  background: #FFFBEB;
+  border: 1px solid #F6E05E;
+  color: #744210;
+  text-align: center;
+  font-weight: 700;
+  font-size: 12px;
+  padding: var(--space-2) var(--space-4);
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Page header gradient accent ───────────────────────────────────── */
+.page-accent {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

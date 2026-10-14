@@ -22,7 +22,9 @@ router = APIRouter()
 SensorType = Literal["current", "smoke_heat", "co"]
 SensorStatus = Literal["active", "inactive", "error", "stale"]
 
-SENSOR_COLUMNS = "sensor_id, room_id, sensor_type, status, unit_config, last_seen_at, created_at"
+# SELECT * on purpose: a column the owning member adds in a later migration
+# shows up in the API without touching this file.
+SENSOR_COLUMNS = "*"
 
 
 class SensorCreate(BaseModel):
@@ -110,7 +112,7 @@ def get_sensor_readings(
             clauses.append('"timestamp" < %s')
             params.append(to_time)
         rows = db_manager.fetch_all(
-            'SELECT message_id, "timestamp", "values", units, validation_status, received_at '
+            "SELECT * "
             f"FROM sensor_readings WHERE {' AND '.join(clauses)} "
             'ORDER BY "timestamp" DESC LIMIT %s',
             (*params, limit),

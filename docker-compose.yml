@@ -41,6 +41,7 @@ services:
       DB_USER: ${DB_USER:-pyronav_user}
       DB_PASSWORD: ${DB_PASSWORD:-secure_password}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      # true: reset the building to the shared-contracts demo hospital on every start
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
       DEMO_FALLBACK: ${DEMO_FALLBACK:-true}
       ENABLE_DEV_ENDPOINTS: ${ENABLE_DEV_ENDPOINTS:-true}

@@ -33,7 +33,7 @@ py -3.14 -m venv venv                              # any Python 3.11-3.14
 .\venv\Scripts\python.exe -m pip install -r requirements.txt
 copy .env.example .env                             # optional; defaults match the setup above
 .\venv\Scripts\python.exe -m database.migrations.migrate
-.\venv\Scripts\python.exe -m database.seed         # demo hospital: rooms, graph, exits, sensors
+.\venv\Scripts\python.exe -m database.seed --replace   # demo hospital from shared-contracts
 
 # 3. Frontend (one-time setup)
 cd ..\frontend

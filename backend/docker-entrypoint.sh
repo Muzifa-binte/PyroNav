@@ -16,8 +16,10 @@ until python -m database.migrations.migrate; do
     sleep 3
 done
 
+# true  = make the building match /shared-contracts exactly on every start.
+# Set SEED_DEMO_DATA=false once a real building has been imported.
 if [ "${SEED_DEMO_DATA:-false}" = "true" ]; then
-    python -m database.seed
+    python -m database.seed --replace
 fi
 
 # Single process on purpose: the event bus and WebSocket clients are in-memory

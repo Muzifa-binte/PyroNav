@@ -2,114 +2,116 @@ import React from 'react'
 import { useLocation, Link } from 'react-router-dom'
 
 const PAGE_TITLES = {
-  '/overview':   { title: 'Overview',              subtitle: 'Building status and live system activity' },
-  '/map':        { title: 'Live Map',              subtitle: 'Situational awareness — 2D floor plan' },
-  '/sensors':    { title: 'Sensors & Monitoring',  subtitle: 'Measurement and data quality' },
-  '/evacuation': { title: 'Evacuation & Pathfinding', subtitle: 'Current route and status' },
-  '/alerts':     { title: 'Alerts & Incidents',    subtitle: 'Active and historical events' },
-  '/security':   { title: 'Network Security',      subtitle: 'IDS events and cyber-defence status' },
-  '/risk':       { title: 'Risk Analytics',        subtitle: 'Room state and hazard assessment' },
-  '/simulation': { title: 'Simulation / Developer', subtitle: 'Controlled test scenarios' },
-  '/settings':   { title: 'Configuration',         subtitle: 'System settings and mappings' },
+  '/overview':   { title: 'Overview',                subtitle: 'Building status & live activity' },
+  '/map':        { title: 'Live Map',                subtitle: 'Situational awareness — 2D floor plan' },
+  '/sensors':    { title: 'Sensors & Monitoring',    subtitle: 'Measurement and data quality' },
+  '/evacuation': { title: 'Evacuation & Pathfinding',subtitle: 'Current route and status' },
+  '/alerts':     { title: 'Alerts & Incidents',      subtitle: 'Active and historical events' },
+  '/security':   { title: 'Network Security',        subtitle: 'IDS events and cyber-defence' },
+  '/risk':       { title: 'Risk Analytics',          subtitle: 'Room state and hazard assessment' },
+  '/simulation': { title: 'Simulation / Developer',  subtitle: 'Controlled test scenarios' },
+  '/settings':   { title: 'Configuration',           subtitle: 'System settings and mappings' },
 }
 
-const CONNECTION_COLORS = {
-  connected:    'var(--status-normal)',
-  delayed:      'var(--status-warning)',
-  disconnected: 'var(--status-critical)',
-  unknown:      'var(--status-unknown)',
-  simulation:   'var(--status-warning)',
-}
-
-const barStyle = {
-  height: 'var(--topbar-height)',
-  borderBottom: '1px solid var(--border-subtle)',
-  backgroundColor: 'var(--bg-sidebar)',
-  display: 'flex',
-  alignItems: 'center',
-  padding: '0 var(--space-6)',
-  gap: 'var(--space-4)',
-  flexShrink: 0,
+const CONN = {
+  connected:    { color: '#276749', bg: '#C6F6D5', dot: '#38A169', label: 'Connected' },
+  delayed:      { color: '#975A16', bg: '#FEFCBF', dot: '#D69E2E', label: 'Delayed' },
+  disconnected: { color: '#9B2C2C', bg: '#FED7D7', dot: '#E53E3E', label: 'Disconnected' },
+  unknown:      { color: '#4A5568', bg: '#EDF2F7', dot: '#718096', label: 'Unknown' },
+  simulation:   { color: '#975A16', bg: '#FEFCBF', dot: '#D69E2E', label: 'Simulation' },
 }
 
 export default function TopStatusBar({ connectionState = 'unknown', lastUpdate }) {
   const { pathname } = useLocation()
   const page = PAGE_TITLES[pathname] || { title: 'PyroNav', subtitle: '' }
-  const connColor = CONNECTION_COLORS[connectionState] || 'var(--status-unknown)'
-
-  const formattedUpdate = lastUpdate
-    ? new Date(lastUpdate).toLocaleTimeString()
-    : '—'
+  const conn = CONN[connectionState] || CONN.unknown
 
   return (
-    <header style={barStyle} role="banner">
+    <header style={{
+      height: 'var(--topbar-height)',
+      background: 'var(--surface-base)',
+      borderBottom: '1px solid var(--border-subtle)',
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0 var(--space-6)',
+      gap: 'var(--space-4)',
+      flexShrink: 0,
+      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+    }} role="banner">
       {/* Page title */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <h1 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+      <div style={{ flex: 1 }}>
+        <h1 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
           {page.title}
         </h1>
         {page.subtitle && (
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
             {page.subtitle}
           </p>
         )}
       </div>
 
-      {/* Right side status indicators */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
+      {/* Right side */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {/* Last update */}
-        <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right' }}>
-          <div style={{ color: 'var(--text-secondary)' }}>Last update</div>
-          <div className="tabular">{formattedUpdate}</div>
+        <div style={{ textAlign: 'right', fontSize: 11 }}>
+          <div style={{ color: 'var(--text-muted)' }}>Last update</div>
+          <div className="tabular" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+            {lastUpdate ? new Date(lastUpdate).toLocaleTimeString() : '—'}
+          </div>
         </div>
 
-        {/* Connection state */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-2)',
-            padding: '4px 10px',
-            borderRadius: 'var(--radius-sm)',
-            border: `1px solid ${connColor}30`,
-            backgroundColor: `${connColor}15`,
-          }}
-          aria-label={`Connection status: ${connectionState}`}
-        >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              backgroundColor: connColor,
-              flexShrink: 0,
-            }}
-            aria-hidden="true"
-          />
-          <span style={{ fontSize: '12px', color: connColor, fontWeight: 500, textTransform: 'capitalize' }}>
-            {connectionState === 'simulation' ? 'Simulation Active' : connectionState}
+        {/* Connection pill */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '5px 12px',
+          borderRadius: 999,
+          background: conn.bg,
+          border: `1px solid ${conn.dot}40`,
+        }}>
+          <span style={{
+            width: 7, height: 7, borderRadius: '50%',
+            background: conn.dot, flexShrink: 0,
+          }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: conn.color }}>
+            {conn.label}
           </span>
         </div>
 
         {/* Alerts shortcut */}
-        <Link
-          to="/alerts"
-          aria-label="Go to alerts"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-1)',
-            padding: '4px 8px',
-            borderRadius: 'var(--radius-sm)',
-            textDecoration: 'none',
-            color: 'var(--text-secondary)',
-            fontSize: '13px',
-            border: '1px solid var(--border-subtle)',
-          }}
-        >
-          <span aria-hidden="true">🔔</span>
-          <span style={{ fontSize: '12px' }}>Alerts</span>
+        <Link to="/alerts" style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '6px 12px',
+          borderRadius: 8,
+          background: 'var(--surface-inset)',
+          border: '1px solid var(--border-subtle)',
+          color: 'var(--text-secondary)',
+          textDecoration: 'none',
+          fontSize: 12, fontWeight: 500,
+          transition: 'all var(--transition-fast)',
+        }}>
+          <span>🔔</span>
+          <span>Alerts</span>
         </Link>
+
+        {/* Operator badge */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '5px 12px',
+          borderRadius: 8,
+          background: 'var(--surface-inset)',
+          border: '1px solid var(--border-subtle)',
+          fontSize: 12, color: 'var(--text-secondary)',
+        }}>
+          <div style={{
+            width: 26, height: 26, borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--accent-primary), #F0883E)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 13, color: '#fff', fontWeight: 700,
+          }}>O</div>
+          <span style={{ fontWeight: 500 }}>Operator</span>
+        </div>
       </div>
     </header>
   )

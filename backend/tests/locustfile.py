@@ -11,12 +11,20 @@ While it runs, watch:
     GET /api/v1/health/db      — connection pool usage
 Procedure and targets: docs/TESTING.md
 """
+import os
 import random
+import sys
 
 from locust import HttpUser, between, task
 
-ROOMS = ["reception", "corridor_1", "operation_theater", "emergency_ward", "pharmacy", "icu"]
-SENSORS = ["SMOKE-REC-01", "CO-CORR-01", "SMOKE-OT-01", "SMOKE-ICU-01"]
+# Use whatever demo hospital /shared-contracts currently defines (teammates change it)
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from database import demo_data
+    ROOMS = [r["room_id"] for r in demo_data.rooms()]
+    SENSORS = [s["sensor_id"] for s in demo_data.sensors()]
+except Exception:  # shared-contracts not available next to this file
+    ROOMS, SENSORS = ["icu", "main_lobby"], ["SMOKE-ICU-01"]
 
 
 class DashboardUser(HttpUser):

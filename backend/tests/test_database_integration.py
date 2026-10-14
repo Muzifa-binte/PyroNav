@@ -1,10 +1,12 @@
 """
-End-to-end tests against a real PostgreSQL (isolated "pyronav_test" schema).
+End-to-end tests against a real PostgreSQL (isolated "pyronav_test" schema),
+seeded with the fixed layout in tests/fixture_building.py.
 Skipped automatically when the database configured in backend/.env is unreachable.
 
 Run: pytest tests/test_database_integration.py -v
 """
 import logging
+import os
 import threading
 import time
 import uuid
@@ -15,10 +17,11 @@ import pytest
 
 from database.connection import DatabaseUnavailableError
 from database.maintenance import purge_old_data
-from database.migrations.migrate import MigrationRunner
+from database.migrations.migrate import MIGRATIONS_DIR, MigrationRunner
 from events import event_types as ev
 from events.event_bus import Event, event_bus
 from monitoring.background_writer import db_writer
+from tests.fixture_building import TEST_BUILDING
 
 pytestmark = pytest.mark.database
 
@@ -72,11 +75,11 @@ def test_health_is_healthy_with_real_data(client, database):
     assert health["components"]["database"]["status"] == "connected"
 
     db = client.get(f"{API}/health/db").json()
-    assert db["statistics"]["rooms"] == 6
-    assert db["statistics"]["sensors"] == 8
-    assert db["migrations_applied"] == [
-        "001_initial_schema.sql", "002_performance_and_operations.sql",
-    ]
+    assert db["statistics"]["rooms"] == len(TEST_BUILDING["rooms"])
+    assert db["statistics"]["sensors"] == len(TEST_BUILDING["sensors"])
+    # Every migration file on disk — teammates' own migrations included
+    assert db["migrations_applied"] == sorted(
+        f for f in os.listdir(MIGRATIONS_DIR) if f.endswith(".sql"))
     assert client.get(f"{API}/health/ready").status_code == 200
     assert client.get(f"{API}/system/migrations").json()["pending"] == []
 
@@ -230,7 +233,8 @@ def test_route_edge_ids_match_building_edges(client, database):
 def test_building_graph_from_database(client, database):
     building = client.get(f"{API}/building").json()
     assert building["demo_data"] is False
-    assert len(building["nodes"]) == 9 and len(building["edges"]) == 8
+    assert len(building["nodes"]) == len(TEST_BUILDING["nodes"])
+    assert len(building["edges"]) == len(TEST_BUILDING["edges"])
     exits = client.get(f"{API}/exits").json()["exits"]
     assert {e["exit_id"]: e["available"] for e in exits} == {
         "EXIT-A": True, "EXIT-B": True, "EXIT-C": False}
@@ -276,7 +280,7 @@ def test_system_stats_with_database(client, database):
     stats = client.get(f"{API}/system/stats").json()["database"]
     assert stats["status"] == "connected"
     assert stats["readings_24h"] == 1
-    assert stats["sensors"] == 8
+    assert stats["sensors"] == len(TEST_BUILDING["sensors"])
 
 
 def test_retention_purges_only_old_rows(database):

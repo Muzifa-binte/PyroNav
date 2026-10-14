@@ -123,3 +123,36 @@ def test_heartbeat_frames_are_sent(no_database):
             assert msg["data"]["connected_clients"] == 1
     finally:
         settings.ws_heartbeat_seconds = 0
+
+
+def test_teammate_event_type_reaches_clients_without_code_changes(client, no_database):
+    """A teammate registers a brand-new event type; it is broadcast, subscribable
+    and accepted by the dev publish endpoint — no change to Member 4's code."""
+    from events.event_types import WEBSOCKET_EVENTS, register_event_type
+
+    register_event_type("evacuation_ordered")
+    try:
+        with _connect(client, "client_id=t&events=evacuation_ordered") as ws:
+            hello = ws.receive_json()
+            assert "evacuation_ordered" in hello["data"]["available_events"]
+            assert hello["data"]["subscriptions"] == ["evacuation_ordered"]
+
+            event_bus.publish_sync(Event("evacuation_ordered", {"floor": 1}))
+            msg = ws.receive_json()
+            assert msg["event_type"] == "evacuation_ordered"
+            assert msg["data"] == {"floor": 1}
+
+            r = client.post("/api/v1/system/events/publish",
+                            json={"event_type": "evacuation_ordered", "data": {"floor": 2}})
+            assert r.status_code == 200
+            assert ws.receive_json()["data"] == {"floor": 2}
+    finally:
+        WEBSOCKET_EVENTS.pop("evacuation_ordered", None)
+
+
+def test_unregistered_event_stays_internal(client, no_database):
+    with _connect(client) as ws:
+        ws.receive_json()
+        event_bus.publish_sync(Event("internal_cache_refresh", {"secret": True}))
+        event_bus.publish_sync(Event(ev.ROUTE_UPDATED, {"marker": "after"}))
+        assert ws.receive_json()["data"] == {"marker": "after"}

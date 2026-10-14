@@ -11,7 +11,7 @@ pytest -m "not database"                # skip the PostgreSQL tests
 pytest --durations=10                   # slowest tests
 ```
 
-**Database tests** (`-m database`) run against the PostgreSQL configured in `backend/.env`, in a throw-away schema called `pyronav_test`. It is created, migrated and seeded at the start and dropped at the end, so the real tables are never touched and no extra privileges are needed. When PostgreSQL is unreachable these tests are **skipped**, not failed. Check the `-ra` summary for `SKIPPED … PostgreSQL not reachable`.
+**Database tests** (`-m database`) run against the PostgreSQL configured in `backend/.env`, in a throw-away schema called `pyronav_test`, seeded with the fixed layout in `tests/fixture_building.py`. They never use the demo hospital that teammates edit, so changing `shared-contracts` cannot break them. It is created, migrated and seeded at the start and dropped at the end, so the real tables are never touched and no extra privileges are needed. When PostgreSQL is unreachable these tests are **skipped**, not failed. Check the `-ra` summary for `SKIPPED … PostgreSQL not reachable`.
 
 ## 2. What is covered
 
@@ -23,10 +23,11 @@ pytest --durations=10                   # slowest tests
 | `test_api_fallback.py` | **Resilience:** DB down → degraded health, demo data, real routes on the demo graph, 503s, headers, CORS, dev endpoint guard | no |
 | `test_services.py` | Background-service registry: start/stop, health reporting, failure isolation | no |
 | `test_utils.py` | UTC serialisation, retry with backoff | no |
+| `test_demo_data_contract.py` | **Teammates' demo data** (`shared-contracts/mock-data`): unique ids, valid references, non-negative costs, every room can reach an exit, and the building loads into PostgreSQL. Independent of the layout | partly |
 | `test_database_integration.py` | Migrations, every domain endpoint on real data, notification acknowledgement over WebSocket, **hazard → automatic route recalculation → broadcast**, audit log, DB logging, sessions, retention, **pool recovery after a killed connection** | yes |
 | `test_dijkstra.py`, `test_bfs.py` | Member 3's algorithms | no |
 
-Last full run: **80 passed** with PostgreSQL 16; **63 passed, 17 skipped** without a database (Windows 11, Python 3.14).
+Last full run: **86 passed** with PostgreSQL 16; **68 passed, 18 skipped** without a database (Windows 11, Python 3.14).
 
 ### Regression tests for integration bugs fixed in Week 4
 | Test | Bug |

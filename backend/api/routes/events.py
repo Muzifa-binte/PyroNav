@@ -14,10 +14,9 @@ from utils.serialization import to_jsonable
 
 router = APIRouter()
 
-EVENT_COLUMNS = (
-    "he.event_id, he.room_id, r.name AS room_name, he.hazard_level, he.reason_codes, "
-    "he.source_sensor_ids, he.detected_at, he.resolved_at, he.status"
-)
+# SELECT * on purpose: a column the owning member adds in a later migration
+# shows up in the API without touching this file.
+EVENT_COLUMNS = "he.*, r.name AS room_name"
 
 
 @router.get("/events", summary="Hazard events (newest first)")

@@ -91,7 +91,7 @@ def reset(api: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Simulate a decision-engine hazard change")
-    parser.add_argument("room_id", nargs="?", help="e.g. icu, corridor_1, operation_theater")
+    parser.add_argument("room_id", nargs="?", help="e.g. icu, administration, main_lobby")
     parser.add_argument("level", nargs="?", type=str.upper, choices=LEVELS)
     parser.add_argument("--reset", action="store_true", help="set every room back to NORMAL")
     parser.add_argument("--api", default="http://localhost:8000", help="running API base URL")

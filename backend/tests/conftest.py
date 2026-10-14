@@ -24,9 +24,10 @@ from api.main import app  # noqa: E402
 from api.routes import evacuation  # noqa: E402
 from database.connection import DatabaseUnavailableError, db_manager  # noqa: E402
 from database.migrations.migrate import MigrationRunner  # noqa: E402
-from database.seed import seed_demo_building  # noqa: E402
+from database.seed import seed_building  # noqa: E402
 from events import event_types as ev  # noqa: E402
 from events.event_bus import event_bus  # noqa: E402
+from tests.fixture_building import TEST_BUILDING  # noqa: E402
 
 TEST_SCHEMA = os.getenv("TEST_DB_SCHEMA", "pyronav_test")
 UNREACHABLE = {"host": "127.0.0.1", "port": 1, "connect_timeout": 1}
@@ -67,7 +68,8 @@ def _test_schema():
     db_manager.execute_write(f"CREATE SCHEMA {TEST_SCHEMA}")
     with db_manager.get_connection() as conn:
         MigrationRunner(conn).run()
-    seed_demo_building()
+    # The tests' own fixed building — not the demo data teammates keep changing
+    seed_building(TEST_BUILDING, replace=True)
     yield
     db_manager.configure(**{**saved, "search_path": TEST_SCHEMA})
     db_manager.execute_write(f"DROP SCHEMA IF EXISTS {TEST_SCHEMA} CASCADE")

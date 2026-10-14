@@ -86,9 +86,12 @@ class EventBus:
                 handlers.remove(handler)
 
     def _handlers_for(self, event_type: str) -> List[Callable]:
+        # Wildcard observers (WebSocket broadcaster, loggers) run first: a handler
+        # that publishes follow-up events must not get its effects broadcast
+        # before the event that caused them.
         with self._lock:
-            return list(self._subscribers.get(event_type, ())) + list(
-                self._subscribers.get(WILDCARD, ())
+            return list(self._subscribers.get(WILDCARD, ())) + list(
+                self._subscribers.get(event_type, ())
             )
 
     # ------------------------------------------------------------------

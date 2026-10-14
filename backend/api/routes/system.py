@@ -17,7 +17,7 @@ from api.dependencies import require_dev_endpoints
 from database.connection import DatabaseUnavailableError, db_manager
 from database.migrations.migrate import MigrationRunner
 from events.event_bus import Event, event_bus
-from events.event_types import ALL_EVENT_TYPES
+from events.event_types import all_event_types
 from monitoring.background_writer import db_writer
 from monitoring.metrics import request_metrics
 from utils.serialization import to_jsonable, utc_now_iso
@@ -151,10 +151,10 @@ async def publish_event(body: PublishRequest):
     """Publishes the event exactly as a teammate's service would: every subscriber
     runs (e.g. the RouteMonitor on room_status_changed) and the event is broadcast
     to WebSocket clients. Disabled when ENABLE_DEV_ENDPOINTS=false."""
-    if body.event_type not in ALL_EVENT_TYPES:
+    if body.event_type not in all_event_types():
         raise HTTPException(
             status_code=422,
-            detail=f"Unknown event_type. Allowed: {sorted(ALL_EVENT_TYPES)}",
+            detail=f"Unknown event_type. Allowed: {sorted(all_event_types())}",
         )
     await event_bus.publish(Event(body.event_type, body.data))
     return {
