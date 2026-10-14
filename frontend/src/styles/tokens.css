@@ -1,44 +1,44 @@
 /* ============================================================
-   PyroNav Design Tokens — Dark Glassmorphic Command Center
+   PyroNav Design Tokens — Light Glassmorphic Command Center
    ============================================================ */
 :root {
   /* ── Backgrounds ─────────────────────────────────────────── */
-  --bg-canvas:       #0B1120;
-  --bg-sidebar:      #0E1627;
-  --surface-base:    #151F32;
-  --surface-raised:  #1A2740;
-  --surface-inset:   #10192A;
-  --surface-glass:   rgba(21,31,50,0.6);
+  --bg-canvas:       #EDF0F9;
+  --bg-sidebar:      rgba(255,255,255,0.80);
+  --surface-base:    rgba(255,255,255,0.70);
+  --surface-raised:  rgba(255,255,255,0.90);
+  --surface-inset:   rgba(230,235,248,0.80);
+  --surface-glass:   rgba(255,255,255,0.60);
 
   /* ── Glass ───────────────────────────────────────────────── */
-  --glass-bg:        rgba(21,31,50,0.6);
-  --glass-border:    rgba(255,255,255,0.08);
-  --glass-shadow:    0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
-  --glass-blur:      blur(16px);
+  --glass-bg:        rgba(255,255,255,0.65);
+  --glass-border:    rgba(255,255,255,0.85);
+  --glass-shadow:    0 8px 32px rgba(100,120,200,0.12), inset 0 1px 0 rgba(255,255,255,0.9);
+  --glass-blur:      blur(20px);
 
   /* ── Borders ─────────────────────────────────────────────── */
-  --border-subtle:   #29364D;
-  --border-glass:    rgba(255,255,255,0.08);
+  --border-subtle:   rgba(180,195,230,0.60);
+  --border-glass:    rgba(200,215,245,0.50);
 
   /* ── Typography ──────────────────────────────────────────── */
-  --text-primary:    #F2F5FA;
-  --text-secondary:  #AAB7CC;
-  --text-muted:      #7F8DA5;
+  --text-primary:    #1A2340;
+  --text-secondary:  #4A5878;
+  --text-muted:      #8A99B8;
 
   /* ── Accent ──────────────────────────────────────────────── */
-  --accent-primary:  #69B7FF;
+  --accent-primary:  #5B9BF5;
 
   /* ── Status / hazard ─────────────────────────────────────── */
-  --status-normal:   #43C59E;
-  --status-warning:  #F5BE55;
-  --status-high:     #FF8A4C;
-  --status-critical: #FF5D6C;
-  --status-unknown:  #9AA7BA;
-  --status-info:     #8BA8FF;
+  --status-normal:   #22C987;
+  --status-warning:  #F5A623;
+  --status-high:     #F56E3B;
+  --status-critical: #E84D6A;
+  --status-unknown:  #94A3B8;
+  --status-info:     #6B8FFF;
 
   /* ── Shadows ─────────────────────────────────────────────── */
-  --shadow-raised:   4px 4px 12px rgba(0,0,0,0.5), -2px -2px 8px rgba(255,255,255,0.03);
-  --shadow-card:     0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+  --shadow-raised:   6px 6px 18px rgba(160,180,230,0.25), -3px -3px 10px rgba(255,255,255,0.85);
+  --shadow-card:     0 4px 24px rgba(100,120,200,0.10), inset 0 1px 0 rgba(255,255,255,0.95);
 
   /* ── Spacing (4px base) ──────────────────────────────────── */
   --space-1:   4px;

@@ -1,14 +1,14 @@
 import React from 'react'
 
 const SEVERITY_COLORS = {
-  CRITICAL: '#FF5D6C',
-  HIGH_RISK: '#FF8A4C',
-  WARNING: '#F5BE55',
-  NORMAL: '#43C59E',
+  CRITICAL: '#E84D6A',
+  HIGH_RISK: '#F56E3B',
+  WARNING: '#F5A623',
+  NORMAL: '#22C987',
 }
 
 function getSeverityColor(severity) {
-  return SEVERITY_COLORS[severity] || '#69B7FF'
+  return SEVERITY_COLORS[severity] || '#5B9BF5'
 }
 
 function Sparkline({ data, color }) {
@@ -99,9 +99,9 @@ export default function MetricCard({
   const clickable = typeof onClick === 'function'
 
   const trendColor = trendDirection === 'up'
-    ? '#43C59E'
+    ? '#16A97A'
     : trendDirection === 'down'
-    ? '#FF5D6C'
+    ? '#E84D6A'
     : 'var(--text-muted)'
 
   const trendArrow = trendDirection === 'up' ? '↑' : trendDirection === 'down' ? '↓' : '→'
@@ -114,12 +114,12 @@ export default function MetricCard({
       onKeyDown={clickable ? e => e.key === 'Enter' && onClick() : undefined}
       aria-label={clickable ? `${displayTitle}: ${value}. Click for details.` : undefined}
       style={{
-        background: 'var(--glass-bg)',
-        backdropFilter: 'var(--glass-blur)',
-        WebkitBackdropFilter: 'var(--glass-blur)',
-        border: '1px solid var(--glass-border)',
+        background: 'rgba(255,255,255,0.68)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255,255,255,0.88)',
         borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--glass-shadow)',
+        boxShadow: '0 4px 24px rgba(100,120,200,0.10), inset 0 1px 0 rgba(255,255,255,0.95)',
         padding: 20,
         animation: 'fadeInUp 0.4s ease both',
         position: 'relative',
@@ -132,11 +132,11 @@ export default function MetricCard({
       }}
       onMouseEnter={e => {
         e.currentTarget.style.transform = 'translateY(-2px)'
-        e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)'
+        e.currentTarget.style.boxShadow = '0 12px 36px rgba(100,120,200,0.18), inset 0 1px 0 rgba(255,255,255,0.95)'
       }}
       onMouseLeave={e => {
         e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.boxShadow = 'var(--glass-shadow)'
+        e.currentTarget.style.boxShadow = '0 4px 24px rgba(100,120,200,0.10), inset 0 1px 0 rgba(255,255,255,0.95)'
       }}
     >
       {/* Header row */}
@@ -147,7 +147,7 @@ export default function MetricCard({
         <span style={{
           fontSize: 12,
           fontWeight: 600,
-          color: 'var(--text-secondary)',
+          color: '#4A5878',
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
         }}>
@@ -159,7 +159,7 @@ export default function MetricCard({
       <div style={{
         fontSize: 32,
         fontWeight: 800,
-        color: 'var(--text-primary)',
+        color: '#1A2340',
         lineHeight: 1.1,
         letterSpacing: '-0.02em',
         display: 'flex',
@@ -168,13 +168,13 @@ export default function MetricCard({
       }} className="tabular">
         {value ?? '—'}
         {unit && (
-          <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>{unit}</span>
+          <span style={{ fontSize: 14, color: '#8A99B8', fontWeight: 500 }}>{unit}</span>
         )}
       </div>
 
       {/* Sub-label */}
       {sub && (
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: '#8A99B8', marginTop: 4 }}>
           {sub}
         </div>
       )}

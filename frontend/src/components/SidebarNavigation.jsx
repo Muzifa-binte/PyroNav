@@ -29,9 +29,9 @@ function NavItem({ item, collapsed }) {
         padding: '9px 12px',
         borderRadius: 'var(--radius-sm)',
         textDecoration: 'none',
-        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-        background: isActive ? 'rgba(105,183,255,0.12)' : 'transparent',
-        borderLeft: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
+        color: isActive ? '#1A2340' : '#4A5878',
+        background: isActive ? 'rgba(91,155,245,0.12)' : 'transparent',
+        borderLeft: isActive ? '3px solid #5B9BF5' : '3px solid transparent',
         fontWeight: isActive ? 600 : 400,
         fontSize: 13,
         transition: 'all var(--transition-fast)',
@@ -40,11 +40,10 @@ function NavItem({ item, collapsed }) {
       })}
       onMouseEnter={e => {
         if (!e.currentTarget.classList.contains('active')) {
-          e.currentTarget.style.background = 'rgba(105,183,255,0.06)'
+          e.currentTarget.style.background = 'rgba(91,155,245,0.06)'
         }
       }}
       onMouseLeave={e => {
-        // NavLink style function handles active state
         const isActive = e.currentTarget.getAttribute('aria-current') === 'page'
         if (!isActive) e.currentTarget.style.background = 'transparent'
       }}
@@ -61,10 +60,10 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
       aria-label="Primary navigation"
       style={{
         width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)',
-        background: 'rgba(14,22,39,0.85)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderRight: '1px solid var(--border-glass)',
+        background: 'rgba(255,255,255,0.78)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderRight: '1px solid rgba(180,200,240,0.50)',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
@@ -81,26 +80,26 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
         alignItems: 'center',
         gap: 10,
         padding: '0 14px',
-        borderBottom: '1px solid var(--border-glass)',
+        borderBottom: '1px solid rgba(180,200,240,0.50)',
         flexShrink: 0,
       }}>
         {/* Flame logo */}
         <div style={{
           width: 36, height: 36,
           borderRadius: 10,
-          background: 'linear-gradient(135deg, #69B7FF, #43C59E)',
+          background: 'linear-gradient(135deg, #5B9BF5, #22C987)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 20, flexShrink: 0,
-          boxShadow: '0 4px 16px rgba(105,183,255,0.3)',
+          boxShadow: '0 4px 16px rgba(91,155,245,0.30)',
         }}>
           🔥
         </div>
         {!collapsed && (
           <div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#1A2340', letterSpacing: '-0.01em' }}>
               PyroNav
             </div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500 }}>
+            <div style={{ fontSize: 10, color: '#8A99B8', fontWeight: 500 }}>
               Fire Safety
             </div>
           </div>
@@ -110,9 +109,9 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           style={{
             marginLeft: 'auto',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid var(--border-glass)',
-            color: 'var(--text-muted)',
+            background: 'rgba(91,155,245,0.08)',
+            border: '1px solid rgba(91,155,245,0.25)',
+            color: '#4A5878',
             cursor: 'pointer',
             fontSize: 13,
             padding: '4px 7px',
@@ -140,11 +139,11 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
         ))}
 
         {/* Tools divider */}
-        <div style={{ margin: '12px 4px 8px', borderTop: '1px solid var(--border-glass)' }} />
+        <div style={{ margin: '12px 4px 8px', borderTop: '1px solid rgba(180,200,240,0.40)' }} />
         {!collapsed && (
           <div style={{
             fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
-            textTransform: 'uppercase', color: 'var(--text-muted)',
+            textTransform: 'uppercase', color: '#8A99B8',
             padding: '0 8px 4px',
           }}>
             Tools
@@ -159,8 +158,8 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
       {!collapsed && (
         <div style={{
           padding: '12px 14px',
-          borderTop: '1px solid var(--border-glass)',
-          fontSize: 11, color: 'var(--text-muted)',
+          borderTop: '1px solid rgba(180,200,240,0.40)',
+          fontSize: 11, color: '#8A99B8',
           display: 'flex',
           alignItems: 'center',
           gap: 6,

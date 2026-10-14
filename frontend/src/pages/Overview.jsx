@@ -27,11 +27,11 @@ function worstSeverity(rooms) {
 }
 
 const SEVERITY_COLOR = {
-  CRITICAL: '#FF5D6C',
-  HIGH_RISK: '#FF8A4C',
-  WARNING: '#F5BE55',
-  NORMAL: '#43C59E',
-  UNKNOWN: '#9AA7BA',
+  CRITICAL: '#E84D6A',
+  HIGH_RISK: '#F56E3B',
+  WARNING: '#F5A623',
+  NORMAL: '#22C987',
+  UNKNOWN: '#94A3B8',
 }
 
 export default function Overview() {
@@ -111,10 +111,10 @@ export default function Overview() {
 
       {/* Page header */}
       <div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1A2340', letterSpacing: '-0.02em' }}>
           Overview
         </h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+        <p style={{ fontSize: 13, color: '#8A99B8', marginTop: 2 }}>
           Building status and live system activity
         </p>
       </div>
@@ -183,8 +183,8 @@ export default function Overview() {
               borderBottom: '1px solid var(--glass-border)',
             }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>Live Floor Plan</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Click to open full map</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#1A2340' }}>Live Floor Plan</div>
+                <div style={{ fontSize: 11, color: '#8A99B8' }}>Click to open full map</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {route && (
@@ -198,9 +198,9 @@ export default function Overview() {
                   style={{
                     padding: '6px 14px',
                     borderRadius: 8,
-                    background: 'rgba(105,183,255,0.15)',
-                    border: '1px solid rgba(105,183,255,0.3)',
-                    color: 'var(--accent-primary)',
+                    background: 'rgba(91,155,245,0.12)',
+                    border: '1px solid rgba(91,155,245,0.30)',
+                    color: '#5B9BF5',
                     fontSize: 12, fontWeight: 600,
                     cursor: 'pointer',
                   }}
@@ -229,10 +229,10 @@ export default function Overview() {
           <div className="glass-card" style={{
             padding: 16,
             borderLeft: topAlert
-              ? `4px solid ${SEVERITY_COLOR[topAlert.severity || topAlert.hazard_level] || '#9AA7BA'}`
+              ? `4px solid ${SEVERITY_COLOR[topAlert.severity || topAlert.hazard_level] || '#94A3B8'}`
               : '4px solid var(--border-subtle)',
           }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginBottom: 8 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#1A2340', marginBottom: 8 }}>
               Priority Alert
             </div>
             {loading ? <LoadingSkeleton rows={2} height={16} /> :
@@ -253,7 +253,7 @@ export default function Overview() {
 
           {/* Recent events feed */}
           <div className="glass-card" style={{ padding: 16, flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginBottom: 10 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#1A2340', marginBottom: 10 }}>
               Recent Events
             </div>
             {loading ? <LoadingSkeleton rows={5} height={14} gap={10} /> :
@@ -270,18 +270,18 @@ export default function Overview() {
                       gap: 10,
                       padding: '6px 8px',
                       borderRadius: 8,
-                      background: 'rgba(255,255,255,0.02)',
+                      background: 'rgba(91,155,245,0.04)',
                       borderLeft: `3px solid ${col}`,
                     }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: 12, color: '#2A3A5A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {ev.room_id || '—'}
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: 11, color: '#6A7A9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {ev.message || ev.description || sev}
                         </div>
                       </div>
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: 10, color: '#8A99B8', whiteSpace: 'nowrap' }}>
                         {timeAgo(ev.detected_at || ev.created_at)}
                       </div>
                     </div>
@@ -297,7 +297,7 @@ export default function Overview() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* Sensor freshness */}
         <div className="glass-card" style={{ padding: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginBottom: 10 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: '#1A2340', marginBottom: 10 }}>
             Sensor Coverage
           </div>
           {loading ? <LoadingSkeleton rows={1} height={20} /> : (
@@ -318,20 +318,20 @@ export default function Overview() {
 
         {/* IDS / Quick summary */}
         <div className="glass-card" style={{ padding: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginBottom: 10 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: '#1A2340', marginBottom: 10 }}>
             Route Status
           </div>
           {loading ? <LoadingSkeleton rows={2} height={16} gap={8} /> :
            route && route.status === 'ROUTE_FOUND' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <StatusPill status="normal" label="Route Found" />
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                → <strong style={{ color: 'var(--text-primary)' }}>{route.exit_id}</strong>
+              <div style={{ fontSize: 13, color: '#2A3A5A' }}>
+                → <strong style={{ color: '#1A2340' }}>{route.exit_id}</strong>
                 {route.total_cost != null && (
-                  <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{route.total_cost} m</span>
+                  <span style={{ color: '#8A99B8', marginLeft: 8 }}>{route.total_cost} m</span>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: 11, color: '#8A99B8' }}>
                 via {route.algorithm || 'dijkstra'} · {timeAgo(route.calculated_at)}
               </div>
             </div>

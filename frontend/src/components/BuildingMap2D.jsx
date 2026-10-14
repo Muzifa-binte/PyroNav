@@ -50,12 +50,12 @@ const EXITS = [
   { id:'EXIT-SE', x:800, y:620, label:'Emergency\nExit', side:'br' },
 ]
 
-// ─── Hazard state overlay colors (dark theme) ────────────────────────────────
+// ─── Hazard state overlay colors (light theme) ───────────────────────────────
 const HAZARD = {
-  NORMAL:   { fill:'rgba(67,197,158,0.15)',  border:'#43C59E', badge:null,   textColor:'#43C59E' },
-  WARNING:  { fill:'rgba(245,190,85,0.15)',  border:'#F5BE55', badge:'WARN', textColor:'#F5BE55' },
-  HIGH_RISK:{ fill:'rgba(255,138,76,0.20)',  border:'#FF8A4C', badge:'HIGH', textColor:'#FF8A4C' },
-  CRITICAL: { fill:'rgba(255,93,108,0.25)',  border:'#FF5D6C', badge:'CRIT', textColor:'#FF5D6C' },
+  NORMAL:   { fill:'rgba(34,201,135,0.18)',  border:'#22C987', badge:null,   textColor:'#16A97A' },
+  WARNING:  { fill:'rgba(245,166,35,0.18)',  border:'#F5A623', badge:'WARN', textColor:'#B8750A' },
+  HIGH_RISK:{ fill:'rgba(245,110,59,0.22)',  border:'#F56E3B', badge:'HIGH', textColor:'#C4470E' },
+  CRITICAL: { fill:'rgba(232,77,106,0.25)',  border:'#E84D6A', badge:'CRIT', textColor:'#C0244C' },
   UNKNOWN:  { fill:null,                      border:null,      badge:null,   textColor:null },
 }
 
@@ -356,14 +356,14 @@ export default function BuildingMap2D({
 
   return (
     <div style={{
-      background: '#0D1829',
+      background: 'rgba(235,240,252,0.80)',
       borderRadius: 'var(--radius-lg)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      border: '1px solid rgba(100,130,200,0.25)',
       overflow: 'hidden',
       position: 'relative',
       width: '100%',
       aspectRatio: compact ? '16/9' : `${VW}/${VH}`,
-      boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
+      boxShadow: '0 4px 24px rgba(100,120,200,0.10), inset 0 1px 0 rgba(255,255,255,0.95)',
     }}>
       <svg
         viewBox={`0 0 ${VW} ${VH}`}
@@ -372,14 +372,14 @@ export default function BuildingMap2D({
         aria-label="Hospital Ground Floor 2D Plan"
       >
         {/* ── Outer building background ───────────────────────────────────── */}
-        <rect x={0} y={0} width={VW} height={VH} fill="#0D1829" />
+        <rect x={0} y={0} width={VW} height={VH} fill="rgba(235,240,252,0.80)" />
         <rect x={WALL.x} y={WALL.y} width={WALL.w} height={WALL.h}
-          rx={4} fill="#111D30" stroke="#29364D" strokeWidth={4} />
+          rx={4} fill="rgba(245,248,255,0.90)" stroke="rgba(100,130,200,0.25)" strokeWidth={4} />
 
         {/* ── Grid pattern ─────────────────────────────────────────────────── */}
         <defs>
           <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(105,183,255,0.05)" strokeWidth="0.5"/>
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(100,130,200,0.08)" strokeWidth="0.5"/>
           </pattern>
           {/* Route arrow */}
           <marker id="arr-route" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
@@ -398,18 +398,18 @@ export default function BuildingMap2D({
 
         <rect x={0} y={0} width={VW} height={VH} fill="url(#grid)" />
 
-        {/* ── Corridor strips (dark walkways) ──────────────────────────────── */}
+        {/* ── Corridor strips ──────────────────────────────────────────────── */}
         <rect x={WALL.x} y={CORRIDOR_TOP.y} width={WALL.w} height={CORRIDOR_TOP.h}
-          fill="rgba(105,183,255,0.06)" />
+          fill="rgba(100,130,200,0.06)" />
         <rect x={WALL.x} y={CORRIDOR_BOTTOM.y} width={WALL.w} height={CORRIDOR_BOTTOM.h}
-          fill="rgba(105,183,255,0.06)" />
+          fill="rgba(100,130,200,0.06)" />
 
         {/* Corridor centre dashed line */}
         {[CORRIDOR_TOP, CORRIDOR_BOTTOM].map((c, i) => (
           <line key={i}
             x1={WALL.x + 10} y1={c.y + c.h / 2}
             x2={WALL.x + WALL.w - 10} y2={c.y + c.h / 2}
-            stroke="rgba(105,183,255,0.2)" strokeWidth={1} strokeDasharray="10 8" />
+            stroke="rgba(91,155,245,0.25)" strokeWidth={1} strokeDasharray="10 8" />
         ))}
 
         {/* ── Green evacuation arrows on corridors ─────────────────────── */}
@@ -440,10 +440,10 @@ export default function BuildingMap2D({
         {ROOMS.map(room => {
           const hazard   = hazardMap[room.id]
           const hData    = hazard && hazard !== 'UNKNOWN' ? HAZARD[hazard] : null
-          // Dark theme: use hazard overlay or dark default
-          const fillCol  = hData ? hData.fill : 'rgba(26,39,64,0.7)'
-          const bordCol  = hData ? hData.border : '#29364D'
-          const textCol  = hData ? hData.textColor : '#7F8DA5'
+          // Light theme: use hazard overlay or light default
+          const fillCol  = hData ? hData.fill : 'rgba(255,255,255,0.70)'
+          const bordCol  = hData ? hData.border : 'rgba(100,130,200,0.25)'
+          const textCol  = hData ? hData.textColor : '#4A5878'
           const isOnRoute  = routeNodes.has(room.id)
           const isSelected = selectedRoom === room.id
 
@@ -574,7 +574,7 @@ export default function BuildingMap2D({
           return (
             <path key={i}
               d={`M${x1},${y1} A${arc.r},${arc.r} 0 0,1 ${x2},${y2}`}
-              fill="none" stroke="#29364D" strokeWidth={2}
+              fill="none" stroke="rgba(100,130,200,0.30)" strokeWidth={2}
               aria-hidden="true"
             />
           )
@@ -731,7 +731,7 @@ export default function BuildingMap2D({
             <text x={450} y={21}
               textAnchor="middle" dominantBaseline="middle"
               fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
-              fontSize={8} fill="#AAB7CC">
+              fontSize={8} fill="#4A5878">
               (Ground Floor)
             </text>
           </g>
@@ -744,7 +744,7 @@ export default function BuildingMap2D({
             {[['N',0,-13],['S',0,13],['E',13,0],['W',-13,0]].map(([l,dx,dy]) => (
               <text key={l} x={dx} y={dy}
                 textAnchor="middle" dominantBaseline="middle"
-                fontSize={7} fontWeight={700} fill="#AAB7CC">
+                fontSize={7} fontWeight={700} fill="#4A5878">
                 {l}
               </text>
             ))}

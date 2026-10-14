@@ -20,7 +20,7 @@ const LOG_COLORS = {
 
 function LogEntry({ time, msg }) {
   const prefix = msg[0]
-  const color = LOG_COLORS[prefix] || '#AAB7CC'
+  const color = LOG_COLORS[prefix] || '#4A5878'
   return (
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '3px 0' }}>
       <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>

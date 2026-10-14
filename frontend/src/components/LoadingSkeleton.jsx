@@ -1,7 +1,7 @@
 import React from 'react'
 
 const shimmerStyle = {
-  background: 'linear-gradient(90deg, var(--surface-base) 25%, var(--surface-raised) 50%, var(--surface-base) 75%)',
+  background: 'linear-gradient(90deg, rgba(200,210,235,0.50) 25%, rgba(255,255,255,0.80) 50%, rgba(200,210,235,0.50) 75%)',
   backgroundSize: '200% 100%',
   animation: 'shimmer 1.5s infinite',
   borderRadius: 6,
