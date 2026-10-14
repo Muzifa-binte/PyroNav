@@ -14,11 +14,12 @@ const PAGE_TITLES = {
 }
 
 const CONN = {
-  connected:    { color: '#276749', bg: '#C6F6D5', dot: '#38A169', label: 'Connected' },
-  delayed:      { color: '#975A16', bg: '#FEFCBF', dot: '#D69E2E', label: 'Delayed' },
-  disconnected: { color: '#9B2C2C', bg: '#FED7D7', dot: '#E53E3E', label: 'Disconnected' },
-  unknown:      { color: '#4A5568', bg: '#EDF2F7', dot: '#718096', label: 'Unknown' },
-  simulation:   { color: '#975A16', bg: '#FEFCBF', dot: '#D69E2E', label: 'Simulation' },
+  connected:    { color: '#43C59E', bg: 'rgba(67,197,158,0.15)',  dot: '#43C59E', label: 'Connected',    animated: true  },
+  delayed:      { color: '#F5BE55', bg: 'rgba(245,190,85,0.15)',  dot: '#F5BE55', label: 'Delayed',       animated: false },
+  disconnected: { color: '#FF5D6C', bg: 'rgba(255,93,108,0.15)',  dot: '#FF5D6C', label: 'Disconnected',  animated: false },
+  unknown:      { color: '#9AA7BA', bg: 'rgba(154,167,186,0.15)', dot: '#9AA7BA', label: 'Unknown',       animated: false },
+  simulation:   { color: '#F5BE55', bg: 'rgba(245,190,85,0.15)',  dot: '#F5BE55', label: 'Simulation',    animated: false },
+  stale:        { color: '#F5BE55', bg: 'rgba(245,190,85,0.15)',  dot: '#F5BE55', label: 'Stale',         animated: false },
 }
 
 export default function TopStatusBar({ connectionState = 'unknown', lastUpdate }) {
@@ -29,22 +30,27 @@ export default function TopStatusBar({ connectionState = 'unknown', lastUpdate }
   return (
     <header style={{
       height: 'var(--topbar-height)',
-      background: 'var(--surface-base)',
-      borderBottom: '1px solid var(--border-subtle)',
+      background: 'rgba(14,22,39,0.8)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      borderBottom: '1px solid var(--border-glass)',
       display: 'flex',
       alignItems: 'center',
-      padding: '0 var(--space-6)',
-      gap: 'var(--space-4)',
+      padding: '0 24px',
+      gap: 16,
+      position: 'sticky',
+      top: 0,
+      zIndex: 20,
       flexShrink: 0,
-      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
     }} role="banner">
+
       {/* Page title */}
       <div style={{ flex: 1 }}>
-        <h1 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+        <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
           {page.title}
         </h1>
         {page.subtitle && (
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 1 }}>
             {page.subtitle}
           </p>
         )}
@@ -52,12 +58,10 @@ export default function TopStatusBar({ connectionState = 'unknown', lastUpdate }
 
       {/* Right side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
         {/* Last update */}
-        <div style={{ textAlign: 'right', fontSize: 11 }}>
-          <div style={{ color: 'var(--text-muted)' }}>Last update</div>
-          <div className="tabular" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
-            {lastUpdate ? new Date(lastUpdate).toLocaleTimeString() : '—'}
-          </div>
+        <div style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-muted)' }}>
+          {lastUpdate ? new Date(lastUpdate).toLocaleTimeString() : '—'}
         </div>
 
         {/* Connection pill */}
@@ -68,11 +72,12 @@ export default function TopStatusBar({ connectionState = 'unknown', lastUpdate }
           padding: '5px 12px',
           borderRadius: 999,
           background: conn.bg,
-          border: `1px solid ${conn.dot}40`,
+          border: `1px solid ${conn.color}4D`,
         }}>
           <span style={{
             width: 7, height: 7, borderRadius: '50%',
             background: conn.dot, flexShrink: 0,
+            animation: conn.animated ? 'pulse-glow 2s infinite' : 'none',
           }} />
           <span style={{ fontSize: 12, fontWeight: 600, color: conn.color }}>
             {conn.label}
@@ -82,10 +87,10 @@ export default function TopStatusBar({ connectionState = 'unknown', lastUpdate }
         {/* Alerts shortcut */}
         <Link to="/alerts" style={{
           display: 'flex', alignItems: 'center', gap: 5,
-          padding: '6px 12px',
+          padding: '5px 12px',
           borderRadius: 8,
-          background: 'var(--surface-inset)',
-          border: '1px solid var(--border-subtle)',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid var(--border-glass)',
           color: 'var(--text-secondary)',
           textDecoration: 'none',
           fontSize: 12, fontWeight: 500,
@@ -95,22 +100,17 @@ export default function TopStatusBar({ connectionState = 'unknown', lastUpdate }
           <span>Alerts</span>
         </Link>
 
-        {/* Operator badge */}
+        {/* Operator label */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
+          display: 'flex', alignItems: 'center', gap: 6,
           padding: '5px 12px',
           borderRadius: 8,
-          background: 'var(--surface-inset)',
-          border: '1px solid var(--border-subtle)',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid var(--border-glass)',
           fontSize: 12, color: 'var(--text-secondary)',
+          fontWeight: 500,
         }}>
-          <div style={{
-            width: 26, height: 26, borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--accent-primary), #F0883E)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 13, color: '#fff', fontWeight: 700,
-          }}>O</div>
-          <span style={{ fontWeight: 500 }}>Operator</span>
+          OPS-1
         </div>
       </div>
     </header>

@@ -50,13 +50,13 @@ const EXITS = [
   { id:'EXIT-SE', x:800, y:620, label:'Emergency\nExit', side:'br' },
 ]
 
-// ─── Hazard state overlay colors ──────────────────────────────────────────────
+// ─── Hazard state overlay colors (dark theme) ────────────────────────────────
 const HAZARD = {
-  NORMAL:   { fill:'#D5F5E3', border:'#1E8449', badge:null },
-  WARNING:  { fill:'#FEF9E7', border:'#D4AC0D', badge:'WARN' },
-  HIGH_RISK:{ fill:'#FDEBD0', border:'#D35400', badge:'HIGH' },
-  CRITICAL: { fill:'#FDEDEC', border:'#C0392B', badge:'CRIT' },
-  UNKNOWN:  { fill:null,      border:null,       badge:null },
+  NORMAL:   { fill:'rgba(67,197,158,0.15)',  border:'#43C59E', badge:null,   textColor:'#43C59E' },
+  WARNING:  { fill:'rgba(245,190,85,0.15)',  border:'#F5BE55', badge:'WARN', textColor:'#F5BE55' },
+  HIGH_RISK:{ fill:'rgba(255,138,76,0.20)',  border:'#FF8A4C', badge:'HIGH', textColor:'#FF8A4C' },
+  CRITICAL: { fill:'rgba(255,93,108,0.25)',  border:'#FF5D6C', badge:'CRIT', textColor:'#FF5D6C' },
+  UNKNOWN:  { fill:null,                      border:null,      badge:null,   textColor:null },
 }
 
 // ─── Corridor waypoints for route rendering ───────────────────────────────────
@@ -356,14 +356,14 @@ export default function BuildingMap2D({
 
   return (
     <div style={{
-      background: '#F8F9FA',
-      borderRadius: 8,
-      border: '2px solid #BDC3C7',
+      background: '#0D1829',
+      borderRadius: 'var(--radius-lg)',
+      border: '1px solid rgba(255,255,255,0.08)',
       overflow: 'hidden',
       position: 'relative',
       width: '100%',
       aspectRatio: compact ? '16/9' : `${VW}/${VH}`,
-      boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
     }}>
       <svg
         viewBox={`0 0 ${VW} ${VH}`}
@@ -371,34 +371,45 @@ export default function BuildingMap2D({
         role="img"
         aria-label="Hospital Ground Floor 2D Plan"
       >
+        {/* ── Outer building background ───────────────────────────────────── */}
+        <rect x={0} y={0} width={VW} height={VH} fill="#0D1829" />
+        <rect x={WALL.x} y={WALL.y} width={WALL.w} height={WALL.h}
+          rx={4} fill="#111D30" stroke="#29364D" strokeWidth={4} />
+
+        {/* ── Grid pattern ─────────────────────────────────────────────────── */}
         <defs>
+          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(105,183,255,0.05)" strokeWidth="0.5"/>
+          </pattern>
           {/* Route arrow */}
           <marker id="arr-route" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-            <polygon points="0 0, 8 4, 0 8" fill="#27AE60" />
+            <polygon points="0 0, 8 4, 0 8" fill="#69B7FF" />
           </marker>
           {/* Drop shadow */}
           <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
-            <feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.12" />
+            <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.4" />
+          </filter>
+          {/* Selected room glow */}
+          <filter id="glow-selected" x="-10%" y="-10%" width="120%" height="120%">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
           </filter>
         </defs>
 
-        {/* ── Outer building background ───────────────────────────────────── */}
-        <rect x={0} y={0} width={VW} height={VH} fill="#E8ECEF" />
-        <rect x={WALL.x} y={WALL.y} width={WALL.w} height={WALL.h}
-          rx={4} fill="#D5D8DC" stroke="#2C3E50" strokeWidth={4} />
+        <rect x={0} y={0} width={VW} height={VH} fill="url(#grid)" />
 
-        {/* ── Corridor strips (light grey walkways) ─────────────────────── */}
+        {/* ── Corridor strips (dark walkways) ──────────────────────────────── */}
         <rect x={WALL.x} y={CORRIDOR_TOP.y} width={WALL.w} height={CORRIDOR_TOP.h}
-          fill="#D0D3D4" />
+          fill="rgba(105,183,255,0.06)" />
         <rect x={WALL.x} y={CORRIDOR_BOTTOM.y} width={WALL.w} height={CORRIDOR_BOTTOM.h}
-          fill="#D0D3D4" />
+          fill="rgba(105,183,255,0.06)" />
 
         {/* Corridor centre dashed line */}
         {[CORRIDOR_TOP, CORRIDOR_BOTTOM].map((c, i) => (
           <line key={i}
             x1={WALL.x + 10} y1={c.y + c.h / 2}
             x2={WALL.x + WALL.w - 10} y2={c.y + c.h / 2}
-            stroke="#BDC3C7" strokeWidth={1} strokeDasharray="10 8" />
+            stroke="rgba(105,183,255,0.2)" strokeWidth={1} strokeDasharray="10 8" />
         ))}
 
         {/* ── Green evacuation arrows on corridors ─────────────────────── */}
@@ -414,14 +425,14 @@ export default function BuildingMap2D({
         ].map((a, i) => (
           <line key={i}
             x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
-            stroke="#27AE60" strokeWidth={2}
+            stroke="rgba(105,183,255,0.3)" strokeWidth={2}
             markerEnd="url(#arr-green)"
             opacity={0.7}
           />
         ))}
         <defs>
           <marker id="arr-green" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-            <polygon points="0 0, 7 3.5, 0 7" fill="#27AE60" />
+            <polygon points="0 0, 7 3.5, 0 7" fill="rgba(105,183,255,0.5)" />
           </marker>
         </defs>
 
@@ -429,8 +440,10 @@ export default function BuildingMap2D({
         {ROOMS.map(room => {
           const hazard   = hazardMap[room.id]
           const hData    = hazard && hazard !== 'UNKNOWN' ? HAZARD[hazard] : null
-          const fillCol  = hData ? hData.fill : room.fill
-          const bordCol  = hData ? hData.border : room.borderColor
+          // Dark theme: use hazard overlay or dark default
+          const fillCol  = hData ? hData.fill : 'rgba(26,39,64,0.7)'
+          const bordCol  = hData ? hData.border : '#29364D'
+          const textCol  = hData ? hData.textColor : '#7F8DA5'
           const isOnRoute  = routeNodes.has(room.id)
           const isSelected = selectedRoom === room.id
 
@@ -449,31 +462,32 @@ export default function BuildingMap2D({
               <rect
                 x={room.x} y={room.y} width={room.w} height={room.h}
                 fill={fillCol}
-                stroke={isSelected ? '#2980B9' : isOnRoute ? '#27AE60' : bordCol}
-                strokeWidth={isSelected ? 3 : isOnRoute ? 3 : 2}
+                stroke={isSelected ? '#69B7FF' : isOnRoute ? '#69B7FF' : bordCol}
+                strokeWidth={isSelected ? 3 : isOnRoute ? 3 : 1.5}
                 rx={0}
+                filter={isSelected ? 'url(#glow-selected)' : undefined}
               />
 
-              {/* Route highlight: green border glow */}
+              {/* Route highlight: accent border glow */}
               {isOnRoute && !isSelected && (
                 <rect
                   x={room.x - 2} y={room.y - 2}
                   width={room.w + 4} height={room.h + 4}
                   fill="none"
-                  stroke="#27AE60"
+                  stroke="#69B7FF"
                   strokeWidth={4}
-                  opacity={0.35}
+                  opacity={0.3}
                   rx={1}
                 />
               )}
 
-              {/* Selected: blue highlight */}
+              {/* Selected: accent highlight */}
               {isSelected && (
                 <rect
                   x={room.x - 2} y={room.y - 2}
                   width={room.w + 4} height={room.h + 4}
-                  fill="rgba(41,128,185,0.08)"
-                  stroke="#2980B9"
+                  fill="rgba(105,183,255,0.06)"
+                  stroke="#69B7FF"
                   strokeWidth={3}
                   rx={1}
                 />
@@ -485,7 +499,7 @@ export default function BuildingMap2D({
                   type={room.icon}
                   cx={room.x + room.w / 2}
                   cy={room.y + room.h * 0.62}
-                  color={room.textColor}
+                  color={textCol}
                 />
               )}
 
@@ -497,10 +511,10 @@ export default function BuildingMap2D({
                   y={room.y + (compact ? room.h * 0.52 : room.h * 0.28) + i * (compact ? 11 : 13)}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontFamily="'Segoe UI', Arial, sans-serif"
+                  fontFamily="'Inter', 'Segoe UI', Arial, sans-serif"
                   fontSize={compact ? Math.min(9, room.w / 10) : Math.min(11, room.w / 9)}
                   fontWeight={600}
-                  fill={room.textColor}
+                  fill={textCol}
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
                   {line}
@@ -530,16 +544,16 @@ export default function BuildingMap2D({
               {hazard === 'NORMAL' && (
                 <circle
                   cx={room.x + room.w - 10} cy={room.y + 10}
-                  r={5} fill="#27AE60"
+                  r={5} fill="#43C59E"
                 />
               )}
             </g>
           )
         })}
 
-        {/* ── Door arcs (decorative, matches image) ────────────────────── */}
+        {/* ── Door arcs (decorative) ────────────────────────────────────── */}
         {!compact && [
-          // Top corridor door arcs (rooms opening onto top corridor)
+          // Top corridor door arcs
           { cx:175, cy:190, r:16, start:180, end:270 },
           { cx:185, cy:190, r:16, start:270, end:360 },
           { cx:320, cy:190, r:16, start:180, end:270 },
@@ -560,7 +574,7 @@ export default function BuildingMap2D({
           return (
             <path key={i}
               d={`M${x1},${y1} A${arc.r},${arc.r} 0 0,1 ${x2},${y2}`}
-              fill="none" stroke="#2C3E50" strokeWidth={2}
+              fill="none" stroke="#29364D" strokeWidth={2}
               aria-hidden="true"
             />
           )
@@ -572,17 +586,17 @@ export default function BuildingMap2D({
           { x:218, y:452 }, { x:438, y:452 }, { x:658, y:452 },
         ].map((f, i) => (
           <g key={i} aria-hidden="true">
-            <rect x={f.x-3} y={f.y-8}  width={6} height={12} rx={1} fill="#E74C3C" />
-            <rect x={f.x-5} y={f.y-10} width={10} height={4} rx={1} fill="#922B21" />
-            <line x1={f.x} y1={f.y-10} x2={f.x+5} y2={f.y-14} stroke="#922B21" strokeWidth={1.5} />
+            <rect x={f.x-3} y={f.y-8}  width={6} height={12} rx={1} fill="#FF5D6C" opacity={0.7} />
+            <rect x={f.x-5} y={f.y-10} width={10} height={4} rx={1} fill="#FF5D6C" opacity={0.5} />
+            <line x1={f.x} y1={f.y-10} x2={f.x+5} y2={f.y-14} stroke="#FF8A4C" strokeWidth={1.5} />
           </g>
         ))}
 
         {/* ── Fire alarm (red circle) ───────────────────────────────────── */}
         {!compact && (
           <g aria-hidden="true">
-            <circle cx={658} cy={190} r={7} fill="#E74C3C" stroke="#7B241C" strokeWidth={1.5} />
-            <circle cx={658} cy={190} r={4} fill="none"    stroke="#FDEDEC"  strokeWidth={1} />
+            <circle cx={658} cy={190} r={7} fill="#FF5D6C" stroke="#FF8A4C" strokeWidth={1.5} opacity={0.8} />
+            <circle cx={658} cy={190} r={4} fill="none" stroke="rgba(255,93,108,0.3)" strokeWidth={1} />
           </g>
         )}
 
@@ -594,12 +608,14 @@ export default function BuildingMap2D({
               key={i}
               points={pts}
               fill="none"
-              stroke="#27AE60"
+              stroke="#69B7FF"
               strokeWidth={4}
               strokeLinejoin="round"
               strokeLinecap="round"
+              strokeDasharray="8 4"
               markerEnd="url(#arr-route)"
               opacity={0.92}
+              style={{ animation: 'routePulse 1.5s linear infinite' }}
             />
           )
         })}
@@ -609,8 +625,8 @@ export default function BuildingMap2D({
           const c = getCenter(route.node_ids[0])
           return (
             <circle cx={c.x} cy={c.y} r={10}
-              fill="rgba(39,174,96,0.2)"
-              stroke="#27AE60" strokeWidth={2.5}
+              fill="rgba(105,183,255,0.15)"
+              stroke="#69B7FF" strokeWidth={2.5}
             />
           )
         })()}
@@ -619,9 +635,9 @@ export default function BuildingMap2D({
         {EXITS.map(exit => {
           const available = availableExits.has(exit.id)
           const onRoute   = routeNodes.has(exit.id)
-          const bg        = onRoute ? '#1A5276' : available ? '#145A32' : '#641E16'
-          const bc        = onRoute ? '#3498DB' : available ? '#27AE60' : '#E74C3C'
-          const tc        = '#FFFFFF'
+          const bg        = onRoute ? 'rgba(105,183,255,0.25)' : available ? 'rgba(105,183,255,0.15)' : 'rgba(255,93,108,0.15)'
+          const bc        = onRoute ? '#69B7FF' : available ? '#69B7FF' : '#FF5D6C'
+          const tc        = onRoute ? '#69B7FF' : available ? '#69B7FF' : '#FF5D6C'
           const lines     = exit.label.split('\n')
 
           // Position: 80×40 badge
@@ -645,7 +661,7 @@ export default function BuildingMap2D({
                 <text key={i}
                   x={bx + 48} y={by + 12 + i * 12}
                   textAnchor="middle" dominantBaseline="middle"
-                  fontFamily="'Segoe UI', Arial, sans-serif"
+                  fontFamily="'Inter', 'Segoe UI', Arial, sans-serif"
                   fontSize={compact ? 7 : 8.5} fontWeight={700} fill={tc}
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
@@ -656,24 +672,24 @@ export default function BuildingMap2D({
           )
         })}
 
-        {/* ── Main Entrance (bottom centre, matches image) ─────────────── */}
+        {/* ── Main Entrance (bottom centre) ────────────────────────────── */}
         {!compact && (
           <g aria-label="Main Entrance">
             {/* Entrance steps */}
             <rect x={330} y={660} width={120} height={18} rx={3}
-              fill="#27AE60" stroke="#1E8449" strokeWidth={2} />
+              fill="rgba(105,183,255,0.2)" stroke="#69B7FF" strokeWidth={2} />
             <text x={390} y={673}
               textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Segoe UI',Arial,sans-serif"
-              fontSize={9} fontWeight={700} fill="#fff"
+              fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
+              fontSize={9} fontWeight={700} fill="#69B7FF"
               style={{ pointerEvents:'none', userSelect:'none' }}>
               Main Entrance
             </text>
             {/* Bushes */}
             {[316, 454].map((bx, i) => (
               <g key={i}>
-                <circle cx={bx} cy={668} r={9} fill="#1E8449" opacity={0.8} />
-                <circle cx={bx+4} cy={663} r={7} fill="#27AE60" opacity={0.8} />
+                <circle cx={bx} cy={668} r={9} fill="rgba(67,197,158,0.3)" opacity={0.8} />
+                <circle cx={bx+4} cy={663} r={7} fill="rgba(67,197,158,0.5)" opacity={0.8} />
               </g>
             ))}
           </g>
@@ -683,17 +699,17 @@ export default function BuildingMap2D({
         {(route?.status === 'NO_VALID_ROUTE' || route?.status === 'NO_AVAILABLE_EXIT') && (
           <g>
             <rect x={220} y={290} width={460} height={70} rx={8}
-              fill="rgba(231,76,60,0.1)" stroke="#E74C3C" strokeWidth={2} />
+              fill="rgba(255,93,108,0.12)" stroke="#FF5D6C" strokeWidth={2} />
             <text x={450} y={318}
               textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Segoe UI',Arial,sans-serif"
-              fontSize={15} fontWeight={700} fill="#C0392B">
+              fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
+              fontSize={15} fontWeight={700} fill="#FF5D6C">
               {route.status === 'NO_AVAILABLE_EXIT' ? '✕ No Available Exit' : '✕ No Valid Evacuation Route'}
             </text>
             <text x={450} y={342}
               textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Segoe UI',Arial,sans-serif"
-              fontSize={10} fill="#E74C3C">
+              fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
+              fontSize={10} fill="#FF8A4C">
               {route.status === 'NO_AVAILABLE_EXIT'
                 ? 'All exits are marked unavailable'
                 : 'All paths to exits are blocked or unsafe'}
@@ -705,17 +721,17 @@ export default function BuildingMap2D({
         {!compact && (
           <g>
             <rect x={290} y={0} width={320} height={28} rx={4}
-              fill="#EBF5FB" stroke="#2E86C1" strokeWidth={1.5} />
+              fill="rgba(105,183,255,0.1)" stroke="rgba(105,183,255,0.3)" strokeWidth={1.5} />
             <text x={450} y={10}
               textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Segoe UI',Arial,sans-serif"
-              fontSize={11} fontWeight={700} fill="#1A5276">
+              fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
+              fontSize={11} fontWeight={700} fill="#69B7FF">
               Hospital – 2D Floor Map
             </text>
             <text x={450} y={21}
               textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Segoe UI',Arial,sans-serif"
-              fontSize={8} fill="#2E86C1">
+              fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
+              fontSize={8} fill="#AAB7CC">
               (Ground Floor)
             </text>
           </g>
@@ -724,16 +740,16 @@ export default function BuildingMap2D({
         {/* ── Compass rose ──────────────────────────────────────────────── */}
         {!compact && (
           <g transform="translate(858,658)" aria-hidden="true">
-            <circle cx={0} cy={0} r={16} fill="#EBF5FB" stroke="#BDC3C7" strokeWidth={1} />
+            <circle cx={0} cy={0} r={16} fill="rgba(105,183,255,0.08)" stroke="rgba(105,183,255,0.2)" strokeWidth={1} />
             {[['N',0,-13],['S',0,13],['E',13,0],['W',-13,0]].map(([l,dx,dy]) => (
               <text key={l} x={dx} y={dy}
                 textAnchor="middle" dominantBaseline="middle"
-                fontSize={7} fontWeight={700} fill="#2C3E50">
+                fontSize={7} fontWeight={700} fill="#AAB7CC">
                 {l}
               </text>
             ))}
-            <polygon points="0,-10 2,-3 0,-6 -2,-3" fill="#E74C3C" />
-            <polygon points="0,10 2,3 0,6 -2,3"   fill="#7F8C8D" />
+            <polygon points="0,-10 2,-3 0,-6 -2,-3" fill="#FF5D6C" />
+            <polygon points="0,10 2,3 0,6 -2,3"   fill="#9AA7BA" />
           </g>
         )}
       </svg>

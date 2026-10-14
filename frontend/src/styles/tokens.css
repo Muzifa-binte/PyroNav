@@ -1,85 +1,87 @@
 /* ============================================================
-   PyroNav Design Tokens — Light Modern Command Interface
-   Inspired by NexHome smart-dashboard aesthetic:
-   clean whites, soft glass cards, warm orange + teal accents.
+   PyroNav Design Tokens — Dark Glassmorphic Command Center
    ============================================================ */
 :root {
-  /* ── Backgrounds ──────────────────────────────────────────────────── */
-  --bg-canvas:       #F0F4F8;          /* overall page background — pale blue-grey */
-  --bg-sidebar:      #FFFFFF;          /* sidebar — pure white */
-  --surface-base:    #FFFFFF;          /* cards */
-  --surface-raised:  #F7FAFC;          /* elevated cards, hover */
-  --surface-inset:   #EDF2F7;          /* input wells, recessed areas */
-  --surface-glass:   rgba(255,255,255,0.72); /* glassmorphism surfaces */
+  /* ── Backgrounds ─────────────────────────────────────────── */
+  --bg-canvas:       #0B1120;
+  --bg-sidebar:      #0E1627;
+  --surface-base:    #151F32;
+  --surface-raised:  #1A2740;
+  --surface-inset:   #10192A;
+  --surface-glass:   rgba(21,31,50,0.6);
 
-  /* ── Borders ──────────────────────────────────────────────────────── */
-  --border-subtle:   #E2E8F0;
-  --border-medium:   #CBD5E0;
+  /* ── Glass ───────────────────────────────────────────────── */
+  --glass-bg:        rgba(21,31,50,0.6);
+  --glass-border:    rgba(255,255,255,0.08);
+  --glass-shadow:    0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  --glass-blur:      blur(16px);
 
-  /* ── Typography ───────────────────────────────────────────────────── */
-  --text-primary:    #1A202C;          /* almost black */
-  --text-secondary:  #4A5568;          /* medium grey */
-  --text-muted:      #718096;          /* light grey */
-  --text-inverse:    #FFFFFF;
+  /* ── Borders ─────────────────────────────────────────────── */
+  --border-subtle:   #29364D;
+  --border-glass:    rgba(255,255,255,0.08);
 
-  /* ── Brand & accent ───────────────────────────────────────────────── */
-  --accent-primary:  #E8681A;          /* warm orange — primary action, logo */
-  --accent-secondary:#2EC4B6;          /* teal — secondary accent */
-  --accent-hover:    #D05A10;          /* darker orange for hover */
+  /* ── Typography ──────────────────────────────────────────── */
+  --text-primary:    #F2F5FA;
+  --text-secondary:  #AAB7CC;
+  --text-muted:      #7F8DA5;
 
-  /* ── Status / hazard ──────────────────────────────────────────────── */
-  --status-normal:   #38A169;          /* green */
-  --status-warning:  #D69E2E;          /* amber */
-  --status-high:     #DD6B20;          /* orange */
-  --status-critical: #E53E3E;          /* red */
-  --status-unknown:  #718096;          /* grey */
-  --status-info:     #3182CE;          /* blue */
+  /* ── Accent ──────────────────────────────────────────────── */
+  --accent-primary:  #69B7FF;
 
-  /* ── Shadows ──────────────────────────────────────────────────────── */
-  --shadow-card:
-    0 1px 3px rgba(0,0,0,0.06),
-    0 4px 16px rgba(0,0,0,0.07);
-  --shadow-raised:
-    0 2px 8px rgba(0,0,0,0.08),
-    0 8px 24px rgba(0,0,0,0.08);
-  --shadow-inset:
-    inset 0 2px 4px rgba(0,0,0,0.06);
-  --shadow-glass:
-    0 4px 24px rgba(0,0,0,0.10),
-    0 1px 4px rgba(0,0,0,0.06);
+  /* ── Status / hazard ─────────────────────────────────────── */
+  --status-normal:   #43C59E;
+  --status-warning:  #F5BE55;
+  --status-high:     #FF8A4C;
+  --status-critical: #FF5D6C;
+  --status-unknown:  #9AA7BA;
+  --status-info:     #8BA8FF;
 
-  /* ── Spacing (8 px base) ──────────────────────────────────────────── */
-  --space-1:  4px;
-  --space-2:  8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
+  /* ── Shadows ─────────────────────────────────────────────── */
+  --shadow-raised:   4px 4px 12px rgba(0,0,0,0.5), -2px -2px 8px rgba(255,255,255,0.03);
+  --shadow-card:     0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
 
-  /* ── Radii ────────────────────────────────────────────────────────── */
+  /* ── Spacing (4px base) ──────────────────────────────────── */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  28px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Radii ───────────────────────────────────────────────── */
   --radius-sm:  8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
 
-  /* ── Layout ───────────────────────────────────────────────────────── */
+  /* ── Layout ──────────────────────────────────────────────── */
   --sidebar-width:     240px;
   --sidebar-collapsed:  64px;
   --topbar-height:      64px;
 
-  /* ── Motion ───────────────────────────────────────────────────────── */
-  --transition-fast: 140ms cubic-bezier(.4,0,.2,1);
-  --transition-med:  220ms cubic-bezier(.4,0,.2,1);
+  /* ── Motion ──────────────────────────────────────────────── */
+  --transition-fast: 120ms ease;
+  --transition-med:  200ms ease;
+  --transition-slow: 300ms ease;
 
-  /* ── Typography ───────────────────────────────────────────────────── */
-  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Fira Code', monospace;
+  /* ── Typography ──────────────────────────────────────────── */
+  --font-sans: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
+
+  /* ── Animations ──────────────────────────────────────────── */
+  --anim-float: float 25s ease-in-out infinite;
+  --anim-pulse: pulse-glow 2s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    transition-duration: 0ms !important;
-    animation-duration:  0ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

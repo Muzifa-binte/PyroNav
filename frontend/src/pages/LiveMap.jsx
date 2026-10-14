@@ -6,6 +6,14 @@ import LoadingSkeleton from '../components/LoadingSkeleton'
 import * as api from '../services/api'
 import { wsEventBus } from '../hooks/useWebSocket'
 
+const HAZARD_COLOR = {
+  NORMAL:    'var(--status-normal)',
+  WARNING:   'var(--status-warning)',
+  HIGH_RISK: 'var(--status-high)',
+  CRITICAL:  'var(--status-critical)',
+  UNKNOWN:   'var(--status-unknown)',
+}
+
 export default function LiveMap() {
   const [building, setBuilding] = useState(null)
   const [rooms,    setRooms]    = useState([])
@@ -29,7 +37,6 @@ export default function LiveMap() {
     load()
   }, [])
 
-  // Live room hazard updates via WebSocket
   useEffect(() => {
     const handleRoomStatus = (e) => {
       const { room_id, hazard_level, current_hazard_level } = e.detail || {}
@@ -55,144 +62,185 @@ export default function LiveMap() {
   const roomMap = Object.fromEntries((rooms || []).map(r => [r.room_id, r]))
   const selectedRoomData = selected ? roomMap[selected] : null
 
-  const HAZARD_LEVEL_COLOR = {
-    NORMAL:   'var(--status-normal)',
-    WARNING:  'var(--status-warning)',
-    HIGH_RISK:'var(--status-high)',
-    CRITICAL: 'var(--status-critical)',
-    UNKNOWN:  'var(--status-unknown)',
-  }
-
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 'var(--space-4)', height: '100%' }}>
-      {/* Map area */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-        {loading ? <LoadingSkeleton lines={6} height={30} /> : (
-          <BuildingMap2D
-            building={building}
-            rooms={rooms}
-            route={route}
-            onRoomSelect={setSelected}
-            selectedRoom={selected}
-          />
-        )}
-        <MapLegend />
+    <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Route summary strip */}
-        {route && route.status !== 'NO_ROUTE_CALCULATED' && (
-          <div className="card" style={{ fontSize: 13 }}>
-            <div className="label" style={{ marginBottom: 'var(--space-2)' }}>Active Route</div>
-            <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap', alignItems: 'center' }}>
-              <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Status</div>
-                <StatusPill
-                  level={route.status === 'ROUTE_FOUND' ? 'NORMAL' : 'CRITICAL'}
-                  label={route.status?.replace(/_/g, ' ')}
-                />
-              </div>
-              <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Destination</div>
-                <div style={{ color: 'var(--status-normal)', fontWeight: 600 }}>{route.exit_id || '—'}</div>
-              </div>
-              <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Algorithm</div>
-                <div style={{ color: 'var(--text-secondary)' }}>{route.algorithm || '—'}</div>
-              </div>
-              <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Cost</div>
-                <div className="tabular" style={{ color: 'var(--text-primary)' }}>
-                  {route.total_cost != null ? `${route.total_cost} m` : '—'}
-                </div>
-              </div>
-              <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Calculated</div>
-                <div className="tabular" style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
-                  {route.calculated_at ? new Date(route.calculated_at).toLocaleTimeString() : '—'}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Page header */}
+      <div>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+          Live Map
+        </h2>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+          Situational awareness — 2D floor plan
+        </p>
       </div>
 
-      {/* Right detail panel */}
-      <div className="card" style={{ overflowY: 'auto' }}>
-        {selectedRoomData ? (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3)' }}>
-              <h2 style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3 }}>{selectedRoomData.name}</h2>
-              <button
-                onClick={() => setSelected(null)}
-                aria-label="Close room detail"
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 4px', flexShrink: 0 }}
-              >×</button>
-            </div>
-
-            {/* Hazard level */}
-            <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--surface-inset)', borderRadius: 'var(--radius-sm)', border: `1px solid ${HAZARD_LEVEL_COLOR[selectedRoomData.current_hazard_level] || 'var(--border-subtle)'}33` }}>
-              <div className="label" style={{ marginBottom: 6 }}>Hazard Level</div>
-              <StatusPill level={selectedRoomData.current_hazard_level || 'UNKNOWN'} />
-            </div>
-
-            {/* Data quality */}
-            <div style={{ marginBottom: 'var(--space-3)' }}>
-              <div className="label" style={{ marginBottom: 4 }}>Data Quality</div>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                {selectedRoomData.data_quality_status || '—'}
-              </span>
-            </div>
-
-            {/* Last updated */}
-            <div style={{ marginBottom: 'var(--space-3)' }}>
-              <div className="label" style={{ marginBottom: 4 }}>Last Updated</div>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }} className="tabular">
-                {selectedRoomData.last_updated_at
-                  ? new Date(selectedRoomData.last_updated_at).toLocaleTimeString()
-                  : '—'}
-              </span>
-            </div>
-
-            {/* On active route? */}
-            {route?.node_ids?.includes(selected) && (
-              <div style={{ marginBottom: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)', background: 'rgba(105,183,255,0.1)', border: '1px solid var(--accent-primary)', borderRadius: 'var(--radius-sm)', fontSize: 12, color: 'var(--accent-primary)' }}>
-                ✓ This room is on the active evacuation route
-              </div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: selected ? '1fr 320px' : '1fr',
+        gap: 16,
+        position: 'relative',
+      }}>
+        {/* Map area */}
+        <div style={{ position: 'relative' }}>
+          <div className="glass-card" style={{ padding: 16 }}>
+            {loading ? <LoadingSkeleton type="map" height={500} /> : (
+              <BuildingMap2D
+                building={building}
+                rooms={rooms}
+                route={route}
+                onRoomSelect={setSelected}
+                selectedRoom={selected}
+              />
             )}
 
-            {selectedRoomData.demo_data && (
-              <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-2)', background: 'var(--surface-inset)', borderRadius: 'var(--radius-sm)', fontSize: 11, color: 'var(--text-muted)' }}>
-                ℹ Demo data — connect to backend for live sensor readings
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            {/* Default panel: all rooms list */}
-            <div className="label" style={{ marginBottom: 'var(--space-3)' }}>Room Status</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 'var(--space-3)' }}>
-              Click any room on the map to inspect it
+            {/* Floating legend */}
+            <div style={{
+              position: 'absolute',
+              bottom: 28,
+              left: 28,
+              zIndex: 5,
+            }}>
+              <MapLegend />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {rooms.map(r => (
-                <div
-                  key={r.room_id}
-                  onClick={() => setSelected(r.room_id)}
-                  style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '5px 6px',
-                    borderRadius: 'var(--radius-sm)',
-                    cursor: 'pointer',
-                    borderBottom: '1px solid var(--border-subtle)',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-raised)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.name}</span>
-                  <StatusPill level={r.current_hazard_level || 'UNKNOWN'} size="sm" />
+          </div>
+
+          {/* Route summary strip */}
+          {route && route.status !== 'NO_ROUTE_CALCULATED' && (
+            <div className="glass-card" style={{ padding: '12px 20px', marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
+                  <StatusPill
+                    status={route.status === 'ROUTE_FOUND' ? 'normal' : 'critical'}
+                    label={route.status?.replace(/_/g, ' ')}
+                  />
                 </div>
-              ))}
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Destination</div>
+                  <div style={{ color: 'var(--status-normal)', fontWeight: 600 }}>{route.exit_id || '—'}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Algorithm</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{route.algorithm || '—'}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Cost</div>
+                  <div className="tabular" style={{ color: 'var(--text-primary)', fontSize: 13 }}>
+                    {route.total_cost != null ? `${route.total_cost} m` : '—'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Calculated</div>
+                  <div className="tabular" style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
+                    {route.calculated_at ? new Date(route.calculated_at).toLocaleTimeString() : '—'}
+                  </div>
+                </div>
+              </div>
             </div>
-          </>
+          )}
+        </div>
+
+        {/* Room detail drawer */}
+        {(
+          <div className="glass-card" style={{ padding: 20, overflowY: 'auto' }}>
+            {selectedRoomData ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {selectedRoomData.name}
+                  </h3>
+                  <button
+                    onClick={() => setSelected(null)}
+                    aria-label="Close room detail"
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '0 4px', flexShrink: 0 }}
+                  >×</button>
+                </div>
+
+                {/* Hazard level */}
+                <div style={{
+                  marginBottom: 16, padding: 12,
+                  background: 'var(--surface-inset)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: `1px solid ${HAZARD_COLOR[selectedRoomData.current_hazard_level] || 'var(--border-subtle)'}33`,
+                }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Hazard Level</div>
+                  <StatusPill level={selectedRoomData.current_hazard_level || 'UNKNOWN'} />
+                </div>
+
+                {/* Details */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[
+                    ['Data Quality',  selectedRoomData.data_quality_status || '—'],
+                    ['Room ID',       selectedRoomData.room_id],
+                    ['Last Updated',  selectedRoomData.last_updated_at
+                      ? new Date(selectedRoomData.last_updated_at).toLocaleTimeString()
+                      : '—'],
+                  ].map(([k, v]) => (
+                    <div key={k}>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{k}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* On route badge */}
+                {route?.node_ids?.includes(selected) && (
+                  <div style={{
+                    marginTop: 12,
+                    padding: '8px 12px',
+                    background: 'rgba(105,183,255,0.08)',
+                    border: '1px solid var(--accent-primary)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    color: 'var(--accent-primary)',
+                  }}>
+                    ✓ On active evacuation route
+                  </div>
+                )}
+
+                {selectedRoomData.demo_data && (
+                  <div style={{ marginTop: 12, padding: 8, background: 'var(--surface-inset)', borderRadius: 'var(--radius-sm)', fontSize: 11, color: 'var(--text-muted)', border: '1px solid var(--border-glass)' }}>
+                    ℹ Demo data — connect to backend for live sensor readings
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 12 }}>
+                  Room Status
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
+                  Click any room on the map to inspect it
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {rooms.map(r => (
+                    <div
+                      key={r.room_id}
+                      onClick={() => setSelected(r.room_id)}
+                      tabIndex={0}
+                      onKeyDown={e => e.key === 'Enter' && setSelected(r.room_id)}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '6px 8px',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid var(--border-glass)',
+                        transition: 'background var(--transition-fast)',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.name}</span>
+                      <StatusPill level={r.current_hazard_level || 'UNKNOWN'} size="sm" />
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

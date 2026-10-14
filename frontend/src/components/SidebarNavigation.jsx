@@ -27,19 +27,27 @@ function NavItem({ item, collapsed }) {
         alignItems: 'center',
         gap: 10,
         padding: '9px 12px',
-        borderRadius: 10,
+        borderRadius: 'var(--radius-sm)',
         textDecoration: 'none',
-        color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
-        background: isActive
-          ? 'linear-gradient(135deg, var(--accent-primary), #F0883E)'
-          : 'transparent',
-        boxShadow: isActive ? '0 4px 12px rgba(232,104,26,0.30)' : 'none',
-        fontSize: 13,
+        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+        background: isActive ? 'rgba(105,183,255,0.12)' : 'transparent',
+        borderLeft: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
         fontWeight: isActive ? 600 : 400,
+        fontSize: 13,
         transition: 'all var(--transition-fast)',
         whiteSpace: 'nowrap',
         overflow: 'hidden',
       })}
+      onMouseEnter={e => {
+        if (!e.currentTarget.classList.contains('active')) {
+          e.currentTarget.style.background = 'rgba(105,183,255,0.06)'
+        }
+      }}
+      onMouseLeave={e => {
+        // NavLink style function handles active state
+        const isActive = e.currentTarget.getAttribute('aria-current') === 'page'
+        if (!isActive) e.currentTarget.style.background = 'transparent'
+      }}
     >
       <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>{item.icon}</span>
       {!collapsed && <span>{item.label}</span>}
@@ -53,14 +61,17 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
       aria-label="Primary navigation"
       style={{
         width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)',
-        background: 'var(--bg-sidebar)',
-        borderRight: '1px solid var(--border-subtle)',
+        background: 'rgba(14,22,39,0.85)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderRight: '1px solid var(--border-glass)',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
         overflow: 'hidden',
         transition: 'width var(--transition-med)',
-        boxShadow: '2px 0 12px rgba(0,0,0,0.05)',
+        position: 'relative',
+        zIndex: 10,
       }}
     >
       {/* Brand */}
@@ -70,17 +81,17 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
         alignItems: 'center',
         gap: 10,
         padding: '0 14px',
-        borderBottom: '1px solid var(--border-subtle)',
+        borderBottom: '1px solid var(--border-glass)',
         flexShrink: 0,
       }}>
         {/* Flame logo */}
         <div style={{
-          width: 34, height: 34,
+          width: 36, height: 36,
           borderRadius: 10,
-          background: 'linear-gradient(135deg, var(--accent-primary), #F0883E)',
+          background: 'linear-gradient(135deg, #69B7FF, #43C59E)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 18, flexShrink: 0,
-          boxShadow: '0 4px 10px rgba(232,104,26,0.35)',
+          fontSize: 20, flexShrink: 0,
+          boxShadow: '0 4px 16px rgba(105,183,255,0.3)',
         }}>
           🔥
         </div>
@@ -90,7 +101,7 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
               PyroNav
             </div>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500 }}>
-              Fire Safety System
+              Fire Safety
             </div>
           </div>
         )}
@@ -99,8 +110,8 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           style={{
             marginLeft: 'auto',
-            background: 'var(--surface-inset)',
-            border: '1px solid var(--border-subtle)',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid var(--border-glass)',
             color: 'var(--text-muted)',
             cursor: 'pointer',
             fontSize: 13,
@@ -108,6 +119,7 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
             borderRadius: 6,
             flexShrink: 0,
             fontWeight: 700,
+            backdropFilter: 'blur(8px)',
           }}
         >
           {collapsed ? '›' : '‹'}
@@ -128,7 +140,7 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
         ))}
 
         {/* Tools divider */}
-        <div style={{ margin: '12px 4px 8px', borderTop: '1px solid var(--border-subtle)' }} />
+        <div style={{ margin: '12px 4px 8px', borderTop: '1px solid var(--border-glass)' }} />
         {!collapsed && (
           <div style={{
             fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
@@ -147,9 +159,19 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
       {!collapsed && (
         <div style={{
           padding: '12px 14px',
-          borderTop: '1px solid var(--border-subtle)',
+          borderTop: '1px solid var(--border-glass)',
           fontSize: 11, color: 'var(--text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
         }}>
+          <span style={{
+            width: 8, height: 8,
+            borderRadius: '50%',
+            background: 'var(--status-normal)',
+            display: 'inline-block',
+            flexShrink: 0,
+          }} />
           Academic Prototype · v1.0
         </div>
       )}

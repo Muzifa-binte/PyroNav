@@ -1,7 +1,7 @@
 @import './tokens.css';
 
-/* ── Google Fonts ──────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* ── Google Fonts ────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -24,23 +24,83 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Scrollbars ────────────────────────────────────────────────────── */
-::-webkit-scrollbar        { width: 5px; height: 5px; }
-::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: var(--border-medium); border-radius: 10px; }
+/* ── Animated background dot grid ───────────────────────────────────── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: var(--surface-inset); }
+::-webkit-scrollbar-thumb  { background: var(--border-subtle); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ── Focus ring ────────────────────────────────────────────────────── */
+/* ── Focus ring ──────────────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
-/* ── Utility ───────────────────────────────────────────────────────── */
+/* ── Utility ─────────────────────────────────────────────────────────── */
 .tabular { font-variant-numeric: tabular-nums; }
 
-/* ── Status pill ───────────────────────────────────────────────────── */
+/* ── Glass card ──────────────────────────────────────────────────────── */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+}
+
+/* ── Raised card ─────────────────────────────────────────────────────── */
+.raised-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+/* ── Legacy card (preserve backwards compat) ─────────────────────────── */
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+  padding: var(--space-5);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+.card:hover {
+  box-shadow: var(--glass-shadow), 0 12px 40px rgba(0,0,0,0.5);
+}
+
+/* ── Page content wrapper ────────────────────────────────────────────── */
+.page-content {
+  padding: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Section label ───────────────────────────────────────────────────── */
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Status pills ────────────────────────────────────────────────────── */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -52,47 +112,14 @@ body {
   white-space: nowrap;
   letter-spacing: 0.01em;
 }
-.pill--normal   { background: #C6F6D5; color: #276749; }
-.pill--warning  { background: #FEFCBF; color: #975A16; }
-.pill--high     { background: #FEEBC8; color: #C05621; }
-.pill--critical { background: #FED7D7; color: #9B2C2C; }
-.pill--unknown  { background: #EDF2F7; color: #4A5568; }
-.pill--info     { background: #BEE3F8; color: #2C5282; }
+.pill--normal   { background: rgba(67,197,158,0.15);  color: #43C59E; border: 1px solid rgba(67,197,158,0.3); }
+.pill--warning  { background: rgba(245,190,85,0.15);  color: #F5BE55; border: 1px solid rgba(245,190,85,0.3); }
+.pill--high     { background: rgba(255,138,76,0.15);  color: #FF8A4C; border: 1px solid rgba(255,138,76,0.3); }
+.pill--critical { background: rgba(255,93,108,0.15);  color: #FF5D6C; border: 1px solid rgba(255,93,108,0.3); }
+.pill--unknown  { background: rgba(154,167,186,0.15); color: #9AA7BA; border: 1px solid rgba(154,167,186,0.3); }
+.pill--info     { background: rgba(139,168,255,0.15); color: #8BA8FF; border: 1px solid rgba(139,168,255,0.3); }
 
-/* ── Card ──────────────────────────────────────────────────────────── */
-.card {
-  background: var(--surface-base);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
-  padding: var(--space-5);
-  transition: box-shadow var(--transition-fast);
-}
-.card:hover {
-  box-shadow: var(--shadow-raised);
-}
-
-/* ── Glass card ────────────────────────────────────────────────────── */
-.card-glass {
-  background: var(--surface-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.6);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-glass);
-  padding: var(--space-5);
-}
-
-/* ── Section label ─────────────────────────────────────────────────── */
-.label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-/* ── Empty / error states ──────────────────────────────────────────── */
+/* ── Empty / error states ────────────────────────────────────────────── */
 .empty-state, .error-state {
   display: flex;
   flex-direction: column;
@@ -105,11 +132,11 @@ body {
 }
 .error-state { color: var(--status-critical); }
 
-/* ── Simulation banner ─────────────────────────────────────────────── */
+/* ── Simulation banner ───────────────────────────────────────────────── */
 .sim-banner {
-  background: #FFFBEB;
-  border: 1px solid #F6E05E;
-  color: #744210;
+  background: rgba(245,190,85,0.08);
+  border: 1px solid #F5BE55;
+  color: #F5BE55;
   text-align: center;
   font-weight: 700;
   font-size: 12px;
@@ -118,10 +145,55 @@ body {
   border-radius: var(--radius-sm);
 }
 
-/* ── Page header gradient accent ───────────────────────────────────── */
-.page-accent {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* ── Animated background orb container ──────────────────────────────── */
+.bg-animated {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────── */
+@keyframes float1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%     { transform: translate(30px,-20px) scale(1.05); }
+  66%     { transform: translate(-20px,15px) scale(0.98); }
+}
+@keyframes float2 {
+  0%,100% { transform: translate(0,0); }
+  50%     { transform: translate(-25px,20px); }
+}
+@keyframes float3 {
+  0%,100% { transform: translate(0,0); }
+  33%     { transform: translate(20px,-30px); }
+  66%     { transform: translate(-15px,10px); }
+}
+@keyframes float4 {
+  0%,100% { transform: translate(0,0); }
+  50%     { transform: translate(15px,-15px); }
+}
+@keyframes pulse-glow {
+  0%,100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+  50%     { opacity: 0.7; box-shadow: 0 0 0 6px transparent; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes routePulse {
+  0%   { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -25,23 +25,28 @@ class ErrorBoundary extends React.Component {
       return (
         <div style={{
           minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: '#F0F4F8', fontFamily: 'Inter, system-ui, sans-serif',
+          background: '#0B1120', fontFamily: 'Inter, system-ui, sans-serif',
         }}>
           <div style={{
-            background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14,
-            padding: 32, maxWidth: 520, boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+            background: 'rgba(21,31,50,0.8)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255,93,108,0.3)',
+            borderRadius: 16,
+            padding: 32, maxWidth: 520,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           }}>
             <div style={{ fontSize: 28, marginBottom: 12 }}>⚠️</div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1A202C', marginBottom: 8 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#F2F5FA', marginBottom: 8 }}>
               Something went wrong
             </h2>
-            <p style={{ fontSize: 13, color: '#4A5568', marginBottom: 16 }}>
+            <p style={{ fontSize: 13, color: '#AAB7CC', marginBottom: 16 }}>
               PyroNav encountered an error. Check the browser console for details.
             </p>
             <pre style={{
-              fontSize: 11, background: '#FED7D7', color: '#9B2C2C',
+              fontSize: 11, background: 'rgba(255,93,108,0.1)', color: '#FF5D6C',
               padding: 12, borderRadius: 8, overflowX: 'auto', whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
+              wordBreak: 'break-all', border: '1px solid rgba(255,93,108,0.2)',
             }}>
               {this.state.error?.message}
             </pre>
@@ -49,7 +54,9 @@ class ErrorBoundary extends React.Component {
               onClick={() => window.location.reload()}
               style={{
                 marginTop: 16, padding: '8px 20px', borderRadius: 8,
-                background: '#E8681A', border: 'none', color: '#fff',
+                background: 'rgba(105,183,255,0.15)',
+                border: '1px solid rgba(105,183,255,0.4)',
+                color: '#69B7FF',
                 fontSize: 13, fontWeight: 600, cursor: 'pointer',
               }}
             >
