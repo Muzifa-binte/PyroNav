@@ -1,14 +1,14 @@
 {
-  "_note": "Example route result — used by frontend during development before backend is ready.",
+  "_note": "Example route result for the hospital floor plan — main_lobby to EXIT-S (Main Entrance).",
   "route_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "origin_node_id": "reception",
-  "exit_id": "EXIT-A",
-  "node_ids": ["reception", "EXIT-A"],
-  "edge_ids": ["EDGE-06"],
-  "total_cost": 10.0,
+  "origin_node_id": "main_lobby",
+  "exit_id": "EXIT-S",
+  "node_ids": ["main_lobby", "EXIT-S"],
+  "edge_ids": ["EDGE-21"],
+  "total_cost": 5.0,
   "algorithm": "dijkstra",
   "status": "ROUTE_FOUND",
-  "calculated_at": "2026-10-13T06:00:00Z",
+  "calculated_at": "2026-10-14T06:00:00Z",
   "hazard_state_snapshot": [],
   "demo_data": true
 }

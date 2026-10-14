@@ -8,6 +8,7 @@ const shellStyle = {
   height: '100vh',
   overflow: 'hidden',
   backgroundColor: 'var(--bg-canvas)',
+  backgroundImage: 'radial-gradient(ellipse at 80% 10%, rgba(232,104,26,0.05) 0%, transparent 60%), radial-gradient(ellipse at 10% 90%, rgba(46,196,182,0.05) 0%, transparent 60%)',
 }
 
 const mainStyle = {

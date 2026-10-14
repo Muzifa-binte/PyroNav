@@ -1,7 +1,7 @@
 import React from 'react'
 
 const pulse = {
-  background: 'linear-gradient(90deg, var(--surface-base) 25%, var(--surface-raised) 50%, var(--surface-base) 75%)',
+  background: 'linear-gradient(90deg, #EDF2F7 25%, #E2E8F0 50%, #EDF2F7 75%)',
   backgroundSize: '200% 100%',
   animation: 'skeleton-pulse 1.5s ease-in-out infinite',
   borderRadius: 'var(--radius-sm)',

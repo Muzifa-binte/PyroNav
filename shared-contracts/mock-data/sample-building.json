@@ -1,5 +1,5 @@
 {
-  "_note": "Demo building layout — illustrative data, not a real building.",
+  "_note": "Hospital Ground Floor — matches the PyroNav 2D floor plan image.",
   "building_id": "HOSPITAL-DEMO-01",
   "name": "PyroNav Demo Hospital",
   "floors": [
@@ -7,24 +7,48 @@
       "floor_id": "floor_1",
       "name": "Ground Floor",
       "rooms": [
-        { "room_id": "reception",         "name": "Reception",          "map_position": { "x": 50,  "y": 200 }, "dimensions": { "w": 100, "h": 80 } },
-        { "room_id": "corridor_1",        "name": "Main Corridor",      "map_position": { "x": 200, "y": 200 }, "dimensions": { "w": 150, "h": 40 } },
-        { "room_id": "operation_theater", "name": "Operation Theater",  "map_position": { "x": 400, "y": 150 }, "dimensions": { "w": 120, "h": 100 } },
-        { "room_id": "emergency_ward",    "name": "Emergency Ward",     "map_position": { "x": 400, "y": 300 }, "dimensions": { "w": 120, "h": 100 } },
-        { "room_id": "pharmacy",          "name": "Pharmacy",           "map_position": { "x": 200, "y": 320 }, "dimensions": { "w": 100, "h": 80 } },
-        { "room_id": "icu",               "name": "ICU",                "map_position": { "x": 580, "y": 150 }, "dimensions": { "w": 100, "h": 80 } }
+        { "room_id": "icu",                "name": "ICU (4 Beds)",          "map_position": { "x": 60,  "y": 60  }, "dimensions": { "w": 160, "h": 110 }, "type": "icu" },
+        { "room_id": "isolation_room",     "name": "Isolation Room",        "map_position": { "x": 220, "y": 60  }, "dimensions": { "w": 130, "h": 110 }, "type": "patient" },
+        { "room_id": "patient_room",       "name": "Patient Room (2 Beds)", "map_position": { "x": 350, "y": 60  }, "dimensions": { "w": 140, "h": 110 }, "type": "patient" },
+        { "room_id": "operation_theater",  "name": "Operating Theatre (OT)","map_position": { "x": 490, "y": 60  }, "dimensions": { "w": 160, "h": 110 }, "type": "ot" },
+        { "room_id": "radiology",          "name": "Radiology (X-Ray)",     "map_position": { "x": 60,  "y": 230 }, "dimensions": { "w": 100, "h": 120 }, "type": "diagnostic" },
+        { "room_id": "lab",                "name": "Lab",                   "map_position": { "x": 60,  "y": 350 }, "dimensions": { "w": 100, "h": 100 }, "type": "diagnostic" },
+        { "room_id": "pharmacy",           "name": "Pharmacy",              "map_position": { "x": 160, "y": 270 }, "dimensions": { "w": 130, "h": 120 }, "type": "support" },
+        { "room_id": "waiting_area",       "name": "Waiting Area",          "map_position": { "x": 290, "y": 230 }, "dimensions": { "w": 160, "h": 120 }, "type": "support" },
+        { "room_id": "administration",     "name": "Administration",        "map_position": { "x": 450, "y": 230 }, "dimensions": { "w": 130, "h": 70  }, "type": "admin" },
+        { "room_id": "records",            "name": "Records",               "map_position": { "x": 450, "y": 300 }, "dimensions": { "w": 130, "h": 70  }, "type": "admin" },
+        { "room_id": "general_ward",       "name": "General Ward (6 Beds)", "map_position": { "x": 580, "y": 230 }, "dimensions": { "w": 170, "h": 120 }, "type": "patient" },
+        { "room_id": "maternity_ward",     "name": "Maternity Ward (4 Beds)","map_position": {"x": 580, "y": 350 }, "dimensions": { "w": 170, "h": 110 }, "type": "patient" },
+        { "room_id": "cafeteria",          "name": "Cafeteria",             "map_position": { "x": 60,  "y": 450 }, "dimensions": { "w": 130, "h": 100 }, "type": "cafeteria" },
+        { "room_id": "main_lobby",         "name": "Main Lobby & Reception","map_position": { "x": 270, "y": 450 }, "dimensions": { "w": 180, "h": 100 }, "type": "support" },
+        { "room_id": "emergency_dept",     "name": "Emergency Department",  "map_position": { "x": 450, "y": 450 }, "dimensions": { "w": 130, "h": 100 }, "type": "emergency" },
+        { "room_id": "blood_bank",         "name": "Blood Bank",            "map_position": { "x": 660, "y": 460 }, "dimensions": { "w": 90,  "h": 80  }, "type": "support" }
       ],
       "connections": [
-        { "from": "reception",         "to": "corridor_1",        "distance_m": 10.0 },
-        { "from": "corridor_1",        "to": "operation_theater", "distance_m": 10.0 },
-        { "from": "corridor_1",        "to": "emergency_ward",    "distance_m": 12.0 },
-        { "from": "corridor_1",        "to": "pharmacy",          "distance_m": 8.0  },
-        { "from": "operation_theater", "to": "icu",               "distance_m": 10.0 }
+        { "from": "icu",              "to": "isolation_room",  "distance_m": 8.0  },
+        { "from": "isolation_room",   "to": "patient_room",    "distance_m": 8.0  },
+        { "from": "patient_room",     "to": "operation_theater","distance_m": 8.0  },
+        { "from": "icu",              "to": "radiology",       "distance_m": 10.0 },
+        { "from": "radiology",        "to": "lab",             "distance_m": 8.0  },
+        { "from": "radiology",        "to": "pharmacy",        "distance_m": 8.0  },
+        { "from": "pharmacy",         "to": "waiting_area",    "distance_m": 8.0  },
+        { "from": "waiting_area",     "to": "administration",  "distance_m": 8.0  },
+        { "from": "administration",   "to": "records",         "distance_m": 5.0  },
+        { "from": "administration",   "to": "general_ward",    "distance_m": 8.0  },
+        { "from": "general_ward",     "to": "maternity_ward",  "distance_m": 8.0  },
+        { "from": "waiting_area",     "to": "main_lobby",      "distance_m": 10.0 },
+        { "from": "main_lobby",       "to": "emergency_dept",  "distance_m": 8.0  },
+        { "from": "emergency_dept",   "to": "blood_bank",      "distance_m": 8.0  },
+        { "from": "cafeteria",        "to": "main_lobby",      "distance_m": 10.0 },
+        { "from": "operation_theater","to": "general_ward",    "distance_m": 12.0 },
+        { "from": "lab",              "to": "cafeteria",       "distance_m": 10.0 }
       ],
       "exits": [
-        { "exit_id": "EXIT-A", "name": "EXIT A — Main Entrance", "connected_to": "reception",      "position": { "x": 0,   "y": 200 }, "available": true  },
-        { "exit_id": "EXIT-B", "name": "EXIT B — Side Door",     "connected_to": "operation_theater", "position": { "x": 580, "y": 100 }, "available": true  },
-        { "exit_id": "EXIT-C", "name": "EXIT C — Emergency Exit","connected_to": "emergency_ward", "position": { "x": 580, "y": 350 }, "available": false }
+        { "exit_id": "EXIT-NW", "name": "EXIT NW — Emergency Exit", "connected_to": "icu",           "position": { "x": 60,  "y": 30  }, "available": true  },
+        { "exit_id": "EXIT-NE", "name": "EXIT NE — Emergency Exit", "connected_to": "operation_theater","position":{ "x": 650, "y": 30  }, "available": true  },
+        { "exit_id": "EXIT-SW", "name": "EXIT SW — Emergency Exit", "connected_to": "cafeteria",     "position": { "x": 60,  "y": 580 }, "available": true  },
+        { "exit_id": "EXIT-S",  "name": "EXIT S  — Main Entrance",  "connected_to": "main_lobby",    "position": { "x": 360, "y": 580 }, "available": true  },
+        { "exit_id": "EXIT-SE", "name": "EXIT SE — Emergency Exit", "connected_to": "blood_bank",    "position": { "x": 750, "y": 580 }, "available": true  }
       ]
     }
   ]

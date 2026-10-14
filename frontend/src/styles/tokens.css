@@ -1,43 +1,54 @@
 /* ============================================================
-   PyroNav Design Tokens — Dark Neumorphism Command Center
-   Source: UI/UX Specification §8.2
+   PyroNav Design Tokens — Light Modern Command Interface
+   Inspired by NexHome smart-dashboard aesthetic:
+   clean whites, soft glass cards, warm orange + teal accents.
    ============================================================ */
 :root {
-  /* Background surfaces */
-  --bg-canvas:       #0B1120;
-  --bg-sidebar:      #0E1627;
-  --surface-base:    #151F32;
-  --surface-raised:  #1A2740;
-  --surface-inset:   #10192A;
+  /* ── Backgrounds ──────────────────────────────────────────────────── */
+  --bg-canvas:       #F0F4F8;          /* overall page background — pale blue-grey */
+  --bg-sidebar:      #FFFFFF;          /* sidebar — pure white */
+  --surface-base:    #FFFFFF;          /* cards */
+  --surface-raised:  #F7FAFC;          /* elevated cards, hover */
+  --surface-inset:   #EDF2F7;          /* input wells, recessed areas */
+  --surface-glass:   rgba(255,255,255,0.72); /* glassmorphism surfaces */
 
-  /* Borders */
-  --border-subtle:   #29364D;
+  /* ── Borders ──────────────────────────────────────────────────────── */
+  --border-subtle:   #E2E8F0;
+  --border-medium:   #CBD5E0;
 
-  /* Typography */
-  --text-primary:    #F2F5FA;
-  --text-secondary:  #AAB7CC;
-  --text-muted:      #7F8DA5;
+  /* ── Typography ───────────────────────────────────────────────────── */
+  --text-primary:    #1A202C;          /* almost black */
+  --text-secondary:  #4A5568;          /* medium grey */
+  --text-muted:      #718096;          /* light grey */
+  --text-inverse:    #FFFFFF;
 
-  /* Accent */
-  --accent-primary:  #69B7FF;
+  /* ── Brand & accent ───────────────────────────────────────────────── */
+  --accent-primary:  #E8681A;          /* warm orange — primary action, logo */
+  --accent-secondary:#2EC4B6;          /* teal — secondary accent */
+  --accent-hover:    #D05A10;          /* darker orange for hover */
 
-  /* Status colours */
-  --status-normal:   #43C59E;
-  --status-warning:  #F5BE55;
-  --status-high:     #FF8A4C;
-  --status-critical: #FF5D6C;
-  --status-unknown:  #9AA7BA;
-  --status-info:     #8BA8FF;
+  /* ── Status / hazard ──────────────────────────────────────────────── */
+  --status-normal:   #38A169;          /* green */
+  --status-warning:  #D69E2E;          /* amber */
+  --status-high:     #DD6B20;          /* orange */
+  --status-critical: #E53E3E;          /* red */
+  --status-unknown:  #718096;          /* grey */
+  --status-info:     #3182CE;          /* blue */
 
-  /* Neumorphic shadows (used via box-shadow on raised surfaces) */
+  /* ── Shadows ──────────────────────────────────────────────────────── */
+  --shadow-card:
+    0 1px 3px rgba(0,0,0,0.06),
+    0 4px 16px rgba(0,0,0,0.07);
   --shadow-raised:
-    4px 4px 10px rgba(0,0,0,0.5),
-    -2px -2px 6px rgba(255,255,255,0.03);
+    0 2px 8px rgba(0,0,0,0.08),
+    0 8px 24px rgba(0,0,0,0.08);
   --shadow-inset:
-    inset 2px 2px 6px rgba(0,0,0,0.5),
-    inset -1px -1px 4px rgba(255,255,255,0.03);
+    inset 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-glass:
+    0 4px 24px rgba(0,0,0,0.10),
+    0 1px 4px rgba(0,0,0,0.06);
 
-  /* Spacing scale (8 px base) */
+  /* ── Spacing (8 px base) ──────────────────────────────────────────── */
   --space-1:  4px;
   --space-2:  8px;
   --space-3: 12px;
@@ -46,26 +57,29 @@
   --space-6: 24px;
   --space-8: 32px;
 
-  /* Radii */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  /* ── Radii ────────────────────────────────────────────────────────── */
+  --radius-sm:  8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
 
-  /* Sidebar */
-  --sidebar-width: 236px;
-  --sidebar-collapsed: 56px;
-  --topbar-height: 64px;
+  /* ── Layout ───────────────────────────────────────────────────────── */
+  --sidebar-width:     240px;
+  --sidebar-collapsed:  64px;
+  --topbar-height:      64px;
 
-  /* Transitions */
-  --transition-fast: 120ms ease;
-  --transition-med:  180ms ease;
+  /* ── Motion ───────────────────────────────────────────────────────── */
+  --transition-fast: 140ms cubic-bezier(.4,0,.2,1);
+  --transition-med:  220ms cubic-bezier(.4,0,.2,1);
 
-  /* Typography */
-  --font-sans: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
+  /* ── Typography ───────────────────────────────────────────────────── */
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Fira Code', monospace;
 }
 
-/* Reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  * { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+  *, *::before, *::after {
+    transition-duration: 0ms !important;
+    animation-duration:  0ms !important;
+  }
 }

@@ -11,39 +11,35 @@ from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 
+_now = datetime.now(timezone.utc).isoformat
+
+def _room(room_id, name, hazard="UNKNOWN", quality="NO_DATA", pos=None):
+    return {
+        "room_id": room_id,
+        "name": name,
+        "current_hazard_level": hazard,
+        "data_quality_status": quality,
+        "last_updated_at": datetime.now(timezone.utc).isoformat(),
+        "map_position": pos or {"x": 0, "y": 0},
+    }
+
 MOCK_ROOMS = [
-    {
-        "room_id": "reception",
-        "name": "Reception",
-        "current_hazard_level": "NORMAL",
-        "data_quality_status": "FRESH",
-        "last_updated_at": datetime.now(timezone.utc).isoformat(),
-        "map_position": {"x": 0, "y": 0},
-    },
-    {
-        "room_id": "operation_theater",
-        "name": "Operation Theater",
-        "current_hazard_level": "NORMAL",
-        "data_quality_status": "FRESH",
-        "last_updated_at": datetime.now(timezone.utc).isoformat(),
-        "map_position": {"x": 100, "y": 0},
-    },
-    {
-        "room_id": "corridor_1",
-        "name": "Corridor 1",
-        "current_hazard_level": "NORMAL",
-        "data_quality_status": "FRESH",
-        "last_updated_at": datetime.now(timezone.utc).isoformat(),
-        "map_position": {"x": 50, "y": 0},
-    },
-    {
-        "room_id": "emergency_ward",
-        "name": "Emergency Ward",
-        "current_hazard_level": "UNKNOWN",
-        "data_quality_status": "NO_DATA",
-        "last_updated_at": datetime.now(timezone.utc).isoformat(),
-        "map_position": {"x": 100, "y": 100},
-    },
+    _room("icu",               "ICU (4 Beds)",              "UNKNOWN", "NO_DATA"),
+    _room("isolation_room",    "Isolation Room",             "UNKNOWN", "NO_DATA"),
+    _room("patient_room",      "Patient Room (2 Beds)",      "UNKNOWN", "NO_DATA"),
+    _room("operation_theater", "Operating Theatre (OT)",     "NORMAL",  "FRESH"),
+    _room("radiology",         "Radiology (X-Ray)",          "UNKNOWN", "NO_DATA"),
+    _room("lab",               "Lab",                        "UNKNOWN", "NO_DATA"),
+    _room("pharmacy",          "Pharmacy",                   "NORMAL",  "FRESH"),
+    _room("waiting_area",      "Waiting Area",               "NORMAL",  "FRESH"),
+    _room("administration",    "Administration",             "UNKNOWN", "NO_DATA"),
+    _room("records",           "Records",                    "UNKNOWN", "NO_DATA"),
+    _room("general_ward",      "General Ward (6 Beds)",      "UNKNOWN", "NO_DATA"),
+    _room("maternity_ward",    "Maternity Ward (4 Beds)",    "UNKNOWN", "NO_DATA"),
+    _room("cafeteria",         "Cafeteria",                  "NORMAL",  "FRESH"),
+    _room("main_lobby",        "Main Lobby & Reception",     "NORMAL",  "FRESH"),
+    _room("emergency_dept",    "Emergency Department",       "UNKNOWN", "NO_DATA"),
+    _room("blood_bank",        "Blood Bank",                 "UNKNOWN", "NO_DATA"),
 ]
 
 
