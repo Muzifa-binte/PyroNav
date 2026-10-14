@@ -1,0 +1,71 @@
+/* ============================================================
+   PyroNav Design Tokens — Dark Neumorphism Command Center
+   Source: UI/UX Specification §8.2
+   ============================================================ */
+:root {
+  /* Background surfaces */
+  --bg-canvas:       #0B1120;
+  --bg-sidebar:      #0E1627;
+  --surface-base:    #151F32;
+  --surface-raised:  #1A2740;
+  --surface-inset:   #10192A;
+
+  /* Borders */
+  --border-subtle:   #29364D;
+
+  /* Typography */
+  --text-primary:    #F2F5FA;
+  --text-secondary:  #AAB7CC;
+  --text-muted:      #7F8DA5;
+
+  /* Accent */
+  --accent-primary:  #69B7FF;
+
+  /* Status colours */
+  --status-normal:   #43C59E;
+  --status-warning:  #F5BE55;
+  --status-high:     #FF8A4C;
+  --status-critical: #FF5D6C;
+  --status-unknown:  #9AA7BA;
+  --status-info:     #8BA8FF;
+
+  /* Neumorphic shadows (used via box-shadow on raised surfaces) */
+  --shadow-raised:
+    4px 4px 10px rgba(0,0,0,0.5),
+    -2px -2px 6px rgba(255,255,255,0.03);
+  --shadow-inset:
+    inset 2px 2px 6px rgba(0,0,0,0.5),
+    inset -1px -1px 4px rgba(255,255,255,0.03);
+
+  /* Spacing scale (8 px base) */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Sidebar */
+  --sidebar-width: 236px;
+  --sidebar-collapsed: 56px;
+  --topbar-height: 64px;
+
+  /* Transitions */
+  --transition-fast: 120ms ease;
+  --transition-med:  180ms ease;
+
+  /* Typography */
+  --font-sans: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Fira Code', monospace;
+}
+
+/* Reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+}

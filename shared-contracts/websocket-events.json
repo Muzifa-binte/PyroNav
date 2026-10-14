@@ -1,0 +1,56 @@
+{
+  "_doc": "WebSocket event schemas — server → client push over ws://host/ws/v1/live",
+  "envelope": {
+    "event_type": "string",
+    "data":        "object",
+    "timestamp":   "ISO-8601 UTC string"
+  },
+  "events": {
+    "sensor_reading_updated": {
+      "sensor_id": "string",
+      "room_id":   "string",
+      "values":    "object  (e.g. {smoke: 45, temperature: 22})",
+      "units":     "object  (e.g. {smoke: 'ppm', temperature: 'degC'})",
+      "validation_status": "valid | invalid | stale | duplicate",
+      "timestamp": "ISO-8601"
+    },
+    "room_status_changed": {
+      "room_id":        "string",
+      "hazard_level":   "NORMAL | WARNING | HIGH_RISK | CRITICAL | UNKNOWN",
+      "previous_level": "string | null"
+    },
+    "hazard_event_created": {
+      "event_id":    "UUID",
+      "room_id":     "string",
+      "hazard_level": "string",
+      "reason_codes": ["string"],
+      "detected_at": "ISO-8601"
+    },
+    "notification_created": {
+      "notification_id": "UUID",
+      "event_id":        "UUID",
+      "room_id":         "string",
+      "severity":        "string",
+      "message":         "string"
+    },
+    "route_updated": {
+      "route_id":       "UUID",
+      "origin_node_id": "string",
+      "exit_id":        "string | null",
+      "node_ids":       ["string"],
+      "edge_ids":       ["string"],
+      "total_cost":     "number | null",
+      "algorithm":      "dijkstra | bfs",
+      "status":         "ROUTE_FOUND | NO_VALID_ROUTE | NO_AVAILABLE_EXIT | RECALCULATION_PENDING",
+      "reason":         "string (e.g. hazard_change)"
+    },
+    "ids_event_detected": {
+      "event_id":    "UUID",
+      "category":    "string",
+      "source":      "string",
+      "severity":    "string",
+      "description": "string",
+      "timestamp":   "ISO-8601"
+    }
+  }
+}

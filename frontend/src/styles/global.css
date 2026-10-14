@@ -1,0 +1,101 @@
+@import './tokens.css';
+
+/* Google Fonts — Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--surface-inset); }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Focus ring — must remain visible for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Utility: tabular numerals for sensor values */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Utility: simulation banner */
+.sim-banner {
+  background: #2A1A00;
+  border: 1px solid var(--status-warning);
+  color: var(--status-warning);
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  padding: var(--space-2) var(--space-4);
+  letter-spacing: 0.05em;
+}
+
+/* Utility: status pill */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pill--normal   { background: rgba(67,197,158,0.15); color: var(--status-normal);   border: 1px solid rgba(67,197,158,0.3); }
+.pill--warning  { background: rgba(245,190,85,0.15);  color: var(--status-warning);  border: 1px solid rgba(245,190,85,0.3); }
+.pill--high     { background: rgba(255,138,76,0.15);  color: var(--status-high);     border: 1px solid rgba(255,138,76,0.3); }
+.pill--critical { background: rgba(255,93,108,0.15);  color: var(--status-critical); border: 1px solid rgba(255,93,108,0.3); }
+.pill--unknown  { background: rgba(154,167,186,0.15); color: var(--status-unknown);  border: 1px solid rgba(154,167,186,0.3); }
+.pill--info     { background: rgba(139,168,255,0.15); color: var(--status-info);     border: 1px solid rgba(139,168,255,0.3); }
+
+/* Card surface */
+.card {
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-raised);
+  padding: var(--space-4);
+}
+
+/* Section label */
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Empty / loading states */
+.empty-state, .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  color: var(--text-muted);
+  text-align: center;
+}
+.error-state { color: var(--status-critical); }

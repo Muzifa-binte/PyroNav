@@ -1,0 +1,14 @@
+{
+  "_note": "Example route result — used by frontend during development before backend is ready.",
+  "route_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "origin_node_id": "reception",
+  "exit_id": "EXIT-A",
+  "node_ids": ["reception", "EXIT-A"],
+  "edge_ids": ["EDGE-06"],
+  "total_cost": 10.0,
+  "algorithm": "dijkstra",
+  "status": "ROUTE_FOUND",
+  "calculated_at": "2026-10-13T06:00:00Z",
+  "hazard_state_snapshot": [],
+  "demo_data": true
+}

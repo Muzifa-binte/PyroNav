@@ -1,0 +1,24 @@
+{
+  "_note": "Graph representation of the demo hospital floor — used by pathfinding engine.",
+  "nodes": [
+    { "node_id": "reception",         "node_type": "room",    "room_id": "reception",         "position": { "x": 100, "y": 240 }, "traversable": true },
+    { "node_id": "corridor_1",        "node_type": "junction","room_id": "corridor_1",        "position": { "x": 275, "y": 220 }, "traversable": true },
+    { "node_id": "operation_theater", "node_type": "room",    "room_id": "operation_theater", "position": { "x": 460, "y": 200 }, "traversable": true },
+    { "node_id": "emergency_ward",    "node_type": "room",    "room_id": "emergency_ward",    "position": { "x": 460, "y": 350 }, "traversable": true },
+    { "node_id": "pharmacy",          "node_type": "room",    "room_id": "pharmacy",          "position": { "x": 250, "y": 360 }, "traversable": true },
+    { "node_id": "icu",               "node_type": "room",    "room_id": "icu",               "position": { "x": 630, "y": 190 }, "traversable": true },
+    { "node_id": "EXIT-A",            "node_type": "exit",    "room_id": null,                "position": { "x": 0,   "y": 240 }, "traversable": true },
+    { "node_id": "EXIT-B",            "node_type": "exit",    "room_id": null,                "position": { "x": 730, "y": 190 }, "traversable": true },
+    { "node_id": "EXIT-C",            "node_type": "exit",    "room_id": null,                "position": { "x": 730, "y": 350 }, "traversable": true }
+  ],
+  "edges": [
+    { "edge_id": "EDGE-01", "from_node": "reception",         "to_node": "corridor_1",        "cost": 10.0, "bidirectional": true,  "traversable": true },
+    { "edge_id": "EDGE-02", "from_node": "corridor_1",        "to_node": "operation_theater", "cost": 10.0, "bidirectional": true,  "traversable": true },
+    { "edge_id": "EDGE-03", "from_node": "corridor_1",        "to_node": "emergency_ward",    "cost": 12.0, "bidirectional": true,  "traversable": true },
+    { "edge_id": "EDGE-04", "from_node": "corridor_1",        "to_node": "pharmacy",          "cost": 8.0,  "bidirectional": true,  "traversable": true },
+    { "edge_id": "EDGE-05", "from_node": "operation_theater", "to_node": "icu",               "cost": 10.0, "bidirectional": true,  "traversable": true },
+    { "edge_id": "EDGE-06", "from_node": "reception",         "to_node": "EXIT-A",            "cost": 10.0, "bidirectional": false, "traversable": true },
+    { "edge_id": "EDGE-07", "from_node": "icu",               "to_node": "EXIT-B",            "cost": 5.0,  "bidirectional": false, "traversable": true },
+    { "edge_id": "EDGE-08", "from_node": "emergency_ward",    "to_node": "EXIT-C",            "cost": 5.0,  "bidirectional": false, "traversable": true }
+  ]
+}

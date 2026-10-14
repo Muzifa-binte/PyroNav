@@ -1,0 +1,51 @@
+/**
+ * PyroNav API service — thin wrapper around fetch.
+ * All calls go through Vite's proxy (/api → localhost:8000).
+ */
+
+const BASE = '/api/v1'
+
+async function request(path, options = {}) {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.detail || err.error || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+// ── Health ─────────────────────────────────────────────────
+export const getHealth = () => request('/health')
+
+// ── Building & rooms ───────────────────────────────────────
+export const getBuilding = () => request('/building')
+export const getRooms    = () => request('/rooms')
+export const getRoom     = (id) => request(`/rooms/${id}`)
+
+// ── Sensors ────────────────────────────────────────────────
+export const getSensors        = () => request('/sensors')
+export const getSensor         = (id) => request(`/sensors/${id}`)
+export const getSensorReadings = (id, limit = 100) =>
+  request(`/sensors/${id}/readings?limit=${limit}`)
+
+// ── Routes ─────────────────────────────────────────────────
+export const calculateRoute = (originRoomId, algorithm = 'dijkstra', targetExitId = null) =>
+  request('/routes/calculate', {
+    method: 'POST',
+    body: JSON.stringify({ origin_room_id: originRoomId, algorithm, target_exit_id: targetExitId }),
+  })
+
+export const getCurrentRoute = () => request('/routes/current')
+export const getExits        = () => request('/exits')
+
+// ── Alerts ─────────────────────────────────────────────────
+export const getAlerts          = (status = 'ACTIVE') => request(`/alerts?status=${status}`)
+export const getSecurityEvents  = (limit = 50) => request(`/security/events?limit=${limit}`)
+export const getNotifications   = () => request('/notifications')
+
+// ── System ─────────────────────────────────────────────────
+export const getSystemStats     = () => request('/system/stats')
+export const getWebSocketStats  = () => request('/system/websocket/stats')

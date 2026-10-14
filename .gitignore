@@ -1,0 +1,39 @@
+# ── Kiro IDE internals (never push) ─────────────────────────
+.kiro/
+.agents/
+
+# ── Python ───────────────────────────────────────────────────
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/**/*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+
+# ── Secrets / environment ─────────────────────────────────────
+.env
+*.env
+!.env.example
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Node / frontend ──────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── OS artefacts ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor artefacts ─────────────────────────────────────────
+.vscode/
+*.swp
+*.swo
