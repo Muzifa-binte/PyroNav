@@ -4,8 +4,8 @@
 -- Covers: sensors, decision engine, pathfinding, and system infrastructure
 -- =============================================================================
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Requires PostgreSQL 13+: UUID defaults use the built-in gen_random_uuid(),
+-- so no extension (uuid-ossp / pgcrypto) needs to be installed.
 
 -- ============================================================================
 -- MEMBER 2: ROOMS (must come first — sensors FK references rooms)
@@ -65,7 +65,7 @@ CREATE INDEX idx_sensor_readings_sensor_id ON sensor_readings(sensor_id);
 -- ============================================================================
 
 CREATE TABLE hazard_events (
-    event_id          UUID           PRIMARY KEY DEFAULT uuid_generate_v4(),
+    event_id          UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
     room_id           VARCHAR(50)    REFERENCES rooms(room_id),
     hazard_level      hazard_level_enum NOT NULL,
     reason_codes      TEXT[],
@@ -76,7 +76,7 @@ CREATE TABLE hazard_events (
 );
 
 CREATE TABLE notifications (
-    notification_id UUID           PRIMARY KEY DEFAULT uuid_generate_v4(),
+    notification_id UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id        UUID           REFERENCES hazard_events(event_id),
     room_id         VARCHAR(50)    REFERENCES rooms(room_id),
     severity        hazard_level_enum NOT NULL,
@@ -130,7 +130,7 @@ CREATE TABLE exits (
 );
 
 CREATE TABLE route_results (
-    route_id               UUID           PRIMARY KEY DEFAULT uuid_generate_v4(),
+    route_id               UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
     origin_node_id         VARCHAR(50),
     exit_id                VARCHAR(50),
     node_ids               TEXT[],
@@ -160,7 +160,7 @@ CREATE TABLE system_logs (
 );
 
 CREATE TABLE websocket_sessions (
-    session_id    UUID      PRIMARY KEY DEFAULT uuid_generate_v4(),
+    session_id    UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id     VARCHAR(100),
     connected_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

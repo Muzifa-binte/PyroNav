@@ -1,23 +1,24 @@
 # PyroNav Backend Dependencies
+# Supported Python: 3.11 – 3.14  (pins verified to install on Windows + Linux)
 
 # Web Framework
-fastapi==0.115.5
-uvicorn[standard]==0.32.1
+fastapi==0.143.1
+uvicorn[standard]==0.54.0
 
 # Database
-psycopg2-binary==2.9.10
-SQLAlchemy==2.0.36
+psycopg2-binary==2.9.13
+SQLAlchemy==2.0.49
 
 # WebSocket
-websockets==14.1
-python-socketio==5.11.4
+websockets==17.2
+python-socketio==5.17.0
 
 # Data validation
-pydantic==2.10.3
-pydantic-settings==2.7.0
+pydantic==2.14.1
+pydantic-settings==2.16.0
 
 # Environment variables
-python-dotenv==1.0.1
+python-dotenv==1.2.4
 
 # Graph algorithms (optional, for testing)
 networkx==3.4.2
@@ -26,9 +27,9 @@ networkx==3.4.2
 httpx==0.28.1
 
 # Testing
-pytest==8.3.4
-pytest-asyncio==0.24.0
-locust==2.32.4
+pytest==9.1.1
+pytest-asyncio==1.4.0
+locust==2.46.7
 
 # Logging / Utilities
 python-dateutil==2.9.0.post0

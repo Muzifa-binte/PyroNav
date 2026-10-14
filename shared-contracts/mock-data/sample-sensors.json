@@ -1,0 +1,13 @@
+{
+  "_note": "Demo sensor registry for the sample hospital — illustrative data, not a real installation. Replaced by the sensor export from Member 1's 3D editor.",
+  "sensors": [
+    { "sensor_id": "SMOKE-REC-01", "room_id": "reception",         "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "CO-CORR-01",   "room_id": "corridor_1",        "sensor_type": "co",         "unit_config": { "co": "ppm" } },
+    { "sensor_id": "SMOKE-OT-01",  "room_id": "operation_theater", "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "CUR-OT-01",    "room_id": "operation_theater", "sensor_type": "current",    "unit_config": { "current": "A" } },
+    { "sensor_id": "SMOKE-ER-01",  "room_id": "emergency_ward",    "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-PH-01",  "room_id": "pharmacy",          "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "SMOKE-ICU-01", "room_id": "icu",               "sensor_type": "smoke_heat", "unit_config": { "smoke": "ppm", "temperature": "degC" } },
+    { "sensor_id": "CO-ICU-01",    "room_id": "icu",               "sensor_type": "co",         "unit_config": { "co": "ppm" } }
+  ]
+}
