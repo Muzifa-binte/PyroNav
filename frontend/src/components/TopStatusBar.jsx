@@ -30,10 +30,11 @@ export default function TopStatusBar({ connectionState = 'unknown', lastUpdate }
   return (
     <header style={{
       height: 'var(--topbar-height)',
-      background: 'rgba(255,255,255,0.82)',
-      backdropFilter: 'blur(24px)',
-      WebkitBackdropFilter: 'blur(24px)',
-      borderBottom: '1px solid rgba(180,200,240,0.45)',
+      background: 'rgba(255,255,255,0.88)',
+      backdropFilter: 'blur(28px)',
+      WebkitBackdropFilter: 'blur(28px)',
+      borderBottom: '1px solid rgba(180,200,240,0.50)',
+      boxShadow: '0 4px 20px rgba(80,100,180,0.10)',
       display: 'flex',
       alignItems: 'center',
       padding: '0 24px',

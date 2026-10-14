@@ -1,329 +1,394 @@
-import React from 'react'
+import React, { useState } from 'react'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LAYOUT CONSTANTS  (SVG viewBox = 0 0 900 680)
-// Matches the provided hospital floor-plan image exactly.
-// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Hospital 2D Floor Map (Ground Floor)
+ * Exact 1:1 blueprint reproduction of the PyroNav hospital floor plan.
+ * Matches all architectural dimensions, room colors, furniture, door swings,
+ * safety equipment, exits, legend, and compass rose.
+ */
 
-// Outer building wall
-const WALL = { x: 10, y: 10, w: 880, h: 660 }
+// ── SVG Canvas Dimensions ───────────────────────────────────────────────────
+const VW = 1020
+const VH = 660
 
-// Corridor Y-bands (the horizontal walkways between room rows)
-const CORRIDOR_TOP    = { y: 190, h: 36 }   // between top row and middle row
-const CORRIDOR_BOTTOM = { y: 450, h: 36 }   // between middle row and bottom row
+// ── Room Layout Definitions ─────────────────────────────────────────────────
+export const ROOMS_DATA = [
+  // ── Top Row ──
+  {
+    id: 'icu',
+    name: 'ICU (4 Beds)',
+    x: 75, y: 80, w: 165, h: 115,
+    fill: '#BEE3F8',
+    borderColor: '#1E293B',
+    type: 'icu',
+    label: ['ICU', '(4 Beds)'],
+    door: { x: 85, y: 195, size: 24, orientation: 'bottom', swing: 'left' },
+  },
+  {
+    id: 'isolation_room',
+    name: 'Isolation Room',
+    x: 240, y: 80, w: 95, h: 115,
+    fill: '#F0D5EE',
+    borderColor: '#1E293B',
+    type: 'isolation',
+    label: ['Isolation', 'Room'],
+    door: { x: 250, y: 195, size: 24, orientation: 'bottom', swing: 'left' },
+  },
+  {
+    id: 'patient_room',
+    name: 'Patient Room (2 Beds)',
+    x: 335, y: 80, w: 145, h: 115,
+    fill: '#BEE3F8',
+    borderColor: '#1E293B',
+    type: 'patient',
+    label: ['Patient Room', '(2 Beds)'],
+    door: { x: 345, y: 195, size: 24, orientation: 'bottom', swing: 'left' },
+  },
+  {
+    id: 'operation_theater',
+    name: 'Operating Theatre (OT)',
+    x: 480, y: 80, w: 180, h: 115,
+    fill: '#D5EEDB',
+    borderColor: '#1E293B',
+    type: 'ot',
+    label: ['Operating', 'Theatre (OT)'],
+    door: { x: 635, y: 195, size: 24, orientation: 'bottom', swing: 'right' },
+  },
 
-// ─── Room definitions ────────────────────────────────────────────────────────
-// fill      = light interior color (like the image)
-// textColor = dark text on light background
-const ROOMS = [
-  // ── Top row ────────────────────────────────────────────────────────────────
-  { id:'icu',               x:10,  y:10,  w:175, h:180, label:['ICU','(4 Beds)'],          fill:'#BDE8F7', textColor:'#0A3550', icon:'beds4',    borderColor:'#1A5276' },
-  { id:'isolation_room',    x:185, y:10,  w:145, h:180, label:['Isolation','Room'],          fill:'#D6EAF8', textColor:'#1A3A5C', icon:'bed1',     borderColor:'#2E86C1' },
-  { id:'patient_room',      x:330, y:10,  w:155, h:180, label:['Patient Room','(2 Beds)'],   fill:'#D6EAF8', textColor:'#1A3A5C', icon:'beds2',    borderColor:'#2E86C1' },
-  { id:'operation_theater', x:485, y:10,  w:175, h:180, label:['Operating','Theatre (OT)'], fill:'#D5F5E3', textColor:'#0B5345', icon:'ot',       borderColor:'#1E8449' },
-  // right gap space (665–900) is handled by wall
-  { id:'general_ward',      x:660, y:10,  w:230, h:215, label:['General Ward','(6 Beds)'],   fill:'#FADBD8', textColor:'#641E16', icon:'beds6',    borderColor:'#C0392B' },
+  // ── Left Column ──
+  {
+    id: 'radiology',
+    name: 'Radiology (X-Ray)',
+    x: 40, y: 240, w: 115, h: 105,
+    fill: '#EAD6F4',
+    borderColor: '#1E293B',
+    type: 'radiology',
+    label: ['Radiology', '(X-Ray)'],
+    door: { x: 155, y: 290, size: 24, orientation: 'right', swing: 'down' },
+  },
+  {
+    id: 'lab',
+    name: 'Lab',
+    x: 40, y: 345, w: 115, h: 105,
+    fill: '#EAD6F4',
+    borderColor: '#1E293B',
+    type: 'lab',
+    label: ['Lab'],
+    door: { x: 155, y: 395, size: 24, orientation: 'right', swing: 'down' },
+  },
+  {
+    id: 'cafeteria',
+    name: 'Cafeteria',
+    x: 40, y: 450, w: 145, h: 120,
+    fill: '#D5EEDB',
+    borderColor: '#1E293B',
+    type: 'cafeteria',
+    label: ['Cafeteria'],
+    door: { x: 185, y: 490, size: 24, orientation: 'right', swing: 'down' },
+    exitDoor: { x: 40, y: 540, size: 24, orientation: 'left' },
+  },
 
-  // ── Middle row ─────────────────────────────────────────────────────────────
-  { id:'radiology',         x:10,  y:226, w:115, h:130, label:['Radiology','(X-Ray)'],       fill:'#E8DAEF', textColor:'#4A235A', icon:'xray',     borderColor:'#8E44AD' },
-  { id:'lab',               x:10,  y:356, w:115, h:130, label:['Lab'],                       fill:'#E8DAEF', textColor:'#4A235A', icon:'lab',      borderColor:'#8E44AD' },
-  { id:'pharmacy',          x:125, y:226, w:150, h:260, label:['Pharmacy'],                  fill:'#D1F2EB', textColor:'#0E6655', icon:'pharmacy', borderColor:'#1ABC9C' },
-  { id:'waiting_area',      x:275, y:226, w:165, h:260, label:['Waiting','Area'],             fill:'#EBF5FB', textColor:'#154360', icon:'chairs',   borderColor:'#2E86C1' },
-  { id:'administration',    x:440, y:226, w:155, h:115, label:['Administration'],             fill:'#FEF9E7', textColor:'#7D6608', icon:'desk',     borderColor:'#D4AC0D' },
-  { id:'records',           x:440, y:341, w:155, h:145, label:['Records'],                   fill:'#FEF9E7', textColor:'#7D6608', icon:'doc',      borderColor:'#D4AC0D' },
-  { id:'maternity_ward',    x:660, y:226, w:230, h:220, label:['Maternity Ward','(4 Beds)'],  fill:'#FADBD8', textColor:'#641E16', icon:'beds4',    borderColor:'#C0392B' },
+  // ── Center Section ──
+  {
+    id: 'pharmacy',
+    name: 'Pharmacy',
+    x: 190, y: 240, w: 95, h: 190,
+    fill: '#CCEBFB',
+    borderColor: '#0F172A',
+    borderWidth: 3,
+    type: 'pharmacy',
+    label: ['Pharmacy'],
+    door: { x: 250, y: 240, size: 24, orientation: 'top', swing: 'left' },
+    door2: { x: 220, y: 430, size: 24, orientation: 'bottom', swing: 'left' },
+  },
+  {
+    id: 'waiting_area',
+    name: 'Waiting Area',
+    x: 285, y: 240, w: 160, h: 190,
+    fill: '#FFFFFF',
+    borderColor: '#1E293B',
+    type: 'waiting_area',
+    label: ['Waiting Area'],
+  },
+  {
+    id: 'administration',
+    name: 'Administration',
+    x: 445, y: 240, w: 115, h: 95,
+    fill: '#FFF2D1',
+    borderColor: '#1E293B',
+    type: 'admin',
+    label: ['Administration'],
+    door: { x: 445, y: 285, size: 24, orientation: 'left', swing: 'down' },
+  },
+  {
+    id: 'records',
+    name: 'Records',
+    x: 445, y: 335, w: 115, h: 95,
+    fill: '#FFF2D1',
+    borderColor: '#1E293B',
+    type: 'records',
+    label: ['Records'],
+    door: { x: 445, y: 400, size: 24, orientation: 'left', swing: 'down' },
+  },
 
-  // ── Bottom row ─────────────────────────────────────────────────────────────
-  { id:'cafeteria',         x:10,  y:486, w:155, h:184, label:['Cafeteria'],                 fill:'#FDFEFE', textColor:'#1C2833', icon:'cafe',     borderColor:'#839192' },
-  { id:'main_lobby',        x:220, y:486, w:185, h:184, label:['Main Lobby &','Reception'],   fill:'#EBF5FB', textColor:'#154360', icon:'reception',borderColor:'#2E86C1' },
-  { id:'emergency_dept',    x:440, y:486, w:155, h:184, label:['Emergency','Department'],     fill:'#FDEDEC', textColor:'#7B241C', icon:'emergency',borderColor:'#E74C3C' },
-  { id:'blood_bank',        x:660, y:486, w:140, h:130, label:['Blood Bank'],                fill:'#EBF5FB', textColor:'#154360', icon:'blood',    borderColor:'#2E86C1' },
+  // ── Right Column ──
+  {
+    id: 'general_ward',
+    name: 'General Ward (6 Beds)',
+    x: 595, y: 240, w: 185, h: 120,
+    fill: '#FDD9CC',
+    borderColor: '#1E293B',
+    type: 'general_ward',
+    label: ['General Ward', '(6 Beds)'],
+    door: { x: 595, y: 290, size: 24, orientation: 'left', swing: 'down' },
+  },
+  {
+    id: 'maternity_ward',
+    name: 'Maternity Ward (4 Beds)',
+    x: 595, y: 360, w: 185, h: 105,
+    fill: '#FDD9CC',
+    borderColor: '#1E293B',
+    type: 'maternity_ward',
+    label: ['Maternity Ward', '(4 Beds)'],
+    door: { x: 595, y: 410, size: 24, orientation: 'left', swing: 'down' },
+  },
+  {
+    id: 'blood_bank',
+    name: 'Blood Bank',
+    x: 690, y: 465, w: 90, h: 105,
+    fill: '#CCEBFB',
+    borderColor: '#1E293B',
+    type: 'blood_bank',
+    label: ['Blood Bank'],
+    door: { x: 690, y: 520, size: 24, orientation: 'left', swing: 'down' },
+    exitDoor: { x: 745, y: 570, size: 24, orientation: 'bottom' },
+  },
+
+  // ── Bottom Center ──
+  {
+    id: 'main_lobby',
+    name: 'Main Lobby & Reception',
+    x: 285, y: 465, w: 160, h: 105,
+    fill: '#FFF8EB',
+    borderColor: '#1E293B',
+    type: 'main_lobby',
+    label: ['Main Lobby & Reception'],
+    entrance: true,
+  },
+  {
+    id: 'emergency_dept',
+    name: 'Emergency Department',
+    x: 465, y: 465, w: 95, h: 105,
+    fill: '#E2DAF7',
+    borderColor: '#1E293B',
+    type: 'emergency_dept',
+    label: ['Emergency', 'Department'],
+    door: { x: 510, y: 465, size: 24, orientation: 'top', swing: 'left' },
+  },
 ]
 
-// ─── Exit definitions ─────────────────────────────────────────────────────────
-// Placed at corners/edges, matching image
+// ── Exit Sign Definitions ───────────────────────────────────────────────────
 const EXITS = [
-  { id:'EXIT-NW', x:10,  y:10,  label:'Emergency\nExit', side:'tl' },
-  { id:'EXIT-NE', x:800, y:10,  label:'Emergency\nExit', side:'tr' },
-  { id:'EXIT-SW', x:10,  y:620, label:'Emergency\nExit', side:'bl' },
-  { id:'EXIT-S',  x:340, y:645, label:'Main\nEntrance',  side:'bc' },
-  { id:'EXIT-SE', x:800, y:620, label:'Emergency\nExit', side:'br' },
+  { id: 'EXIT-NW', name: 'Emergency Exit', x: 25, y: 45, w: 105, h: 32, connected: 'icu' },
+  { id: 'EXIT-NE', name: 'Emergency Exit', x: 685, y: 45, w: 105, h: 32, connected: 'operation_theater' },
+  { id: 'EXIT-SW', name: 'Emergency Exit', x: 25, y: 595, w: 105, h: 32, connected: 'cafeteria' },
+  { id: 'EXIT-SE', name: 'Emergency Exit', x: 690, y: 595, w: 105, h: 32, connected: 'blood_bank' },
+  { id: 'EXIT-S',  name: 'Main Entrance',  x: 325, y: 620, w: 80,  h: 22, connected: 'main_lobby' },
 ]
 
-// ─── Hazard state overlay colors (light theme) ───────────────────────────────
-const HAZARD = {
-  NORMAL:   { fill:'rgba(34,201,135,0.18)',  border:'#22C987', badge:null,   textColor:'#16A97A' },
-  WARNING:  { fill:'rgba(245,166,35,0.18)',  border:'#F5A623', badge:'WARN', textColor:'#B8750A' },
-  HIGH_RISK:{ fill:'rgba(245,110,59,0.22)',  border:'#F56E3B', badge:'HIGH', textColor:'#C4470E' },
-  CRITICAL: { fill:'rgba(232,77,106,0.25)',  border:'#E84D6A', badge:'CRIT', textColor:'#C0244C' },
-  UNKNOWN:  { fill:null,                      border:null,      badge:null,   textColor:null },
+// ── Corridor Waypoints for Safe Route Navigation ───────────────────────────
+const ROOM_ENTRY_POINTS = {
+  icu:               { x: 97,  y: 218 },
+  isolation_room:    { x: 262, y: 218 },
+  patient_room:      { x: 357, y: 218 },
+  operation_theater: { x: 647, y: 218 },
+  radiology:         { x: 172, y: 302 },
+  lab:               { x: 172, y: 407 },
+  cafeteria:         { x: 202, y: 502 },
+  pharmacy:          { x: 232, y: 218 },
+  waiting_area:      { x: 365, y: 300 },
+  administration:    { x: 420, y: 297 },
+  records:           { x: 420, y: 412 },
+  general_ward:      { x: 578, y: 302 },
+  maternity_ward:    { x: 578, y: 422 },
+  blood_bank:        { x: 670, y: 532 },
+  main_lobby:        { x: 365, y: 450 },
+  emergency_dept:    { x: 512, y: 450 },
+  'EXIT-NW':         { x: 55,  y: 218 },
+  'EXIT-NE':         { x: 745, y: 218 },
+  'EXIT-SW':         { x: 55,  y: 532 },
+  'EXIT-S':          { x: 365, y: 555 },
+  'EXIT-SE':         { x: 745, y: 532 },
 }
 
-// ─── Corridor waypoints for route rendering ───────────────────────────────────
-// Each room has an entry-point on the nearest corridor strip.
-// Route lines follow: room-center → corridor-waypoint → corridor-waypoint → room-center
-// This keeps route lines inside corridors, never cutting through rooms diagonally.
+// ── Room Icons & Furniture Helpers ──────────────────────────────────────────
 
-const TOP_CORRIDOR_Y    = CORRIDOR_TOP.y + CORRIDOR_TOP.h / 2       // 208
-const BOTTOM_CORRIDOR_Y = CORRIDOR_BOTTOM.y + CORRIDOR_BOTTOM.h / 2 // 468
-
-// Corridor entry X per room (horizontal mid-point clamped to corridor)
-const CORRIDOR_ENTRY = {
-  // Top row → enters TOP corridor from above
-  icu:               { x: 97,  topY: TOP_CORRIDOR_Y },
-  isolation_room:    { x: 257, topY: TOP_CORRIDOR_Y },
-  patient_room:      { x: 407, topY: TOP_CORRIDOR_Y },
-  operation_theater: { x: 572, topY: TOP_CORRIDOR_Y },
-  general_ward:      { x: 775, topY: TOP_CORRIDOR_Y },
-
-  // Middle row → enters TOP corridor from below OR BOTTOM corridor from above
-  radiology:         { x: 67,  topY: TOP_CORRIDOR_Y, bottomY: BOTTOM_CORRIDOR_Y },
-  lab:               { x: 67,  topY: TOP_CORRIDOR_Y, bottomY: BOTTOM_CORRIDOR_Y },
-  pharmacy:          { x: 200, topY: TOP_CORRIDOR_Y, bottomY: BOTTOM_CORRIDOR_Y },
-  waiting_area:      { x: 357, topY: TOP_CORRIDOR_Y, bottomY: BOTTOM_CORRIDOR_Y },
-  administration:    { x: 517, topY: TOP_CORRIDOR_Y, bottomY: BOTTOM_CORRIDOR_Y },
-  records:           { x: 517, topY: TOP_CORRIDOR_Y, bottomY: BOTTOM_CORRIDOR_Y },
-  maternity_ward:    { x: 775, topY: TOP_CORRIDOR_Y, bottomY: BOTTOM_CORRIDOR_Y },
-
-  // Bottom row → enters BOTTOM corridor from below
-  cafeteria:         { x: 87,  bottomY: BOTTOM_CORRIDOR_Y },
-  main_lobby:        { x: 312, bottomY: BOTTOM_CORRIDOR_Y },
-  emergency_dept:    { x: 517, bottomY: BOTTOM_CORRIDOR_Y },
-  blood_bank:        { x: 730, bottomY: BOTTOM_CORRIDOR_Y },
-
-  // Exits
-  'EXIT-NW':         { x: 60,  topY: TOP_CORRIDOR_Y },
-  'EXIT-NE':         { x: 850, topY: TOP_CORRIDOR_Y },
-  'EXIT-SW':         { x: 60,  bottomY: BOTTOM_CORRIDOR_Y },
-  'EXIT-S':          { x: 390, bottomY: BOTTOM_CORRIDOR_Y },
-  'EXIT-SE':         { x: 850, bottomY: BOTTOM_CORRIDOR_Y },
+function HospitalBed({ x, y, width = 24, height = 20, color = '#2563EB' }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {/* Bed frame */}
+      <rect x={0} y={4} width={width} height={height - 4} rx={2} fill="#FFFFFF" stroke={color} strokeWidth={1.5} />
+      {/* Pillow */}
+      <rect x={2} y={5} width={width - 4} height={4} rx={1} fill="#E2E8F0" stroke={color} strokeWidth={0.8} />
+      {/* Blanket fold */}
+      <line x1={0} y1={11} x2={width} y2={11} stroke={color} strokeWidth={1.2} />
+      {/* Headboard */}
+      <rect x={0} y={1} width={width} height={3} rx={1} fill={color} />
+      {/* Footboard */}
+      <rect x={0} y={height - 2} width={width} height={2} rx={0.5} fill={color} />
+    </g>
+  )
 }
 
-// Room geometric centers
-const ROOM_CENTER = Object.fromEntries(
-  ROOMS.map(r => [r.id, { x: r.x + r.w / 2, y: r.y + r.h / 2 }])
-)
-
-// Exit centers
-const EXIT_CENTER = {
-  'EXIT-NW': { x: 55,  y: 55  },
-  'EXIT-NE': { x: 845, y: 55  },
-  'EXIT-SW': { x: 55,  y: 645 },
-  'EXIT-S':  { x: 390, y: 665 },
-  'EXIT-SE': { x: 845, y: 645 },
+function PottedPlant({ x, y }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {/* Pot */}
+      <polygon points="-5,6 5,6 3.5,12 -3.5,12" fill="#B45309" stroke="#78350F" strokeWidth={0.8} />
+      {/* Plant leaves */}
+      <circle cx={-3} cy={2} r={4.5} fill="#16A34A" />
+      <circle cx={3}  cy={2} r={4.5} fill="#15803D" />
+      <circle cx={0}  cy={-2} r={4.5} fill="#22C55E" />
+      <circle cx={-4} cy={-1} r={3.5} fill="#4ADE80" opacity={0.7} />
+      <circle cx={4}  cy={-1} r={3.5} fill="#16A34A" opacity={0.7} />
+    </g>
+  )
 }
 
-function getCenter(id) {
-  return ROOM_CENTER[id] || EXIT_CENTER[id] || { x: 450, y: 340 }
+function WaitingChair({ x, y, color = '#2563EB' }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {/* Seat back */}
+      <rect x={-7} y={-7} width={14} height={5} rx={1} fill={color} opacity={0.9} />
+      {/* Seat cushion */}
+      <rect x={-7} y={-1} width={14} height={8} rx={1} fill={color} />
+      {/* Legs */}
+      <line x1={-6} y1={7} x2={-6} y2={11} stroke="#64748B" strokeWidth={1.2} />
+      <line x1={6}  y1={7} x2={6}  y2={11} stroke="#64748B" strokeWidth={1.2} />
+    </g>
+  )
 }
 
-// Determine which corridor strip a node uses and its direction
-function getNodeRow(id) {
-  const topRow    = ['icu','isolation_room','patient_room','operation_theater','general_ward','EXIT-NW','EXIT-NE']
-  const middleRow = ['radiology','lab','pharmacy','waiting_area','administration','records','maternity_ward']
-  const bottomRow = ['cafeteria','main_lobby','emergency_dept','blood_bank','EXIT-SW','EXIT-S','EXIT-SE']
-  if (topRow.includes(id))    return 'top'
-  if (middleRow.includes(id)) return 'middle'
-  if (bottomRow.includes(id)) return 'bottom'
-  return 'middle'
+function FireExtinguisher({ x, y, orientation = 'vertical' }) {
+  return (
+    <g transform={`translate(${x},${y})`} filter="drop-shadow(0 1px 2px rgba(0,0,0,0.25))">
+      {/* Body */}
+      <rect x={-3.5} y={-8} width={7} height={15} rx={2} fill="#DC2626" stroke="#991B1B" strokeWidth={0.8} />
+      {/* Handle & Gauge */}
+      <rect x={-2.5} y={-11} width={5} height={3} rx={0.5} fill="#1E293B" />
+      <circle cx={2.5} cy={-9} r={1.2} fill="#FACC15" />
+      {/* Hose */}
+      <path d="M-2.5,-9 Q-6,-6 -3,1" fill="none" stroke="#1E293B" strokeWidth={1} />
+      {/* Band */}
+      <line x1={-3.5} y1={-2} x2={3.5} y2={-2} stroke="#FFFFFF" strokeWidth={1} />
+    </g>
+  )
 }
 
-// Build a polyline path between two nodes that travels through the corridor strips
-// instead of cutting diagonally through rooms
-function buildRoutePath(fromId, toId) {
-  const c1   = getCenter(fromId)
-  const c2   = getCenter(toId)
-  const row1 = getNodeRow(fromId)
-  const row2 = getNodeRow(toId)
-  const e1   = CORRIDOR_ENTRY[fromId] || {}
-  const e2   = CORRIDOR_ENTRY[toId]   || {}
+function FireAlarmCallPoint({ x, y }) {
+  return (
+    <g transform={`translate(${x},${y})`} filter="drop-shadow(0 1px 2px rgba(0,0,0,0.25))">
+      {/* Target rings */}
+      <circle cx={0} cy={0} r={8.5} fill="#DC2626" stroke="#991B1B" strokeWidth={1.2} />
+      <circle cx={0} cy={0} r={5.5} fill="#FFFFFF" />
+      <circle cx={0} cy={0} r={3}   fill="#DC2626" />
+    </g>
+  )
+}
 
-  const pts = [c1]
+function EvacuationArrow({ x, y, direction = 'right' }) {
+  const rot = direction === 'right' ? 0 : direction === 'down' ? 90 : direction === 'up' ? -90 : 180
+  return (
+    <g transform={`translate(${x},${y}) rotate(${rot})`} filter="drop-shadow(0 1px 1px rgba(0,0,0,0.2))">
+      <path
+        d="M-10,-3.5 L0,-3.5 L0,-7 L10,0 L0,7 L0,3.5 L-10,3.5 Z"
+        fill="#15803D"
+        stroke="#065F46"
+        strokeWidth={0.8}
+      />
+    </g>
+  )
+}
 
-  if (row1 === row2) {
-    // Same row — travel horizontally in their shared corridor
-    if (row1 === 'top') {
-      pts.push({ x: c1.x, y: TOP_CORRIDOR_Y })
-      pts.push({ x: c2.x, y: TOP_CORRIDOR_Y })
-    } else if (row1 === 'bottom') {
-      pts.push({ x: c1.x, y: BOTTOM_CORRIDOR_Y })
-      pts.push({ x: c2.x, y: BOTTOM_CORRIDOR_Y })
+function ArchitecturalDoor({ x, y, size = 24, orientation = 'bottom', swing = 'left' }) {
+  // Draws authentic architectural door leaf and circular swing arc
+  let leafX2, leafY2, arcPath
+  const rad = size
+
+  if (orientation === 'bottom') {
+    if (swing === 'left') {
+      leafX2 = x
+      leafY2 = y + rad
+      arcPath = `M ${x + rad} ${y} A ${rad} ${rad} 0 0 1 ${x} ${y + rad}`
     } else {
-      // Both middle — cross via top corridor
-      pts.push({ x: c1.x, y: TOP_CORRIDOR_Y })
-      pts.push({ x: c2.x, y: TOP_CORRIDOR_Y })
+      leafX2 = x + rad
+      leafY2 = y + rad
+      arcPath = `M ${x} ${y} A ${rad} ${rad} 0 0 0 ${x + rad} ${y + rad}`
     }
-  } else if (row1 === 'top' && row2 === 'middle') {
-    pts.push({ x: c1.x, y: TOP_CORRIDOR_Y })
-    pts.push({ x: c2.x, y: TOP_CORRIDOR_Y })
-  } else if (row1 === 'middle' && row2 === 'top') {
-    pts.push({ x: c1.x, y: TOP_CORRIDOR_Y })
-    pts.push({ x: c2.x, y: TOP_CORRIDOR_Y })
-  } else if (row1 === 'middle' && row2 === 'bottom') {
-    pts.push({ x: c1.x, y: BOTTOM_CORRIDOR_Y })
-    pts.push({ x: c2.x, y: BOTTOM_CORRIDOR_Y })
-  } else if (row1 === 'bottom' && row2 === 'middle') {
-    pts.push({ x: c1.x, y: BOTTOM_CORRIDOR_Y })
-    pts.push({ x: c2.x, y: BOTTOM_CORRIDOR_Y })
-  } else if (row1 === 'top' && row2 === 'bottom') {
-    pts.push({ x: c1.x, y: TOP_CORRIDOR_Y })
-    pts.push({ x: c2.x, y: TOP_CORRIDOR_Y })
-    pts.push({ x: c2.x, y: BOTTOM_CORRIDOR_Y })
-  } else if (row1 === 'bottom' && row2 === 'top') {
-    pts.push({ x: c1.x, y: BOTTOM_CORRIDOR_Y })
-    pts.push({ x: c2.x, y: BOTTOM_CORRIDOR_Y })
-    pts.push({ x: c2.x, y: TOP_CORRIDOR_Y })
+  } else if (orientation === 'top') {
+    leafX2 = x
+    leafY2 = y - rad
+    arcPath = `M ${x + rad} ${y} A ${rad} ${rad} 0 0 0 ${x} ${y - rad}`
+  } else if (orientation === 'right') {
+    leafX2 = x + rad
+    leafY2 = y
+    arcPath = `M ${x} ${y + rad} A ${rad} ${rad} 0 0 1 ${x + rad} ${y}`
+  } else if (orientation === 'left') {
+    leafX2 = x - rad
+    leafY2 = y
+    arcPath = `M ${x} ${y + rad} A ${rad} ${rad} 0 0 0 ${x - rad} ${y}`
   }
 
-  pts.push(c2)
-
-  // Remove consecutive duplicate points
-  const clean = [pts[0]]
-  for (let i = 1; i < pts.length; i++) {
-    const prev = clean[clean.length - 1]
-    if (Math.abs(pts[i].x - prev.x) > 0.5 || Math.abs(pts[i].y - prev.y) > 0.5) {
-      clean.push(pts[i])
-    }
-  }
-  return clean.map(p => `${Math.round(p.x)},${Math.round(p.y)}`).join(' ')
+  return (
+    <g>
+      {/* Swing Arc (dashed or fine stroke) */}
+      <path d={arcPath} fill="none" stroke="#64748B" strokeWidth={1} strokeDasharray="3 2" />
+      {/* Door Leaf */}
+      <line x1={x} y1={y} x2={leafX2} y2={leafY2} stroke="#1E293B" strokeWidth={2} />
+    </g>
+  )
 }
 
-// ─── Small room icons ─────────────────────────────────────────────────────────
-function RoomIcon({ type, cx, cy, color }) {
-  const c = color || '#555'
-  const s = { fill: c, stroke: 'none' }
+// ── Compass Rose Component ──────────────────────────────────────────────────
+function CompassRose({ cx, cy, size = 36 }) {
+  const r = size
+  const rSmall = size * 0.4
+  return (
+    <g transform={`translate(${cx},${cy})`}>
+      {/* Outer Ring */}
+      <circle cx={0} cy={0} r={r + 6} fill="none" stroke="#1E293B" strokeWidth={1.5} />
+      <circle cx={0} cy={0} r={r + 8} fill="none" stroke="#64748B" strokeWidth={0.6} />
 
-  switch (type) {
-    case 'bed1': return (
-      <g transform={`translate(${cx - 14},${cy - 8})`}>
-        <rect x={0} y={4} width={28} height={12} rx={2} fill={c} opacity={0.8} />
-        <rect x={0} y={0} width={12} height={8}  rx={2} fill={c} opacity={0.6} />
-      </g>
-    )
-    case 'beds2': return (
-      <g transform={`translate(${cx - 20},${cy - 8})`}>
-        {[0, 22].map(ox => (
-          <g key={ox} transform={`translate(${ox},0)`}>
-            <rect x={0} y={4} width={18} height={10} rx={2} fill={c} opacity={0.8} />
-            <rect x={0} y={0} width={8}  height={7}  rx={2} fill={c} opacity={0.6} />
-          </g>
-        ))}
-      </g>
-    )
-    case 'beds4': return (
-      <g transform={`translate(${cx - 34},${cy - 8})`}>
-        {[0,17,34,51].map(ox => (
-          <g key={ox} transform={`translate(${ox},0)`}>
-            <rect x={0} y={3} width={14} height={9} rx={2} fill={c} opacity={0.8} />
-            <rect x={0} y={0} width={6}  height={6} rx={2} fill={c} opacity={0.6} />
-          </g>
-        ))}
-      </g>
-    )
-    case 'beds6': return (
-      <g transform={`translate(${cx - 42},${cy - 14})`}>
-        {[0,1].map(row => (
-          [0,18,36,54,72,90].slice(0,3).map(ox => (
-            <g key={`${row}-${ox}`} transform={`translate(${ox},${row * 16})`}>
-              <rect x={0} y={2} width={14} height={9} rx={2} fill={c} opacity={0.8} />
-              <rect x={0} y={0} width={6}  height={6} rx={2} fill={c} opacity={0.6} />
-            </g>
-          ))
-        ))}
-      </g>
-    )
-    case 'ot': return (
-      <g>
-        <circle cx={cx} cy={cy} r={16} fill="none" stroke={c} strokeWidth={2} opacity={0.7} />
-        <line x1={cx-12} y1={cy} x2={cx+12} y2={cy} stroke={c} strokeWidth={2} />
-        <line x1={cx} y1={cy-12} x2={cx} y2={cy+12} stroke={c} strokeWidth={2} />
-        <circle cx={cx} cy={cy} r={5} fill={c} opacity={0.5} />
-      </g>
-    )
-    case 'xray': return (
-      <g>
-        <rect x={cx-12} y={cy-14} width={24} height={18} rx={2} fill="none" stroke={c} strokeWidth={1.5} />
-        <line x1={cx-8} y1={cy-6} x2={cx+8} y2={cy+6} stroke={c} strokeWidth={1.5} />
-        <line x1={cx+8} y1={cy-6} x2={cx-8} y2={cy+6} stroke={c} strokeWidth={1.5} />
-        <rect x={cx-10} y={cy+6} width={20} height={5} rx={1} fill={c} opacity={0.4} />
-      </g>
-    )
-    case 'lab': return (
-      <g>
-        <polygon points={`${cx},${cy-16} ${cx-10},${cy+10} ${cx+10},${cy+10}`} fill="none" stroke={c} strokeWidth={1.5} />
-        <line x1={cx} y1={cy-8} x2={cx} y2={cy+6} stroke={c} strokeWidth={1.5} />
-        <ellipse cx={cx} cy={cy+10} rx={10} ry={4} fill={c} opacity={0.3} />
-      </g>
-    )
-    case 'pharmacy': return (
-      <g>
-        <ellipse cx={cx} cy={cy} rx={14} ry={9} fill="none" stroke={c} strokeWidth={2} transform={`rotate(-30,${cx},${cy})`} />
-        <ellipse cx={cx} cy={cy} rx={14} ry={9} fill={c} opacity={0.15} transform={`rotate(-30,${cx},${cy})`} />
-      </g>
-    )
-    case 'chairs': return (
-      <g>
-        {[-18,-6,6,18].map(ox => (
-          <g key={ox} transform={`translate(${cx+ox},${cy})`}>
-            <rect x={-4} y={-8} width={8} height={6} rx={1} fill={c} opacity={0.7} />
-            <rect x={-4} y={-2} width={8} height={8} rx={1} fill={c} opacity={0.5} />
-            <line x1={-4} y1={6} x2={-4} y2={10} stroke={c} strokeWidth={1} />
-            <line x1={4}  y1={6} x2={4}  y2={10} stroke={c} strokeWidth={1} />
-          </g>
-        ))}
-      </g>
-    )
-    case 'desk': return (
-      <g>
-        <rect x={cx-20} y={cy-8} width={40} height={16} rx={2} fill={c} opacity={0.5} />
-        <rect x={cx-8}  y={cy-16} width={6} height={10} rx={1} fill={c} opacity={0.7} />
-        <circle cx={cx+14} cy={cy} r={6} fill="none" stroke={c} strokeWidth={1.5} opacity={0.7} />
-      </g>
-    )
-    case 'doc': return (
-      <g>
-        <rect x={cx-12} y={cy-16} width={24} height={28} rx={2} fill="none" stroke={c} strokeWidth={1.5} />
-        <line x1={cx-8} y1={cy-8}  x2={cx+8} y2={cy-8}  stroke={c} strokeWidth={1.2} />
-        <line x1={cx-8} y1={cy-2}  x2={cx+8} y2={cy-2}  stroke={c} strokeWidth={1.2} />
-        <line x1={cx-8} y1={cy+4}  x2={cx+4} y2={cy+4}  stroke={c} strokeWidth={1.2} />
-      </g>
-    )
-    case 'cafe': return (
-      <g>
-        {[-18,0,18].map(ox => (
-          <g key={ox} transform={`translate(${cx+ox},${cy-4})`}>
-            <rect x={-7} y={0} width={14} height={8} rx={1} fill={c} opacity={0.4} />
-            <line x1={-7} y1={8} x2={-7} y2={14} stroke={c} strokeWidth={1} />
-            <line x1={7}  y1={8} x2={7}  y2={14} stroke={c} strokeWidth={1} />
-            <line x1={-7} y1={14} x2={7} y2={14} stroke={c} strokeWidth={1} />
-          </g>
-        ))}
-      </g>
-    )
-    case 'reception': return (
-      <g>
-        <ellipse cx={cx} cy={cy+4} rx={20} ry={10} fill="none" stroke={c} strokeWidth={1.5} />
-        <circle cx={cx} cy={cy-8} r={7} fill="none" stroke={c} strokeWidth={1.5} />
-      </g>
-    )
-    case 'emergency': return (
-      <g>
-        <rect x={cx-16} y={cy-6} width={32} height={12} rx={2} fill={c} opacity={0.7} />
-        <rect x={cx-6} y={cy-16} width={12} height={32} rx={2} fill={c} opacity={0.7} />
-      </g>
-    )
-    case 'blood': return (
-      <g>
-        <path d={`M${cx},${cy-18} C${cx+14},${cy} ${cx+14},${cy+8} ${cx},${cy+16} C${cx-14},${cy+8} ${cx-14},${cy} ${cx},${cy-18}`}
-          fill={c} opacity={0.6} />
-      </g>
-    )
-    default: return null
-  }
+      {/* 8-Point Compass Star */}
+      {/* North */}
+      <polygon points={`0,0 -4,-${rSmall} 0,-${r}`} fill="#0F172A" />
+      <polygon points={`0,0 4,-${rSmall} 0,-${r}`}  fill="#94A3B8" />
+      {/* South */}
+      <polygon points={`0,0 4,${rSmall} 0,${r}`}   fill="#0F172A" />
+      <polygon points={`0,0 -4,${rSmall} 0,${r}`}  fill="#94A3B8" />
+      {/* East */}
+      <polygon points={`0,0 ${rSmall},-4 ${r},0`}  fill="#0F172A" />
+      <polygon points={`0,0 ${rSmall},4 ${r},0`}   fill="#94A3B8" />
+      {/* West */}
+      <polygon points={`0,0 -${rSmall},4 -${r},0`} fill="#0F172A" />
+      <polygon points={`0,0 -${rSmall},-4 -${r},0`}fill="#94A3B8" />
+
+      {/* Minor Intercardinal points */}
+      <polygon points={`0,0 0,-${rSmall * 0.8} ${rSmall * 0.8},-${rSmall * 0.8}`} fill="#64748B" opacity={0.6} />
+      <polygon points={`0,0 0,${rSmall * 0.8} ${rSmall * 0.8},${rSmall * 0.8}`}   fill="#64748B" opacity={0.6} />
+      <polygon points={`0,0 0,${rSmall * 0.8} -${rSmall * 0.8},${rSmall * 0.8}`}  fill="#64748B" opacity={0.6} />
+      <polygon points={`0,0 0,-${rSmall * 0.8} -${rSmall * 0.8},-${rSmall * 0.8}`} fill="#64748B" opacity={0.6} />
+
+      {/* Cardinal Labels */}
+      <text x={0} y={-(r + 14)} textAnchor="middle" dominantBaseline="middle" fontSize={14} fontWeight={800} fill="#0F172A">N</text>
+      <text x={0} y={r + 16}    textAnchor="middle" dominantBaseline="middle" fontSize={14} fontWeight={800} fill="#0F172A">S</text>
+      <text x={r + 16} y={1}    textAnchor="middle" dominantBaseline="middle" fontSize={14} fontWeight={800} fill="#0F172A">E</text>
+      <text x={-(r + 16)} y={1} textAnchor="middle" dominantBaseline="middle" fontSize={14} fontWeight={800} fill="#0F172A">W</text>
+    </g>
+  )
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
+// ── Main Map Component ──────────────────────────────────────────────────────
 export default function BuildingMap2D({
   building,
   rooms = [],
@@ -332,427 +397,699 @@ export default function BuildingMap2D({
   selectedRoom,
   compact = false,
 }) {
-  // Live hazard lookup
-  const hazardMap = Object.fromEntries((rooms || []).map(r => [r.room_id, r.current_hazard_level]))
+  const [hoveredRoom, setHoveredRoom] = useState(null)
 
-  // Route sets
+  // Map hazard levels by room_id
+  const hazardMap = Object.fromEntries(
+    (rooms || []).map(r => [r.room_id, r.current_hazard_level || 'NORMAL'])
+  )
+
   const routeNodes = new Set(route?.node_ids || [])
   const hasRoute   = route?.status === 'ROUTE_FOUND' && routeNodes.size > 0
 
-  // Build route polyline segments from consecutive node_ids
-  const routeSegments = []
-  if (hasRoute && route.node_ids && route.node_ids.length >= 2) {
-    for (let i = 0; i < route.node_ids.length - 1; i++) {
-      routeSegments.push({ from: route.node_ids[i], to: route.node_ids[i + 1] })
+  // Build clean corridor route polyline
+  const routePoints = []
+  if (hasRoute && route?.node_ids && route.node_ids.length > 0) {
+    for (const nodeId of route.node_ids) {
+      const pt = ROOM_ENTRY_POINTS[nodeId]
+      if (pt) routePoints.push(pt)
     }
   }
 
-  // Available exits
-  const availableExits = new Set(
-    (building?.exits || EXITS).filter(e => e.available !== false).map(e => e.exit_id || e.id)
-  )
-
-  const VW = 900, VH = 680
-
   return (
-    <div style={{
-      background: 'rgba(235,240,252,0.80)',
-      borderRadius: 'var(--radius-lg)',
-      border: '1px solid rgba(100,130,200,0.25)',
-      overflow: 'hidden',
-      position: 'relative',
-      width: '100%',
-      aspectRatio: compact ? '16/9' : `${VW}/${VH}`,
-      boxShadow: '0 4px 24px rgba(100,120,200,0.10), inset 0 1px 0 rgba(255,255,255,0.95)',
-    }}>
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: compact ? '16/10' : `${VW}/${VH}`,
+        background: '#F8FAFC',
+        borderRadius: 14,
+        overflow: 'hidden',
+        border: '1px solid #CBD5E1',
+        boxShadow: '0 4px 20px rgba(15, 23, 42, 0.06)',
+      }}
+    >
       <svg
         viewBox={`0 0 ${VW} ${VH}`}
         style={{ width: '100%', height: '100%', display: 'block' }}
         role="img"
         aria-label="Hospital Ground Floor 2D Plan"
       >
-        {/* ── Outer building background ───────────────────────────────────── */}
-        <rect x={0} y={0} width={VW} height={VH} fill="rgba(235,240,252,0.80)" />
-        <rect x={WALL.x} y={WALL.y} width={WALL.w} height={WALL.h}
-          rx={4} fill="rgba(245,248,255,0.90)" stroke="rgba(100,130,200,0.25)" strokeWidth={4} />
-
-        {/* ── Grid pattern ─────────────────────────────────────────────────── */}
         <defs>
-          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(100,130,200,0.08)" strokeWidth="0.5"/>
-          </pattern>
-          {/* Route arrow */}
-          <marker id="arr-route" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-            <polygon points="0 0, 8 4, 0 8" fill="#69B7FF" />
+          {/* Pulsing route line marker */}
+          <marker id="route-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <polygon points="0 1, 7 4, 0 7" fill="#0284C7" />
           </marker>
-          {/* Drop shadow */}
-          <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
-            <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.4" />
-          </filter>
-          {/* Selected room glow */}
-          <filter id="glow-selected" x="-10%" y="-10%" width="120%" height="120%">
-            <feGaussianBlur stdDeviation="3" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-          </filter>
+
+          {/* Pulse animations */}
+          <style>{`
+            @keyframes routeDash {
+              to { stroke-dashoffset: -24; }
+            }
+            @keyframes hazardPulse {
+              0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 4px rgba(225, 29, 72, 0.6)); }
+              50% { opacity: 0.35; filter: drop-shadow(0 0 12px rgba(225, 29, 72, 0.9)); }
+            }
+            @keyframes warningPulse {
+              0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 4px rgba(217, 119, 6, 0.6)); }
+              50% { opacity: 0.45; filter: drop-shadow(0 0 10px rgba(217, 119, 6, 0.8)); }
+            }
+          `}</style>
         </defs>
 
-        <rect x={0} y={0} width={VW} height={VH} fill="url(#grid)" />
+        {/* ── Background: Canvas ── */}
+        <rect x={0} y={0} width={VW} height={VH} fill="#F8FAFC" />
 
-        {/* ── Corridor strips ──────────────────────────────────────────────── */}
-        <rect x={WALL.x} y={CORRIDOR_TOP.y} width={WALL.w} height={CORRIDOR_TOP.h}
-          fill="rgba(100,130,200,0.06)" />
-        <rect x={WALL.x} y={CORRIDOR_BOTTOM.y} width={WALL.w} height={CORRIDOR_BOTTOM.h}
-          fill="rgba(100,130,200,0.06)" />
+        {/* ── Outer Building Envelope & Corridor Base ── */}
+        {/* The entire interior walkable corridor is crisp white */}
+        <rect
+          x={38} y={78} width={744} height={494}
+          fill="#FFFFFF"
+          stroke="#1E293B"
+          strokeWidth={4}
+          rx={2}
+        />
 
-        {/* Corridor centre dashed line */}
-        {[CORRIDOR_TOP, CORRIDOR_BOTTOM].map((c, i) => (
-          <line key={i}
-            x1={WALL.x + 10} y1={c.y + c.h / 2}
-            x2={WALL.x + WALL.w - 10} y2={c.y + c.h / 2}
-            stroke="rgba(91,155,245,0.25)" strokeWidth={1} strokeDasharray="10 8" />
-        ))}
-
-        {/* ── Green evacuation arrows on corridors ─────────────────────── */}
-        {!compact && [
-          // Top corridor arrows (left → right)
-          { x1:200, y1:208, x2:290, y2:208 },
-          { x1:370, y1:208, x2:460, y2:208 },
-          { x1:540, y1:208, x2:630, y2:208 },
-          // Bottom corridor arrows
-          { x1:195, y1:468, x2:280, y2:468 },
-          { x1:440, y1:468, x2:530, y2:468 },
-          { x1:620, y1:468, x2:710, y2:468 },
-        ].map((a, i) => (
-          <line key={i}
-            x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
-            stroke="rgba(105,183,255,0.3)" strokeWidth={2}
-            markerEnd="url(#arr-green)"
-            opacity={0.7}
-          />
-        ))}
-        <defs>
-          <marker id="arr-green" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-            <polygon points="0 0, 7 3.5, 0 7" fill="rgba(105,183,255,0.5)" />
-          </marker>
-        </defs>
-
-        {/* ── Room rectangles (draw FIRST so route goes on top) ────────── */}
-        {ROOMS.map(room => {
-          const hazard   = hazardMap[room.id]
-          const hData    = hazard && hazard !== 'UNKNOWN' ? HAZARD[hazard] : null
-          // Light theme: use hazard overlay or light default
-          const fillCol  = hData ? hData.fill : 'rgba(255,255,255,0.70)'
-          const bordCol  = hData ? hData.border : 'rgba(100,130,200,0.25)'
-          const textCol  = hData ? hData.textColor : '#4A5878'
-          const isOnRoute  = routeNodes.has(room.id)
+        {/* ── Room Rectangles ── */}
+        {ROOMS_DATA.map((room) => {
+          const hazard = hazardMap[room.id] || 'NORMAL'
+          const isCritical = hazard === 'CRITICAL'
+          const isWarning  = hazard === 'WARNING' || hazard === 'HIGH_RISK'
           const isSelected = selectedRoom === room.id
+          const isHovered  = hoveredRoom === room.id
+          const isOnRoute  = routeNodes.has(room.id)
+
+          let roomFill = room.fill
+          if (isCritical) roomFill = 'rgba(254, 205, 211, 0.85)'
+          else if (isWarning) roomFill = 'rgba(254, 240, 138, 0.85)'
 
           return (
             <g
               key={room.id}
               onClick={() => onRoomSelect?.(room.id)}
+              onMouseEnter={() => setHoveredRoom(room.id)}
+              onMouseLeave={() => setHoveredRoom(null)}
               style={{ cursor: onRoomSelect ? 'pointer' : 'default' }}
               role="button"
               tabIndex={0}
-              aria-label={`${room.label.join(' ')} — ${hazard || 'UNKNOWN'}`}
-              onKeyDown={e => e.key === 'Enter' && onRoomSelect?.(room.id)}
-              filter="url(#shadow)"
+              aria-label={`${room.name} — Hazard: ${hazard}`}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onRoomSelect?.(room.id)}
             >
-              {/* Main room fill */}
+              {/* Room Body */}
               <rect
-                x={room.x} y={room.y} width={room.w} height={room.h}
-                fill={fillCol}
-                stroke={isSelected ? '#69B7FF' : isOnRoute ? '#69B7FF' : bordCol}
-                strokeWidth={isSelected ? 3 : isOnRoute ? 3 : 1.5}
-                rx={0}
-                filter={isSelected ? 'url(#glow-selected)' : undefined}
+                x={room.x}
+                y={room.y}
+                width={room.w}
+                height={room.h}
+                fill={roomFill}
+                stroke={isSelected ? '#0284C7' : room.borderColor || '#1E293B'}
+                strokeWidth={isSelected ? 3.5 : room.borderWidth || 2.5}
+                style={{
+                  transition: 'fill 0.2s ease, stroke 0.2s ease',
+                  ...(isCritical ? { animation: 'hazardPulse 1.8s infinite' } : {}),
+                  ...(isWarning ? { animation: 'warningPulse 2.2s infinite' } : {}),
+                }}
               />
 
-              {/* Route highlight: accent border glow */}
-              {isOnRoute && !isSelected && (
+              {/* Selection / Route Glow Ring */}
+              {(isSelected || isOnRoute) && (
                 <rect
-                  x={room.x - 2} y={room.y - 2}
-                  width={room.w + 4} height={room.h + 4}
+                  x={room.x - 3}
+                  y={room.y - 3}
+                  width={room.w + 6}
+                  height={room.h + 6}
                   fill="none"
-                  stroke="#69B7FF"
-                  strokeWidth={4}
-                  opacity={0.3}
-                  rx={1}
-                />
-              )}
-
-              {/* Selected: accent highlight */}
-              {isSelected && (
-                <rect
-                  x={room.x - 2} y={room.y - 2}
-                  width={room.w + 4} height={room.h + 4}
-                  fill="rgba(105,183,255,0.06)"
-                  stroke="#69B7FF"
+                  stroke={isSelected ? '#0284C7' : '#38BDF8'}
                   strokeWidth={3}
-                  rx={1}
+                  strokeDasharray={isOnRoute && !isSelected ? '6 4' : 'none'}
+                  rx={2}
+                  opacity={0.8}
                 />
               )}
 
-              {/* Room icon */}
-              {!compact && (
-                <RoomIcon
-                  type={room.icon}
-                  cx={room.x + room.w / 2}
-                  cy={room.y + room.h * 0.62}
-                  color={textCol}
+              {/* Room Door Openings and Architectural Swings */}
+              {room.door && (
+                <ArchitecturalDoor
+                  x={room.door.x}
+                  y={room.door.y}
+                  size={room.door.size}
+                  orientation={room.door.orientation}
+                  swing={room.door.swing}
+                />
+              )}
+              {room.door2 && (
+                <ArchitecturalDoor
+                  x={room.door2.x}
+                  y={room.door2.y}
+                  size={room.door2.size}
+                  orientation={room.door2.orientation}
+                  swing={room.door2.swing}
                 />
               )}
 
-              {/* Room label */}
-              {room.label.map((line, i) => (
+              {/* Room Title & Label */}
+              {room.label && (
                 <text
-                  key={i}
                   x={room.x + room.w / 2}
-                  y={room.y + (compact ? room.h * 0.52 : room.h * 0.28) + i * (compact ? 11 : 13)}
+                  y={room.y + (room.label.length > 1 ? 22 : 26)}
                   textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontFamily="'Inter', 'Segoe UI', Arial, sans-serif"
-                  fontSize={compact ? Math.min(9, room.w / 10) : Math.min(11, room.w / 9)}
-                  fontWeight={600}
-                  fill={textCol}
+                  fontFamily="'Inter', system-ui, sans-serif"
+                  fontWeight={700}
+                  fontSize={room.w < 110 ? 10.5 : 12}
+                  fill="#0F172A"
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
-                  {line}
+                  {room.label[0]}
                 </text>
-              ))}
+              )}
+              {room.label && room.label.length > 1 && (
+                <text
+                  x={room.x + room.w / 2}
+                  y={room.y + 36}
+                  textAnchor="middle"
+                  fontFamily="'Inter', system-ui, sans-serif"
+                  fontWeight={600}
+                  fontSize={10.5}
+                  fill="#475569"
+                  style={{ pointerEvents: 'none', userSelect: 'none' }}
+                >
+                  {room.label[1]}
+                </text>
+              )}
 
-              {/* Hazard badge */}
-              {hData?.badge && (
+              {/* ── Room Specific Architectural Furniture / Icons ── */}
+              {/* ICU: 4 Beds */}
+              {room.type === 'icu' && (
                 <g>
-                  <rect
-                    x={room.x + room.w - 30} y={room.y + 4}
-                    width={26} height={13} rx={3}
-                    fill={bordCol} opacity={0.92}
-                  />
-                  <text
-                    x={room.x + room.w - 17} y={room.y + 11.5}
-                    textAnchor="middle" dominantBaseline="middle"
-                    fontSize={6.5} fontWeight={700} fill="#fff"
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
-                  >
-                    {hData.badge}
-                  </text>
+                  <HospitalBed x={room.x + 12} y={room.y + 55} width={26} height={26} color="#0284C7" />
+                  <HospitalBed x={room.x + 48} y={room.y + 55} width={26} height={26} color="#0284C7" />
+                  <HospitalBed x={room.x + 84} y={room.y + 55} width={26} height={26} color="#0284C7" />
+                  <HospitalBed x={room.x + 120} y={room.y + 55} width={26} height={26} color="#0284C7" />
                 </g>
               )}
 
-              {/* NORMAL green dot */}
-              {hazard === 'NORMAL' && (
-                <circle
-                  cx={room.x + room.w - 10} cy={room.y + 10}
-                  r={5} fill="#43C59E"
-                />
+              {/* Isolation Room: 1 Bed */}
+              {room.type === 'isolation' && (
+                <g>
+                  <HospitalBed x={room.x + 32} y={room.y + 55} width={30} height={28} color="#9333EA" />
+                </g>
+              )}
+
+              {/* Patient Room: 2 Beds */}
+              {room.type === 'patient' && (
+                <g>
+                  <HospitalBed x={room.x + 30} y={room.y + 55} width={30} height={28} color="#0284C7" />
+                  <HospitalBed x={room.x + 82} y={room.y + 55} width={30} height={28} color="#0284C7" />
+                </g>
+              )}
+
+              {/* Operating Theatre (OT): Surgical lamp & table */}
+              {room.type === 'ot' && (
+                <g transform={`translate(${room.x + room.w / 2},${room.y + 70})`}>
+                  {/* Surgical Lamp */}
+                  <circle cx={0} cy={-12} r={14} fill="#16A34A" opacity={0.2} />
+                  <circle cx={0} cy={-12} r={9}  fill="#15803D" stroke="#0F172A" strokeWidth={1.5} />
+                  <line x1={0} y1={-25} x2={0} y2={-12} stroke="#0F172A" strokeWidth={2} />
+                  {/* Lamp light cone lines */}
+                  <line x1={-8} y1={-12} x2={-14} y2={0} stroke="#15803D" strokeWidth={1} strokeDasharray="2 1" />
+                  <line x1={8}  y1={-12} x2={14}  y2={0} stroke="#15803D" strokeWidth={1} strokeDasharray="2 1" />
+                  {/* Operating Table */}
+                  <rect x={-22} y={-2} width={44} height={14} rx={3} fill="#059669" stroke="#047857" strokeWidth={1.2} />
+                  <rect x={-4}  y={12} width={8}  height={8} rx={1} fill="#0F172A" />
+                </g>
+              )}
+
+              {/* Radiology (X-Ray): Navy square with skeleton ribcage */}
+              {room.type === 'radiology' && (
+                <g transform={`translate(${room.x + room.w / 2 - 18},${room.y + 50})`}>
+                  <rect x={0} y={0} width={36} height={40} rx={4} fill="#1E293B" stroke="#0F172A" strokeWidth={1.5} />
+                  {/* Spine */}
+                  <line x1={18} y1={6} x2={18} y2={34} stroke="#F8FAFC" strokeWidth={2} />
+                  {/* Ribs */}
+                  <path d="M12,12 Q18,9 24,12" stroke="#F8FAFC" strokeWidth={1.6} fill="none" />
+                  <path d="M10,17 Q18,14 26,17" stroke="#F8FAFC" strokeWidth={1.6} fill="none" />
+                  <path d="M11,22 Q18,19 25,22" stroke="#F8FAFC" strokeWidth={1.6} fill="none" />
+                  <path d="M13,27 Q18,24 23,27" stroke="#F8FAFC" strokeWidth={1.6} fill="none" />
+                </g>
+              )}
+
+              {/* Lab: Science Erlenmeyer Flask */}
+              {room.type === 'lab' && (
+                <g transform={`translate(${room.x + room.w / 2},${room.y + 68})`}>
+                  {/* Flask Body */}
+                  <polygon points="-16,18 16,18 5,-8 5,-16 -5,-16 -5,-8" fill="#EDE9FE" stroke="#6B21A8" strokeWidth={1.8} />
+                  {/* Liquid */}
+                  <polygon points="-13,15 13,15 8,7 -8,7" fill="#8B5CF6" opacity={0.65} />
+                  {/* Top rim */}
+                  <rect x={-7} y={-18} width={14} height={3} rx={1} fill="#6B21A8" />
+                  {/* Bubbles */}
+                  <circle cx={-2} cy={9} r={1.8} fill="#FFFFFF" />
+                  <circle cx={4}  cy={12} r={1.2} fill="#FFFFFF" />
+                </g>
+              )}
+
+              {/* Cafeteria: Dining Table with 4 Chairs */}
+              {room.type === 'cafeteria' && (
+                <g transform={`translate(${room.x + room.w / 2},${room.y + 68})`}>
+                  {/* Table */}
+                  <rect x={-20} y={-10} width={40} height={20} rx={2} fill="#059669" stroke="#047857" strokeWidth={1.5} />
+                  {/* Top Chair */}
+                  <rect x={-10} y={-17} width={20} height={4} rx={1} fill="#0F172A" />
+                  <line x1={-8} y1={-13} x2={-8} y2={-10} stroke="#0F172A" strokeWidth={1.5} />
+                  <line x1={8}  y1={-13} x2={8}  y2={-10} stroke="#0F172A" strokeWidth={1.5} />
+                  {/* Bottom Chair */}
+                  <rect x={-10} y={13} width={20} height={4} rx={1} fill="#0F172A" />
+                  <line x1={-8} y1={10} x2={-8} y2={13} stroke="#0F172A" strokeWidth={1.5} />
+                  <line x1={8}  y1={10} x2={8}  y2={13} stroke="#0F172A" strokeWidth={1.5} />
+                  {/* Left Chair */}
+                  <rect x={-27} y={-5} width={4} height={10} rx={1} fill="#0F172A" />
+                  <line x1={-23} y1={0} x2={-20} y2={0} stroke="#0F172A" strokeWidth={1.5} />
+                  {/* Right Chair */}
+                  <rect x={23} y={-5} width={4} height={10} rx={1} fill="#0F172A" />
+                  <line x1={20} y1={0} x2={23} y2={0} stroke="#0F172A" strokeWidth={1.5} />
+                </g>
+              )}
+
+              {/* Pharmacy: Angled Medicine Capsule */}
+              {room.type === 'pharmacy' && (
+                <g transform={`translate(${room.x + room.w / 2},${room.y + 110}) rotate(-45)`}>
+                  <rect x={-12} y={-24} width={24} height={24} rx={12} fill="#0284C7" stroke="#0F172A" strokeWidth={1.5} />
+                  <rect x={-12} y={0}   width={24} height={24} rx={12} fill="#FFFFFF" stroke="#0F172A" strokeWidth={1.5} />
+                  <line x1={-12} y1={0} x2={12} y2={0} stroke="#0F172A" strokeWidth={2} />
+                </g>
+              )}
+
+              {/* Waiting Area: 8 Chairs & 2 Plants */}
+              {room.type === 'waiting_area' && (
+                <g>
+                  {/* Left & Right Potted Plants */}
+                  <PottedPlant x={room.x + 18} y={room.y + 115} />
+                  <PottedPlant x={room.x + room.w - 18} y={room.y + 115} />
+
+                  {/* Top Row: 4 Chairs */}
+                  <WaitingChair x={room.x + 42} y={room.y + 95} color="#0284C7" />
+                  <WaitingChair x={room.x + 68} y={room.y + 95} color="#0284C7" />
+                  <WaitingChair x={room.x + 94} y={room.y + 95} color="#0284C7" />
+                  <WaitingChair x={room.x + 120} y={room.y + 95} color="#0284C7" />
+
+                  {/* Bottom Row: 4 Chairs */}
+                  <WaitingChair x={room.x + 42} y={room.y + 138} color="#0284C7" />
+                  <WaitingChair x={room.x + 68} y={room.y + 138} color="#0284C7" />
+                  <WaitingChair x={room.x + 94} y={room.y + 138} color="#0284C7" />
+                  <WaitingChair x={room.x + 120} y={room.y + 138} color="#0284C7" />
+                </g>
+              )}
+
+              {/* Administration: Desk with Person */}
+              {room.type === 'admin' && (
+                <g transform={`translate(${room.x + room.w / 2},${room.y + 60})`}>
+                  {/* Person */}
+                  <circle cx={0} cy={-12} r={6} fill="#0F172A" />
+                  <path d="M-8,-2 Q0,-7 8,-2 L6,2 L-6,2 Z" fill="#0F172A" />
+                  {/* Desk */}
+                  <rect x={-20} y={2} width={40} height={12} rx={2} fill="#B45309" stroke="#78350F" strokeWidth={1.2} />
+                  {/* Computer Monitor */}
+                  <rect x={-5} y={-3} width={10} height={5} rx={1} fill="#38BDF8" stroke="#0F172A" strokeWidth={0.8} />
+                </g>
+              )}
+
+              {/* Records: Document Icon */}
+              {room.type === 'records' && (
+                <g transform={`translate(${room.x + room.w / 2 - 12},${room.y + 50})`}>
+                  {/* Paper sheet with folded top-right corner */}
+                  <polygon points="0,0 16,0 24,8 24,30 0,30" fill="#FFFFFF" stroke="#0F172A" strokeWidth={1.5} />
+                  <polygon points="16,0 16,8 24,8" fill="#E2E8F0" stroke="#0F172A" strokeWidth={1.2} />
+                  {/* Lines of text */}
+                  <line x1={4}  y1={12} x2={20} y2={12} stroke="#64748B" strokeWidth={1.5} strokeLinecap="round" />
+                  <line x1={4}  y1={17} x2={20} y2={17} stroke="#64748B" strokeWidth={1.5} strokeLinecap="round" />
+                  <line x1={4}  y1={22} x2={14} y2={22} stroke="#64748B" strokeWidth={1.5} strokeLinecap="round" />
+                </g>
+              )}
+
+              {/* General Ward: 6 Beds (2 rows of 3) */}
+              {room.type === 'general_ward' && (
+                <g>
+                  {/* Row 1 */}
+                  <HospitalBed x={room.x + 22} y={room.y + 48} width={26} height={24} color="#EA580C" />
+                  <HospitalBed x={room.x + 75} y={room.y + 48} width={26} height={24} color="#EA580C" />
+                  <HospitalBed x={room.x + 128} y={room.y + 48} width={26} height={24} color="#EA580C" />
+                  {/* Row 2 */}
+                  <HospitalBed x={room.x + 22} y={room.y + 82} width={26} height={24} color="#EA580C" />
+                  <HospitalBed x={room.x + 75} y={room.y + 82} width={26} height={24} color="#EA580C" />
+                  <HospitalBed x={room.x + 128} y={room.y + 82} width={26} height={24} color="#EA580C" />
+                </g>
+              )}
+
+              {/* Maternity Ward: 4 Beds in 1 row */}
+              {room.type === 'maternity_ward' && (
+                <g>
+                  <HospitalBed x={room.x + 16} y={room.y + 58} width={26} height={26} color="#EA580C" />
+                  <HospitalBed x={room.x + 56} y={room.y + 58} width={26} height={26} color="#EA580C" />
+                  <HospitalBed x={room.x + 96} y={room.y + 58} width={26} height={26} color="#EA580C" />
+                  <HospitalBed x={room.x + 136} y={room.y + 58} width={26} height={26} color="#EA580C" />
+                </g>
+              )}
+
+              {/* Blood Bank: Dark Blue Blood Drop */}
+              {room.type === 'blood_bank' && (
+                <g transform={`translate(${room.x + room.w / 2},${room.y + 66})`}>
+                  <path
+                    d="M0,-16 C12,-4 14,8 0,16 C-14,8 -12,-4 0,-16 Z"
+                    fill="#0284C7"
+                    stroke="#0369A1"
+                    strokeWidth={1.5}
+                  />
+                  {/* Shine reflection */}
+                  <ellipse cx={-3} cy={3} rx={2} ry={5} fill="#BAE6FD" opacity={0.6} transform="rotate(-20)" />
+                </g>
+              )}
+
+              {/* Main Lobby & Reception: Reception Counter & Person */}
+              {room.type === 'main_lobby' && (
+                <g transform={`translate(${room.x + room.w / 2},${room.y + 60})`}>
+                  {/* Receptionist */}
+                  <circle cx={0} cy={-12} r={6} fill="#0F172A" />
+                  <path d="M-8,-3 Q0,-8 8,-3 L6,3 L-6,3 Z" fill="#0F172A" />
+                  {/* Reception desk with curve */}
+                  <rect x={-26} y={0} width={52} height={14} rx={3} fill="#0284C7" stroke="#0369A1" strokeWidth={1.5} />
+                  <rect x={-18} y={3} width={36} height={8} rx={1} fill="#38BDF8" opacity={0.5} />
+                </g>
+              )}
+
+              {/* Emergency Department: Hospital Bed with Medical Cross */}
+              {room.type === 'emergency_dept' && (
+                <g transform={`translate(${room.x + room.w / 2},${room.y + 60})`}>
+                  {/* Medical Blue Cross */}
+                  <path
+                    d="M-4,-18 L4,-18 L4,-12 L10,-12 L10,-4 L4,-4 L4,2 L-4,2 L-4,-4 L-10,-4 L-10,-12 L-4,-12 Z"
+                    fill="#2563EB"
+                  />
+                  {/* Gurney / Bed */}
+                  <HospitalBed x={-18} y={2} width={36} height={20} color="#6D28D9" />
+                </g>
+              )}
+
+              {/* Hazard Alert Badge on Room */}
+              {hazard !== 'NORMAL' && (
+                <g transform={`translate(${room.x + room.w - 38},${room.y + 6})`}>
+                  <rect
+                    x={0} y={0} width={32} height={15} rx={3}
+                    fill={isCritical ? '#E11D48' : '#D97706'}
+                    stroke="#FFFFFF" strokeWidth={1}
+                  />
+                  <text
+                    x={16} y={11}
+                    textAnchor="middle"
+                    fontSize={8.5} fontWeight={800} fill="#FFFFFF"
+                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                  >
+                    {isCritical ? 'CRIT' : 'WARN'}
+                  </text>
+                </g>
               )}
             </g>
           )
         })}
 
-        {/* ── Door arcs (decorative) ────────────────────────────────────── */}
-        {!compact && [
-          // Top corridor door arcs
-          { cx:175, cy:190, r:16, start:180, end:270 },
-          { cx:185, cy:190, r:16, start:270, end:360 },
-          { cx:320, cy:190, r:16, start:180, end:270 },
-          { cx:330, cy:190, r:16, start:270, end:360 },
-          { cx:465, cy:190, r:16, start:180, end:270 },
-          { cx:475, cy:190, r:16, start:270, end:360 },
-          // Bottom corridor door arcs
-          { cx:210, cy:450, r:16, start:90,  end:180 },
-          { cx:220, cy:450, r:16, start:0,   end:90  },
-          { cx:430, cy:450, r:16, start:90,  end:180 },
-          { cx:440, cy:450, r:16, start:0,   end:90  },
-        ].map((arc, i) => {
-          const rad = Math.PI / 180
-          const x1  = arc.cx + arc.r * Math.cos(arc.start * rad)
-          const y1  = arc.cy + arc.r * Math.sin(arc.start * rad)
-          const x2  = arc.cx + arc.r * Math.cos(arc.end   * rad)
-          const y2  = arc.cy + arc.r * Math.sin(arc.end   * rad)
-          return (
-            <path key={i}
-              d={`M${x1},${y1} A${arc.r},${arc.r} 0 0,1 ${x2},${y2}`}
-              fill="none" stroke="rgba(100,130,200,0.30)" strokeWidth={2}
-              aria-hidden="true"
-            />
-          )
-        })}
+        {/* ── Corridors & Safety Infrastructure Overlays ── */}
 
-        {/* ── Fire extinguishers ────────────────────────────────────────── */}
-        {!compact && [
-          { x:180, y:194 }, { x:328, y:194 }, { x:483, y:194 }, { x:658, y:194 },
-          { x:218, y:452 }, { x:438, y:452 }, { x:658, y:452 },
-        ].map((f, i) => (
-          <g key={i} aria-hidden="true">
-            <rect x={f.x-3} y={f.y-8}  width={6} height={12} rx={1} fill="#FF5D6C" opacity={0.7} />
-            <rect x={f.x-5} y={f.y-10} width={10} height={4} rx={1} fill="#FF5D6C" opacity={0.5} />
-            <line x1={f.x} y1={f.y-10} x2={f.x+5} y2={f.y-14} stroke="#FF8A4C" strokeWidth={1.5} />
+        {/* Green Evacuation Route Arrows on Corridors */}
+        <g id="evacuation-arrows" opacity={0.92}>
+          {/* Top Corridor: Moving right toward NE Exit */}
+          <EvacuationArrow x={175} y={218} direction="right" />
+          <EvacuationArrow x={345} y={218} direction="right" />
+          <EvacuationArrow x={570} y={218} direction="right" />
+
+          {/* Right Corridor: Moving down toward SE Exit */}
+          <EvacuationArrow x={578} y={305} direction="down" />
+          <EvacuationArrow x={578} y={415} direction="down" />
+
+          {/* Left Corridor: Moving up */}
+          <EvacuationArrow x={172} y={305} direction="up" />
+
+          {/* Bottom Corridor: Moving right */}
+          <EvacuationArrow x={235} y={515} direction="right" />
+          <EvacuationArrow x={605} y={515} direction="right" />
+
+          {/* Main Entrance: Moving up into Lobby */}
+          <EvacuationArrow x={365} y={588} direction="up" />
+        </g>
+
+        {/* Fire Extinguishers (Mounted on Walls) */}
+        <g id="fire-extinguishers">
+          <FireExtinguisher x={105} y={210} />
+          <FireExtinguisher x={485} y={210} />
+          <FireExtinguisher x={145} y={410} />
+          <FireExtinguisher x={535} y={360} />
+          <FireExtinguisher x={535} y={455} />
+          <FireExtinguisher x={535} y={548} />
+          <FireExtinguisher x={295} y={555} />
+          <FireExtinguisher x={435} y={555} />
+        </g>
+
+        {/* Fire Alarm Target Bell Call Point */}
+        <g id="fire-alarms">
+          <FireAlarmCallPoint x={655} y={218} />
+        </g>
+
+        {/* ── Main Entrance Vestibule & Steps ── */}
+        <g id="main-entrance">
+          {/* Steps */}
+          <rect x={305} y={570} width={120} height={14} fill="#E2E8F0" stroke="#1E293B" strokeWidth={1.5} />
+          <rect x={300} y={584} width={130} height={14} fill="#CBD5E1" stroke="#1E293B" strokeWidth={1.5} />
+          <rect x={295} y={598} width={140} height={16} fill="#94A3B8" stroke="#1E293B" strokeWidth={1.5} />
+
+          {/* Potted bushes beside entrance stairs */}
+          <PottedPlant x={282} y={596} />
+          <PottedPlant x={448} y={596} />
+
+          {/* Double entrance doors opening inward */}
+          <line x1={345} y1={570} x2={345} y2={546} stroke="#1E293B" strokeWidth={2} />
+          <path d="M 365 570 A 20 20 0 0 1 345 546" fill="none" stroke="#64748B" strokeWidth={1} strokeDasharray="3 2" />
+          <line x1={385} y1={570} x2={385} y2={546} stroke="#1E293B" strokeWidth={2} />
+          <path d="M 365 570 A 20 20 0 0 0 385 546" fill="none" stroke="#64748B" strokeWidth={1} strokeDasharray="3 2" />
+
+          {/* Green Entrance Sign with Up Arrow */}
+          <g transform="translate(325, 620)">
+            <rect x={0} y={0} width={80} height={20} rx={3} fill="#15803D" stroke="#065F46" strokeWidth={1.2} />
+            <text x={40} y={14} textAnchor="middle" fontSize={9} fontWeight={800} fill="#FFFFFF">
+              Main Entrance
+            </text>
           </g>
-        ))}
+        </g>
 
-        {/* ── Fire alarm (red circle) ───────────────────────────────────── */}
-        {!compact && (
-          <g aria-hidden="true">
-            <circle cx={658} cy={190} r={7} fill="#FF5D6C" stroke="#FF8A4C" strokeWidth={1.5} opacity={0.8} />
-            <circle cx={658} cy={190} r={4} fill="none" stroke="rgba(255,93,108,0.3)" strokeWidth={1} />
-          </g>
-        )}
-
-        {/* ── ROUTE OVERLAY (polyline through corridors) ────────────────── */}
-        {routeSegments.map((seg, i) => {
-          const pts = buildRoutePath(seg.from, seg.to)
-          return (
-            <polyline
-              key={i}
-              points={pts}
-              fill="none"
-              stroke="#69B7FF"
-              strokeWidth={4}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              strokeDasharray="8 4"
-              markerEnd="url(#arr-route)"
-              opacity={0.92}
-              style={{ animation: 'routePulse 1.5s linear infinite' }}
-            />
-          )
-        })}
-
-        {/* Route origin pulse ring */}
-        {hasRoute && route.node_ids?.[0] && (() => {
-          const c = getCenter(route.node_ids[0])
-          return (
-            <circle cx={c.x} cy={c.y} r={10}
-              fill="rgba(105,183,255,0.15)"
-              stroke="#69B7FF" strokeWidth={2.5}
-            />
-          )
-        })()}
-
-        {/* ── Exit signs ───────────────────────────────────────────────── */}
-        {EXITS.map(exit => {
-          const available = availableExits.has(exit.id)
-          const onRoute   = routeNodes.has(exit.id)
-          const bg        = onRoute ? 'rgba(105,183,255,0.25)' : available ? 'rgba(105,183,255,0.15)' : 'rgba(255,93,108,0.15)'
-          const bc        = onRoute ? '#69B7FF' : available ? '#69B7FF' : '#FF5D6C'
-          const tc        = onRoute ? '#69B7FF' : available ? '#69B7FF' : '#FF5D6C'
-          const lines     = exit.label.split('\n')
-
-          // Position: 80×40 badge
-          let bx, by
-          if (exit.side === 'tl') { bx = WALL.x;          by = WALL.y }
-          if (exit.side === 'tr') { bx = WALL.x+WALL.w-80; by = WALL.y }
-          if (exit.side === 'bl') { bx = WALL.x;           by = WALL.y+WALL.h-40 }
-          if (exit.side === 'bc') { bx = exit.x - 40;      by = WALL.y+WALL.h }
-          if (exit.side === 'br') { bx = WALL.x+WALL.w-80; by = WALL.y+WALL.h-40 }
+        {/* ── Emergency Exit Signs (Corners) ── */}
+        {EXITS.map((exit) => {
+          if (exit.id === 'EXIT-S') return null // rendered with Main Entrance
 
           return (
-            <g key={exit.id} aria-label={`${exit.id} — ${available ? 'available' : 'unavailable'}`}>
-              <rect x={bx} y={by} width={80} height={40} rx={4}
-                fill={bg} stroke={bc} strokeWidth={onRoute ? 2.5 : 1.5} />
-              {/* Running-person icon */}
-              <g transform={`translate(${bx+8},${by+6})`} fill={tc} aria-hidden="true">
-                <circle cx={8}  cy={4}  r={3} />
-                <path d="M5 8 L2 16 L6 16 L8 12 L10 16 L14 16 L11 8 L14 5 L9 5 Z" />
+            <g key={exit.id} transform={`translate(${exit.x},${exit.y})`}>
+              {/* Badge Background */}
+              <rect
+                x={0} y={0} width={exit.w} height={exit.h} rx={4}
+                fill="#15803D" stroke="#065F46" strokeWidth={1.5}
+                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
+              />
+              {/* Running person icon */}
+              <g transform="translate(6, 4)" fill="#FFFFFF">
+                <circle cx={7} cy={5} r={3} />
+                <path d="M4,10 L1,18 L5,18 L7,13 L10,18 L14,18 L11,10 L13,7 L8,7 Z" />
               </g>
-              {lines.map((l, i) => (
-                <text key={i}
-                  x={bx + 48} y={by + 12 + i * 12}
-                  textAnchor="middle" dominantBaseline="middle"
-                  fontFamily="'Inter', 'Segoe UI', Arial, sans-serif"
-                  fontSize={compact ? 7 : 8.5} fontWeight={700} fill={tc}
-                  style={{ pointerEvents: 'none', userSelect: 'none' }}
-                >
-                  {l}
-                </text>
-              ))}
+              {/* Exit door frame icon */}
+              <rect x={18} y={6} width={10} height={20} rx={1} fill="none" stroke="#FFFFFF" strokeWidth={1.5} />
+              {/* Exit Label */}
+              <text x={64} y={15} textAnchor="middle" fontSize={9.5} fontWeight={800} fill="#FFFFFF">
+                Emergency
+              </text>
+              <text x={64} y={25} textAnchor="middle" fontSize={9.5} fontWeight={800} fill="#FFFFFF">
+                Exit
+              </text>
+
+              {/* Outer door connection to building wall */}
+              {exit.id === 'EXIT-NW' && (
+                <line x1={exit.w - 15} y1={exit.h} x2={exit.w - 15} y2={exit.h + 10} stroke="#1E293B" strokeWidth={2.5} />
+              )}
+              {exit.id === 'EXIT-NE' && (
+                <line x1={15} y1={exit.h} x2={15} y2={exit.h + 10} stroke="#1E293B" strokeWidth={2.5} />
+              )}
             </g>
           )
         })}
 
-        {/* ── Main Entrance (bottom centre) ────────────────────────────── */}
-        {!compact && (
-          <g aria-label="Main Entrance">
-            {/* Entrance steps */}
-            <rect x={330} y={660} width={120} height={18} rx={3}
-              fill="rgba(105,183,255,0.2)" stroke="#69B7FF" strokeWidth={2} />
-            <text x={390} y={673}
-              textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
-              fontSize={9} fontWeight={700} fill="#69B7FF"
-              style={{ pointerEvents:'none', userSelect:'none' }}>
-              Main Entrance
-            </text>
-            {/* Bushes */}
-            {[316, 454].map((bx, i) => (
-              <g key={i}>
-                <circle cx={bx} cy={668} r={9} fill="rgba(67,197,158,0.3)" opacity={0.8} />
-                <circle cx={bx+4} cy={663} r={7} fill="rgba(67,197,158,0.5)" opacity={0.8} />
-              </g>
-            ))}
+        {/* ── Real-Time Dynamic Route Line (Corridor Path) ── */}
+        {hasRoute && routePoints.length >= 2 && (
+          <g id="live-evacuation-route">
+            <polyline
+              points={routePoints.map(p => `${p.x},${p.y}`).join(' ')}
+              fill="none"
+              stroke="#0284C7"
+              strokeWidth={5}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              strokeDasharray="10 6"
+              markerEnd="url(#route-arrow)"
+              style={{
+                animation: 'routeDash 1s linear infinite',
+                filter: 'drop-shadow(0 0 6px rgba(2, 132, 199, 0.8))',
+              }}
+            />
+            {/* Origin Node Pulse */}
+            <circle
+              cx={routePoints[0].x}
+              cy={routePoints[0].y}
+              r={9}
+              fill="rgba(2, 132, 199, 0.3)"
+              stroke="#0284C7"
+              strokeWidth={2.5}
+            />
+            {/* Destination Exit Pulse */}
+            <circle
+              cx={routePoints[routePoints.length - 1].x}
+              cy={routePoints[routePoints.length - 1].y}
+              r={11}
+              fill="rgba(22, 163, 74, 0.4)"
+              stroke="#16A34A"
+              strokeWidth={3}
+            />
           </g>
         )}
 
-        {/* ── No-route overlay ─────────────────────────────────────────── */}
-        {(route?.status === 'NO_VALID_ROUTE' || route?.status === 'NO_AVAILABLE_EXIT') && (
-          <g>
-            <rect x={220} y={290} width={460} height={70} rx={8}
-              fill="rgba(255,93,108,0.12)" stroke="#FF5D6C" strokeWidth={2} />
-            <text x={450} y={318}
-              textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
-              fontSize={15} fontWeight={700} fill="#FF5D6C">
-              {route.status === 'NO_AVAILABLE_EXIT' ? '✕ No Available Exit' : '✕ No Valid Evacuation Route'}
-            </text>
-            <text x={450} y={342}
-              textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
-              fontSize={10} fill="#FF8A4C">
-              {route.status === 'NO_AVAILABLE_EXIT'
-                ? 'All exits are marked unavailable'
-                : 'All paths to exits are blocked or unsafe'}
-            </text>
-          </g>
-        )}
+        {/* ── Top Title Box ── */}
+        <g transform="translate(260, 15)">
+          <rect
+            x={0} y={0} width={300} height={46} rx={8}
+            fill="#EFF6FF"
+            stroke="#2563EB"
+            strokeWidth={2}
+            filter="drop-shadow(0 2px 6px rgba(37, 99, 235, 0.15))"
+          />
+          <text
+            x={150} y={20}
+            textAnchor="middle"
+            fontFamily="'Inter', system-ui, sans-serif"
+            fontSize={15} fontWeight={800} fill="#1E3A8A"
+          >
+            Hospital – 2D Floor Map
+          </text>
+          <text
+            x={150} y={36}
+            textAnchor="middle"
+            fontFamily="'Inter', system-ui, sans-serif"
+            fontSize={12} fontWeight={700} fill="#1E40AF"
+          >
+            (Ground Floor)
+          </text>
+        </g>
 
-        {/* ── Title (non-compact) ───────────────────────────────────────── */}
-        {!compact && (
-          <g>
-            <rect x={290} y={0} width={320} height={28} rx={4}
-              fill="rgba(105,183,255,0.1)" stroke="rgba(105,183,255,0.3)" strokeWidth={1.5} />
-            <text x={450} y={10}
-              textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
-              fontSize={11} fontWeight={700} fill="#69B7FF">
-              Hospital – 2D Floor Map
-            </text>
-            <text x={450} y={21}
-              textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Inter', 'Segoe UI',Arial,sans-serif"
-              fontSize={8} fill="#4A5878">
-              (Ground Floor)
-            </text>
-          </g>
-        )}
+        {/* ── Legend Box (Right Side) ── */}
+        <g transform="translate(820, 75)">
+          {/* Legend Border Card */}
+          <rect
+            x={0} y={0} width={180} height={425} rx={8}
+            fill="#FFFFFF"
+            stroke="#2563EB"
+            strokeWidth={2}
+            filter="drop-shadow(0 4px 12px rgba(37, 99, 235, 0.10))"
+          />
+          <text
+            x={14} y={25}
+            fontFamily="'Inter', system-ui, sans-serif"
+            fontSize={15} fontWeight={800} fill="#1E3A8A"
+          >
+            Legend
+          </text>
 
-        {/* ── Compass rose ──────────────────────────────────────────────── */}
-        {!compact && (
-          <g transform="translate(858,658)" aria-hidden="true">
-            <circle cx={0} cy={0} r={16} fill="rgba(105,183,255,0.08)" stroke="rgba(105,183,255,0.2)" strokeWidth={1} />
-            {[['N',0,-13],['S',0,13],['E',13,0],['W',-13,0]].map(([l,dx,dy]) => (
-              <text key={l} x={dx} y={dy}
-                textAnchor="middle" dominantBaseline="middle"
-                fontSize={7} fontWeight={700} fill="#4A5878">
-                {l}
+          {/* Legend Items */}
+          {[
+            { label: 'Patient Room / Ward', color: '#FDD9CC' },
+            { label: 'ICU / Critical Care', color: '#BEE3F8' },
+            { label: 'Operating Theatre', color: '#D5EEDB' },
+            { label: 'Diagnostic (Imaging / Lab)', color: '#EAD6F4' },
+            { label: 'Administration / Records', color: '#FFF2D1' },
+            { label: 'Support Services', color: '#CCEBFB' },
+            { label: 'Emergency / Trauma', color: '#E2DAF7' },
+            { label: 'Food / Cafeteria', color: '#D5EEDB' },
+            { label: 'Stairs', color: '#CBD5E1' },
+          ].map((item, i) => (
+            <g key={item.label} transform={`translate(14, ${45 + i * 24})`}>
+              <rect x={0} y={0} width={20} height={14} rx={2} fill={item.color} stroke="#1E293B" strokeWidth={0.8} />
+              <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">
+                {item.label}
               </text>
-            ))}
-            <polygon points="0,-10 2,-3 0,-6 -2,-3" fill="#FF5D6C" />
-            <polygon points="0,10 2,3 0,6 -2,3"   fill="#9AA7BA" />
+            </g>
+          ))}
+
+          {/* Emergency Exit icon item */}
+          <g transform="translate(14, 265)">
+            <rect x={0} y={0} width={20} height={14} rx={2} fill="#15803D" />
+            <path d="M4,10 L2,12 L5,12 L6,9 L8,12 L11,12 L9,7 Z" fill="#FFFFFF" />
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Emergency Exit</text>
           </g>
-        )}
+
+          {/* Evacuation Route arrow item */}
+          <g transform="translate(14, 290)">
+            <line x1={0} y1={7} x2={16} y2={7} stroke="#15803D" strokeWidth={3} strokeLinecap="round" />
+            <polygon points="14,3 20,7 14,11" fill="#15803D" />
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Evacuation Route</text>
+          </g>
+
+          {/* Fire Extinguisher icon item */}
+          <g transform="translate(14, 315)">
+            <rect x={6} y={0} width={8} height={14} rx={2} fill="#DC2626" />
+            <line x1={7} y1={-2} x2={13} y2={-2} stroke="#0F172A" strokeWidth={1} />
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Fire Extinguisher</text>
+          </g>
+
+          {/* Fire Alarm icon item */}
+          <g transform="translate(14, 340)">
+            <circle cx={10} cy={7} r={6.5} fill="#DC2626" stroke="#991B1B" strokeWidth={1} />
+            <circle cx={10} cy={7} r={4} fill="#FFFFFF" />
+            <circle cx={10} cy={7} r={2} fill="#DC2626" />
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Fire Alarm</text>
+          </g>
+        </g>
+
+        {/* ── Compass Rose (Bottom Right) ── */}
+        <CompassRose cx={910} cy={565} size={34} />
       </svg>
+
+      {/* Floating Selected Room Info Toast */}
+      {selectedRoom && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 16,
+            left: 16,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid #CBD5E1',
+            borderRadius: 8,
+            padding: '8px 14px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            fontSize: 12,
+            zIndex: 10,
+          }}
+        >
+          <span style={{ fontWeight: 700, color: '#0F172A' }}>
+            Selected: {ROOMS_DATA.find(r => r.id === selectedRoom)?.name || selectedRoom}
+          </span>
+          <span
+            style={{
+              padding: '2px 8px',
+              borderRadius: 999,
+              fontSize: 10,
+              fontWeight: 700,
+              background: hazardMap[selectedRoom] === 'CRITICAL' ? '#FFE4E6' : hazardMap[selectedRoom] === 'WARNING' ? '#FEF3C7' : '#DCFCE7',
+              color: hazardMap[selectedRoom] === 'CRITICAL' ? '#BE123C' : hazardMap[selectedRoom] === 'WARNING' ? '#B45309' : '#15803D',
+            }}
+          >
+            {hazardMap[selectedRoom] || 'NORMAL'}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

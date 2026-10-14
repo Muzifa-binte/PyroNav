@@ -1,39 +1,58 @@
 import React from 'react'
 
-const SEVERITY_COLORS = {
-  CRITICAL: '#E84D6A',
-  HIGH_RISK: '#F56E3B',
-  WARNING: '#F5A623',
-  NORMAL: '#22C987',
+const SEVERITY_THEMES = {
+  NORMAL: {
+    color: '#059669',
+    bgColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    accent: '#10B981',
+    badge: 'NORMAL',
+  },
+  WARNING: {
+    color: '#D97706',
+    bgColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    accent: '#F59E0B',
+    badge: 'WARNING',
+  },
+  HIGH_RISK: {
+    color: '#EA580C',
+    bgColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+    accent: '#F97316',
+    badge: 'HIGH RISK',
+  },
+  CRITICAL: {
+    color: '#E11D48',
+    bgColor: '#FFF1F2',
+    borderColor: '#FECDD3',
+    accent: '#F43F5E',
+    badge: 'CRITICAL',
+  },
+  INFO: {
+    color: '#2563EB',
+    bgColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    accent: '#3B82F6',
+    badge: 'INFO',
+  },
+  UNKNOWN: {
+    color: '#475569',
+    bgColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    accent: '#64748B',
+    badge: 'STATUS',
+  },
 }
 
-function getSeverityColor(severity) {
-  return SEVERITY_COLORS[severity] || '#5B9BF5'
+function getTheme(severity) {
+  return SEVERITY_THEMES[severity] || SEVERITY_THEMES.UNKNOWN
 }
 
 function Sparkline({ data, color }) {
-  const points = (data && data.length >= 2)
-    ? data
-    : [0,20,10,15,20,25,30,10,40,30,50,20,60,15,70,25,80,18,90,22,100,20].reduce((a,v,i) => {
-        if (i % 2 === 0) a.push({ x: v, y: null })
-        else a[a.length - 1].y = v
-        return a
-      }, []).map(p => p.x !== undefined ? p : null).filter(Boolean)
+  if (!data || !Array.isArray(data) || data.length < 2) return null
 
-  const rawPoints = (data && data.length >= 2)
-    ? data.map((v, i) => ({ x: i, y: v }))
-    : [0,20,10,15,20,25,30,10,40,30,50,20,60,15,70,25,80,18,90,22,100,20].reduce((acc, val, i, arr) => {
-        if (i % 2 === 0) return acc
-        acc.push({ x: arr[i-1], y: val })
-        return acc
-      }, [])
-
-  const allPoints = (data && data.length >= 2)
-    ? data.map((v, i) => ({ x: i, y: v }))
-    : rawPoints
-
-  if (allPoints.length < 2) return null
-
+  const allPoints = data.map((v, i) => ({ x: i, y: typeof v === 'number' ? v : (v?.y ?? 0) }))
   const minY = Math.min(...allPoints.map(p => p.y))
   const maxY = Math.max(...allPoints.map(p => p.y))
   const rangeY = maxY - minY || 1
@@ -41,42 +60,41 @@ function Sparkline({ data, color }) {
 
   const toSvg = (p) => ({
     x: (p.x / maxX) * 100,
-    y: 36 - ((p.y - minY) / rangeY) * 36,
+    y: 28 - ((p.y - minY) / rangeY) * 24,
   })
 
   const pts = allPoints.map(toSvg)
   const polyline = pts.map(p => `${p.x},${p.y}`).join(' ')
-  const area = `${pts[0].x},36 ${polyline} ${pts[pts.length - 1].x},36`
-
-  const gradId = `grad-${Math.random().toString(36).slice(2)}`
+  const area = `${pts[0].x},28 ${polyline} ${pts[pts.length - 1].x},28`
+  const gradId = `spark-grad-${Math.random().toString(36).slice(2, 8)}`
 
   return (
-    <svg
-      width="100%" height="40"
-      viewBox="0 0 100 40"
-      preserveAspectRatio="none"
-      style={{ display: 'block', marginTop: 8 }}
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon
-        points={area}
-        fill={`url(#${gradId})`}
-      />
-      <polyline
-        points={polyline}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <div style={{ marginTop: 10, height: 28, overflow: 'hidden' }}>
+      <svg
+        width="100%"
+        height="28"
+        viewBox="0 0 100 28"
+        preserveAspectRatio="none"
+        style={{ display: 'block' }}
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+        <polygon points={area} fill={`url(#${gradId})`} />
+        <polyline
+          points={polyline}
+          fill="none"
+          stroke={color}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
   )
 }
 
@@ -88,21 +106,22 @@ export default function MetricCard({
   sub,
   trend,
   trendDirection,
-  severity,
-  sparklineData = [],
+  severity = 'NORMAL',
+  sparklineData = null,
   icon,
   accent,
   onClick,
 }) {
   const displayTitle = title || label || ''
-  const accentColor = accent || getSeverityColor(severity)
+  const theme = getTheme(severity)
+  const accentColor = accent || theme.accent
   const clickable = typeof onClick === 'function'
 
   const trendColor = trendDirection === 'up'
-    ? '#16A97A'
+    ? '#059669'
     : trendDirection === 'down'
-    ? '#E84D6A'
-    : 'var(--text-muted)'
+    ? '#E11D48'
+    : '#64748B'
 
   const trendArrow = trendDirection === 'up' ? '↑' : trendDirection === 'down' ? '↓' : '→'
 
@@ -111,103 +130,184 @@ export default function MetricCard({
       onClick={onClick}
       role={clickable ? 'button' : undefined}
       tabIndex={clickable ? 0 : undefined}
-      onKeyDown={clickable ? e => e.key === 'Enter' && onClick() : undefined}
+      onKeyDown={clickable ? (e) => (e.key === 'Enter' || e.key === ' ') && onClick() : undefined}
       aria-label={clickable ? `${displayTitle}: ${value}. Click for details.` : undefined}
       style={{
-        background: 'rgba(255,255,255,0.68)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.88)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 4px 24px rgba(100,120,200,0.10), inset 0 1px 0 rgba(255,255,255,0.95)',
-        padding: 20,
-        animation: 'fadeInUp 0.4s ease both',
+        background: '#FFFFFF',
+        borderRadius: 14,
+        border: '1px solid rgba(226, 232, 240, 0.9)',
+        boxShadow: '0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04)',
+        padding: '18px 20px',
         position: 'relative',
         overflow: 'hidden',
         cursor: clickable ? 'pointer' : 'default',
-        transition: 'transform var(--transition-fast), box-shadow var(--transition-fast)',
-        borderTop: `3px solid ${accentColor}`,
-        flex: 1,
-        minWidth: 150,
+        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        minHeight: 124,
       }}
-      onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-2px)'
-        e.currentTarget.style.boxShadow = '0 12px 36px rgba(100,120,200,0.18), inset 0 1px 0 rgba(255,255,255,0.95)'
+      onMouseEnter={(e) => {
+        if (clickable) {
+          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = '0 10px 25px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04)'
+          e.currentTarget.style.borderColor = accentColor
+        }
       }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.boxShadow = '0 4px 24px rgba(100,120,200,0.10), inset 0 1px 0 rgba(255,255,255,0.95)'
+      onMouseLeave={(e) => {
+        if (clickable) {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04)'
+          e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.9)'
+        }
       }}
     >
-      {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        {icon && (
-          <span style={{ fontSize: 20, lineHeight: 1 }}>{icon}</span>
-        )}
-        <span style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: '#4A5878',
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-        }}>
-          {displayTitle}
-        </span>
+      {/* Top accent line */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          background: accentColor,
+          opacity: 0.85,
+        }}
+      />
+
+      {/* Card Header: Icon + Title + Status Dot */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {icon && (
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 8,
+                background: theme.bgColor,
+                border: `1px solid ${theme.borderColor}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+                flexShrink: 0,
+              }}
+            >
+              {icon}
+            </div>
+          )}
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: '#64748B',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+            }}
+          >
+            {displayTitle}
+          </span>
+        </div>
+
+        {/* Status Indicator Pill */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '2px 8px',
+            borderRadius: 999,
+            background: theme.bgColor,
+            border: `1px solid ${theme.borderColor}`,
+          }}
+        >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              backgroundColor: theme.color,
+            }}
+          />
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: theme.color,
+              letterSpacing: '0.02em',
+            }}
+          >
+            {severity === 'NORMAL' ? 'SAFE' : severity.replace('_', ' ')}
+          </span>
+        </div>
       </div>
 
-      {/* Value */}
-      <div style={{
-        fontSize: 32,
-        fontWeight: 800,
-        color: '#1A2340',
-        lineHeight: 1.1,
-        letterSpacing: '-0.02em',
-        display: 'flex',
-        alignItems: 'baseline',
-        gap: 4,
-      }} className="tabular">
-        {value ?? '—'}
+      {/* Value Row */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+        <div
+          style={{
+            fontSize: 26,
+            fontWeight: 800,
+            color: '#0F172A',
+            letterSpacing: '-0.03em',
+            lineHeight: 1.1,
+          }}
+          className="tabular"
+        >
+          {value ?? '—'}
+        </div>
         {unit && (
-          <span style={{ fontSize: 14, color: '#8A99B8', fontWeight: 500 }}>{unit}</span>
+          <span style={{ fontSize: 13, color: '#64748B', fontWeight: 600 }}>
+            {unit}
+          </span>
         )}
       </div>
 
-      {/* Sub-label */}
-      {sub && (
-        <div style={{ fontSize: 12, color: '#8A99B8', marginTop: 4 }}>
-          {sub}
-        </div>
-      )}
+      {/* Subtitle & Trend */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+        {sub ? (
+          <div style={{ fontSize: 12, fontWeight: 500, color: '#64748B' }}>
+            {sub}
+          </div>
+        ) : <div />}
 
-      {/* Trend indicator */}
-      {(trend || trendDirection) && (
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          marginTop: 6,
-          padding: '2px 8px',
-          borderRadius: 99,
-          background: `${trendColor}18`,
-          fontSize: 11,
-          fontWeight: 600,
-          color: trendColor,
-        }}>
-          <span>{trendArrow}</span>
-          {trend && <span>{trend}</span>}
-        </div>
-      )}
+        {(trend || trendDirection) && (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 3,
+              fontSize: 11,
+              fontWeight: 600,
+              color: trendColor,
+            }}
+          >
+            <span>{trendArrow}</span>
+            {trend && <span>{trend}</span>}
+          </div>
+        )}
 
-      {/* Arrow if clickable */}
-      {clickable && (
-        <div style={{
-          position: 'absolute', bottom: 14, right: 14,
-          color: accentColor, fontSize: 14, opacity: 0.5,
-        }}>→</div>
-      )}
+        {clickable && (
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: accentColor,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <span>View</span>
+            <span style={{ fontSize: 13 }}>→</span>
+          </div>
+        )}
+      </div>
 
-      {/* Sparkline */}
-      <Sparkline data={sparklineData} color={accentColor} />
+      {/* Optional real sparkline if data provided */}
+      {sparklineData && sparklineData.length >= 2 && (
+        <Sparkline data={sparklineData} color={accentColor} />
+      )}
     </div>
   )
 }

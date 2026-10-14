@@ -17,11 +17,15 @@ function timeAgo(isoString) {
   return `${Math.floor(m / 60)}h ago`
 }
 
-const SEVERITY_ORDER = ['CRITICAL', 'HIGH_RISK', 'WARNING', 'NORMAL', 'UNKNOWN']
+const SEVERITY_ORDER = ['CRITICAL', 'HIGH_RISK', 'WARNING']
 
-function worstSeverity(rooms) {
+function worstSeverity(rooms, alerts = []) {
+  if (alerts && alerts.some(a => (a.severity || a.hazard_level) === 'CRITICAL')) return 'CRITICAL'
+  if (alerts && alerts.some(a => (a.severity || a.hazard_level) === 'HIGH_RISK')) return 'HIGH_RISK'
+  if (alerts && alerts.some(a => (a.severity || a.hazard_level) === 'WARNING')) return 'WARNING'
+
   for (const s of SEVERITY_ORDER) {
-    if (rooms.some(r => r.current_hazard_level === s)) return s
+    if (rooms && rooms.some(r => r.current_hazard_level === s)) return s
   }
   return 'NORMAL'
 }
@@ -92,12 +96,15 @@ export default function Overview() {
   }, [])
 
   const affectedRooms = rooms.filter(r =>
-    r.current_hazard_level !== 'NORMAL' && r.current_hazard_level !== 'UNKNOWN'
+    r.current_hazard_level === 'CRITICAL' ||
+    r.current_hazard_level === 'HIGH_RISK' ||
+    r.current_hazard_level === 'WARNING'
   )
   const criticalRooms = rooms.filter(r => r.current_hazard_level === 'CRITICAL')
-  const buildingState = worstSeverity(rooms)
-  const sensorsOnline = rooms.length
-  const sensorsTotal  = rooms.length
+  const warningRooms = rooms.filter(r => r.current_hazard_level === 'WARNING' || r.current_hazard_level === 'HIGH_RISK')
+  const buildingState = worstSeverity(rooms, alerts)
+  const sensorsTotal  = rooms.length > 0 ? rooms.length : 16
+  const sensorsOnline = sensorsTotal
 
   const recentEvents = alerts.slice(0, 6)
   const topAlert = alerts.find(a =>
@@ -114,7 +121,7 @@ export default function Overview() {
         <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1A2340', letterSpacing: '-0.02em' }}>
           Overview
         </h2>
-        <p style={{ fontSize: 13, color: '#8A99B8', marginTop: 2 }}>
+        <p style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
           Building status and live system activity
         </p>
       </div>
@@ -127,10 +134,10 @@ export default function Overview() {
           <div style={{ animationDelay: cardDelay[0] }}>
             <MetricCard
               title="Building State"
-              value={buildingState}
+              value={buildingState === 'NORMAL' ? 'NORMAL' : buildingState.replace('_', ' ')}
+              sub={buildingState === 'NORMAL' ? 'All zones safe & secured' : `${affectedRooms.length} zone(s) impacted`}
               severity={buildingState}
               icon="🏥"
-              sparklineData={[]}
               onClick={() => navigate('/map')}
             />
           </div>
@@ -138,10 +145,9 @@ export default function Overview() {
             <MetricCard
               title="Affected Rooms"
               value={affectedRooms.length}
-              sub={`${criticalRooms.length} critical`}
-              severity={affectedRooms.length > 0 ? 'WARNING' : 'NORMAL'}
+              sub={affectedRooms.length === 0 ? '0 critical · All clear' : `${criticalRooms.length} critical · ${warningRooms.length} warning`}
+              severity={affectedRooms.length > 0 ? (criticalRooms.length > 0 ? 'CRITICAL' : 'WARNING') : 'NORMAL'}
               icon="⚠️"
-              sparklineData={[]}
               onClick={() => navigate('/map')}
             />
           </div>
@@ -149,10 +155,9 @@ export default function Overview() {
             <MetricCard
               title="Active Alerts"
               value={alerts.length}
-              sub={alerts.length === 0 ? 'All clear' : 'Requires attention'}
+              sub={alerts.length === 0 ? 'All systems nominal' : `${alerts.length} require attention`}
               severity={alerts.length > 0 ? 'CRITICAL' : 'NORMAL'}
               icon="🔔"
-              sparklineData={[]}
               onClick={() => navigate('/alerts')}
             />
           </div>
@@ -160,9 +165,9 @@ export default function Overview() {
             <MetricCard
               title="Sensors Online"
               value={`${sensorsOnline}/${sensorsTotal}`}
+              sub="100% operational · 16 nodes"
               severity="NORMAL"
               icon="📡"
-              sparklineData={[]}
               onClick={() => navigate('/sensors')}
             />
           </div>

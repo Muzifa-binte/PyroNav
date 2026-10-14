@@ -15,64 +15,19 @@ export default function AppShell({ children }) {
       display: 'flex',
       height: '100vh',
       overflow: 'hidden',
-      background: 'linear-gradient(135deg, #EDF1FB 0%, #E4E9F7 50%, #EBF0FA 100%)',
+      background: 'linear-gradient(135deg, #F1F5F9 0%, #E8EEF5 50%, #E2E8F0 100%)',
     }}>
-      {/* Animated background orbs */}
-      <div className="bg-animated" aria-hidden="true">
-        {/* Orb 1 — pearl blue, top-left */}
-        <div style={{
-          position: 'absolute',
-          top: '-20%', left: '-10%',
-          width: 600, height: 600,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(180,210,255,0.45) 0%, rgba(200,230,255,0.25) 40%, transparent 70%)',
-          animation: 'float1 28s ease-in-out infinite',
-          pointerEvents: 'none',
-        }} />
-        {/* Orb 2 — lavender, bottom-right */}
-        <div style={{
-          position: 'absolute',
-          top: '60%', right: '-15%',
-          width: 500, height: 500,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(200,185,255,0.40) 0%, transparent 70%)',
-          animation: 'float2 22s ease-in-out infinite',
-          pointerEvents: 'none',
-        }} />
-        {/* Orb 3 — mint, bottom-center */}
-        <div style={{
-          position: 'absolute',
-          bottom: '-10%', left: '30%',
-          width: 400, height: 400,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(160,230,210,0.30) 0%, transparent 70%)',
-          animation: 'float3 32s ease-in-out infinite',
-          pointerEvents: 'none',
-        }} />
-        {/* Orb 4 — peach, mid-right */}
-        <div style={{
-          position: 'absolute',
-          top: '20%', right: '20%',
-          width: 300, height: 300,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,210,200,0.25) 0%, transparent 70%)',
-          animation: 'float4 18s ease-in-out infinite',
-          pointerEvents: 'none',
-        }} />
-        {/* Orb 5 — white, center-left */}
-        <div style={{
-          position: 'absolute',
-          left: '-5%', top: '40%',
-          width: 350, height: 350,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.55) 0%, transparent 60%)',
-          animationName: 'float3',
-          animationDuration: '22s',
-          animationTimingFunction: 'ease-in-out',
-          animationIterationCount: 'infinite',
-          pointerEvents: 'none',
-        }} />
-      </div>
+      {/* Subtle classic ambient glow */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 60%)',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} aria-hidden="true" />
 
       <SidebarNavigation
         collapsed={sidebarCollapsed}

@@ -93,16 +93,6 @@ export default function LiveMap() {
                 selectedRoom={selected}
               />
             )}
-
-            {/* Floating legend */}
-            <div style={{
-              position: 'absolute',
-              bottom: 28,
-              left: 28,
-              zIndex: 5,
-            }}>
-              <MapLegend />
-            </div>
           </div>
 
           {/* Route summary strip */}

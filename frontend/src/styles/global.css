@@ -53,35 +53,36 @@ body::after {
 
 /* ── Glass card ──────────────────────────────────────────────────────── */
 .glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.95);
   border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow);
+  box-shadow: 0 8px 40px rgba(80,100,180,0.14), 0 2px 8px rgba(80,100,180,0.08), inset 0 1px 0 rgba(255,255,255,1);
 }
 
 /* ── Raised card ─────────────────────────────────────────────────────── */
 .raised-card {
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(200,215,245,0.60);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-raised);
+  box-shadow: 8px 8px 22px rgba(140,160,220,0.28), -4px -4px 14px rgba(255,255,255,0.95), 0 2px 6px rgba(80,100,180,0.08);
 }
 
 /* ── Legacy card (preserve backwards compat) ─────────────────────────── */
 .card {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.95);
   border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow);
+  box-shadow: 0 8px 40px rgba(80,100,180,0.14), 0 2px 8px rgba(80,100,180,0.08), inset 0 1px 0 rgba(255,255,255,1);
   padding: var(--space-5);
   transition: box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 .card:hover {
-  box-shadow: var(--glass-shadow), 0 12px 40px rgba(100,120,200,0.18);
+  box-shadow: 0 16px 50px rgba(80,100,180,0.22), 0 4px 12px rgba(80,100,180,0.12), inset 0 1px 0 rgba(255,255,255,1);
+  transform: translateY(-2px);
 }
 
 /* ── Page content wrapper ────────────────────────────────────────────── */

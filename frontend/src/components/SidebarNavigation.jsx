@@ -60,10 +60,11 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
       aria-label="Primary navigation"
       style={{
         width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)',
-        background: 'rgba(255,255,255,0.78)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        borderRight: '1px solid rgba(180,200,240,0.50)',
+        background: 'rgba(255,255,255,0.85)',
+        backdropFilter: 'blur(28px)',
+        WebkitBackdropFilter: 'blur(28px)',
+        borderRight: '1px solid rgba(200,215,245,0.60)',
+        boxShadow: '4px 0 24px rgba(80,100,180,0.10)',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,

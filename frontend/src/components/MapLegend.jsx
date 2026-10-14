@@ -1,18 +1,18 @@
 import React from 'react'
 
 const HAZARD_ITEMS = [
-  { color: '#43C59E', label: 'Normal' },
-  { color: '#F5BE55', label: 'Warning' },
-  { color: '#FF8A4C', label: 'High Risk' },
-  { color: '#FF5D6C', label: 'Critical' },
-  { color: '#9AA7BA', label: 'Unknown' },
+  { color: '#22C987', label: 'Normal' },
+  { color: '#F5A623', label: 'Warning' },
+  { color: '#F56E3B', label: 'High Risk' },
+  { color: '#E84D6A', label: 'Critical' },
+  { color: '#94A3B8', label: 'Unknown' },
 ]
 
 const MAP_ITEMS = [
-  { color: '#69B7FF', label: 'Active Route',  icon: '─▶' },
-  { color: '#69B7FF', label: 'Exit (open)',   icon: '◉' },
-  { color: '#FF5D6C', label: 'Exit (closed)', icon: '◉' },
-  { color: '#FF5D6C', label: 'Blocked',       icon: '✕' },
+  { color: '#5B9BF5', label: 'Active Route',  icon: '─▶' },
+  { color: '#5B9BF5', label: 'Exit (open)',   icon: '◉' },
+  { color: '#E84D6A', label: 'Exit (closed)', icon: '◉' },
+  { color: '#E84D6A', label: 'Blocked',       icon: '✕' },
 ]
 
 function Swatch({ color }) {
