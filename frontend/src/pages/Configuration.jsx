@@ -3,11 +3,13 @@ import StatusPill from '../components/StatusPill'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import * as api from '../services/api'
 
-const GLASS_INPUT = {
-  background: 'var(--surface-inset)',
-  border: '1px solid var(--border-glass)',
-  borderRadius: 'var(--radius-sm)',
-  color: 'var(--text-primary)',
+// Neumorphic input style — warm ivory tokens
+const NEO_INPUT = {
+  background: 'var(--bg-inset)',
+  boxShadow: 'var(--neo-inset)',
+  border: 'none',
+  borderRadius: 8,
+  color: 'var(--ink-900)',
   padding: '8px 12px',
   width: '100%',
   fontSize: 13,
@@ -22,9 +24,10 @@ function SectionHeader({ title }) {
       fontWeight: 700,
       textTransform: 'uppercase',
       letterSpacing: '0.08em',
-      color: 'var(--text-muted)',
+      color: 'var(--ink-400)',
       padding: '14px 20px 10px',
-      borderBottom: '1px solid var(--border-glass)',
+      borderBottom: '1px solid var(--border-subtle)',
+      fontFamily: 'var(--font-sans)',
     }}>
       {title}
     </div>
@@ -37,11 +40,12 @@ function DataRow({ cols }) {
       display: 'flex',
       gap: 24,
       padding: '10px 20px',
-      borderBottom: '1px solid var(--border-glass)',
+      borderBottom: '1px solid var(--border-subtle)',
       fontSize: 13,
+      fontFamily: 'var(--font-sans)',
     }}>
       {cols.map((c, i) => (
-        <div key={i} style={{ flex: 1, color: i === 0 ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+        <div key={i} style={{ flex: 1, color: i === 0 ? 'var(--ink-900)' : 'var(--ink-600)' }}>
           {c ?? '—'}
         </div>
       ))}
@@ -59,9 +63,9 @@ function HeaderRow({ cols }) {
       fontWeight: 700,
       textTransform: 'uppercase',
       letterSpacing: '0.06em',
-      color: 'var(--text-muted)',
-      borderBottom: '1px solid var(--border-glass)',
-      background: 'rgba(255,255,255,0.01)',
+      color: 'var(--ink-400)',
+      borderBottom: '1px solid var(--border-subtle)',
+      fontFamily: 'var(--font-sans)',
     }}>
       {cols.map((c, i) => (
         <div key={i} style={{ flex: 1 }}>{c}</div>
@@ -89,24 +93,27 @@ export default function Configuration() {
   return (
     <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 900 }}>
 
-      {/* Page header */}
-      <div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-          Configuration
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-          System settings and mappings
-        </p>
-      </div>
+      {/* Header */}
+      <h2 style={{
+        fontFamily: 'var(--font-display)',
+        fontSize: 26,
+        fontWeight: 700,
+        color: 'var(--ink-900)',
+        margin: 0,
+      }}>
+        Configuration
+      </h2>
+      <p style={{ fontSize: 13, color: 'var(--ink-400)', marginTop: 0 }}>System settings and mappings</p>
 
-      {/* Read-only notice */}
+      {/* Read-only notice — warm ivory */}
       <div style={{
         padding: '10px 16px',
-        background: 'rgba(105,183,255,0.06)',
-        border: '1px solid rgba(105,183,255,0.2)',
-        borderRadius: 'var(--radius-sm)',
+        background: 'rgba(47,111,222,0.06)',
+        border: '1px solid rgba(47,111,222,0.2)',
+        borderRadius: 8,
         fontSize: 13,
-        color: 'var(--text-secondary)',
+        color: 'var(--ink-600)',
+        fontFamily: 'var(--font-sans)',
       }}>
         ℹ Configuration is read-only in this release. Editing will be enabled once the backend supports save validation.
       </div>
@@ -118,7 +125,7 @@ export default function Configuration() {
             <SectionHeader title="Rooms" />
             <HeaderRow cols={['Room ID', 'Name', 'Hazard Level', 'Last Updated']} />
             {rooms.length === 0 ? (
-              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--ink-400)', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
                 No room data available
               </div>
             ) : rooms.map(r => (
@@ -136,7 +143,7 @@ export default function Configuration() {
             <SectionHeader title="Sensors" />
             <HeaderRow cols={['Sensor ID', 'Type', 'Room', 'Status', 'Units']} />
             {sensors.length === 0 ? (
-              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--ink-400)', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
                 No sensor data available
               </div>
             ) : sensors.map(s => (
@@ -144,7 +151,7 @@ export default function Configuration() {
                 s.sensor_id,
                 s.sensor_type,
                 s.room_id,
-                <StatusPill key="pill" status={(s.status === 'active' ? 'normal' : 'unknown')} label={s.status || '—'} />,
+                <StatusPill key="pill" status={s.status === 'active' ? 'NORMAL' : 'UNKNOWN'} label={s.status || '—'} />,
                 s.unit_config || '—',
               ]} />
             ))}
@@ -155,7 +162,7 @@ export default function Configuration() {
             <SectionHeader title="Exits" />
             <HeaderRow cols={['Exit ID', 'Name', 'Available']} />
             {exits.length === 0 ? (
-              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--ink-400)', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
                 No exit data available
               </div>
             ) : exits.map(e => (
@@ -163,17 +170,17 @@ export default function Configuration() {
                 e.exit_id,
                 e.name || '—',
                 <StatusPill key="pill"
-                  status={e.available ? 'normal' : 'critical'}
+                  status={e.available ? 'SAFE' : 'CRITICAL'}
                   label={e.available ? 'Available' : 'Unavailable'}
                 />,
               ]} />
             ))}
           </div>
 
-          {/* Thresholds (placeholder) */}
+          {/* Thresholds (placeholder) — glass-card */}
           <div className="glass-card" style={{ padding: 20 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 14 }}>
-              Thresholds & Route Policy
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-400)', marginBottom: 14, fontFamily: 'var(--font-sans)' }}>
+              Thresholds &amp; Route Policy
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {[
@@ -183,19 +190,19 @@ export default function Configuration() {
                 { label: 'Stale Data Timeout (s)', value: '—' },
               ].map(({ label, value }) => (
                 <div key={label}>
-                  <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+                  <label style={{ display: 'block', fontSize: 11, color: 'var(--ink-400)', marginBottom: 4, fontFamily: 'var(--font-sans)' }}>
                     {label}
                   </label>
                   <input
                     readOnly
                     value={value}
-                    style={{ ...GLASS_INPUT, cursor: 'default' }}
+                    style={{ ...NEO_INPUT, cursor: 'default' }}
                     aria-label={label}
                   />
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 14, fontSize: 12, color: 'var(--text-muted)' }}>
+            <div style={{ marginTop: 14, fontSize: 12, color: 'var(--ink-400)', fontFamily: 'var(--font-sans)', fontStyle: 'italic' }}>
               Configure thresholds via the backend API. Editing is not yet available in this release.
             </div>
           </div>

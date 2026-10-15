@@ -1,14 +1,14 @@
 import React from 'react'
 
+// Warm ivory shimmer — spec tokens only
 const shimmerStyle = {
-  background: 'linear-gradient(90deg, rgba(200,210,235,0.50) 25%, rgba(255,255,255,0.80) 50%, rgba(200,210,235,0.50) 75%)',
+  background: 'linear-gradient(90deg, var(--bg-inset) 25%, var(--bg-raised) 50%, var(--bg-inset) 75%)',
   backgroundSize: '200% 100%',
   animation: 'shimmer 1.5s infinite',
   borderRadius: 6,
 }
 
 export default function LoadingSkeleton({ rows = 3, lines, cols = 1, height, type = 'card', gap = 12 }) {
-  // Support legacy `lines` prop as alias for `rows`
   const rowCount = lines ?? rows
 
   if (type === 'map') {
@@ -16,11 +16,7 @@ export default function LoadingSkeleton({ rows = 3, lines, cols = 1, height, typ
       <div
         aria-busy="true"
         aria-label="Loading…"
-        style={{
-          ...shimmerStyle,
-          width: '100%',
-          height: height || 400,
-        }}
+        style={{ ...shimmerStyle, width: '100%', height: height || 400 }}
       />
     )
   }
@@ -35,17 +31,12 @@ export default function LoadingSkeleton({ rows = 3, lines, cols = 1, height, typ
     )
   }
 
-  // Default: card type
   if (cols > 1) {
     return (
       <div
         aria-busy="true"
         aria-label="Loading…"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          gap: 16,
-        }}
+        style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 16 }}
       >
         {Array.from({ length: cols * rowCount }).map((_, i) => (
           <div key={i} style={{ ...shimmerStyle, height: height || 120 }} />

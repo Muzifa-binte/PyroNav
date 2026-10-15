@@ -7,28 +7,28 @@ import * as api from '../services/api'
 import { wsEventBus } from '../hooks/useWebSocket'
 
 const ROUTE_STATUS_MAP = {
-  ROUTE_FOUND:           'normal',
-  NO_VALID_ROUTE:        'critical',
-  NO_AVAILABLE_EXIT:     'critical',
-  RECALCULATION_PENDING: 'warning',
-  INVALID_ORIGIN:        'high',
+  ROUTE_FOUND:           'ROUTE_FOUND',
+  NO_VALID_ROUTE:        'NO_VALID_ROUTE',
+  NO_AVAILABLE_EXIT:     'NO_AVAILABLE_EXIT',
+  RECALCULATION_PENDING: 'RECALCULATION_PENDING',
+  INVALID_ORIGIN:        'INVALID_ORIGIN',
 }
 
 export default function Evacuation() {
-  const [building,     setBuilding]     = useState(null)
-  const [rooms,        setRooms]        = useState([])
-  const [route,        setRoute]        = useState(null)
-  const [exits,        setExits]        = useState([])
-  const [loading,      setLoading]      = useState(true)
-  const [calcLoading,  setCalcLoading]  = useState(false)
-  const [origin,       setOrigin]       = useState('main_lobby')
-  const [algo,         setAlgo]         = useState('dijkstra')
-  const [recalcToast,  setRecalcToast]  = useState(null)
+  const [building,    setBuilding]    = useState(null)
+  const [rooms,       setRooms]       = useState([])
+  const [route,       setRoute]       = useState(null)
+  const [exits,       setExits]       = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [calcLoading, setCalcLoading] = useState(false)
+  const [origin,      setOrigin]      = useState('main_lobby')
+  const [algo,        setAlgo]        = useState('dijkstra')
+  const [recalcToast, setRecalcToast] = useState(null)
 
   // WebSocket route updates
   useEffect(() => {
     const handleRouteUpdate = (e) => {
-      const data = e.detail?.data ?? e.detail  // WebSocket envelope: {event_type, data, timestamp}
+      const data = e.detail?.data ?? e.detail
       const incoming = data?.route || data
       if (incoming?.status) {
         setRoute(incoming)
@@ -72,252 +72,287 @@ export default function Evacuation() {
   const noRoute = route?.status === 'NO_VALID_ROUTE' || route?.status === 'NO_AVAILABLE_EXIT'
 
   return (
-    <div style={{ padding: 24, background: 'var(--bg-base)', minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--ink-900)', fontFamily: 'Playfair Display, serif' }}>
+          <h2 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 26,
+            fontWeight: 700,
+            color: 'var(--ink-900)',
+            margin: 0,
+          }}>
             Evacuation &amp; Pathfinding
           </h2>
-          <p style={{ fontSize: 13, color: 'var(--ink-400)', marginTop: 2 }}>
+          <p style={{ fontSize: 13, color: 'var(--ink-400)', marginTop: 4 }}>
             Current route and status
           </p>
         </div>
         {recalcToast && (
           <div style={{
             padding: '8px 14px',
-            background: 'rgba(105,183,255,0.12)',
-            border: '1px solid var(--accent-primary)',
-            borderRadius: 'var(--radius-sm)',
-            color: 'var(--accent-primary)',
-            fontSize: 13, fontWeight: 500,
-            animation: 'fadeInUp 0.3s ease',
+            background: 'rgba(255,106,26,0.10)',
+            border: '1px solid var(--orange-500)',
+            borderRadius: 8,
+            color: 'var(--orange-600)',
+            fontSize: 13,
+            fontWeight: 500,
           }}>
             ↻ {recalcToast}
           </div>
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
-        {/* Map */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Main two-column */}
+      <div style={{ display: 'flex', gap: 20 }}>
+
+        {/* Left column: map + legend */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="glass-card" style={{ padding: 16 }}>
-            {loading ? <LoadingSkeleton type="map" height={400} /> : (
-              <BuildingMap2D building={building} rooms={rooms} route={route} />
-            )}
+            <div style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 16,
+              color: 'var(--ink-900)',
+              marginBottom: 12,
+            }}>
+              Evacuation Route
+            </div>
+            {loading
+              ? <LoadingSkeleton type="map" height={400} />
+              : <BuildingMap2D building={building} rooms={rooms} route={route} />}
           </div>
           <MapLegend compact />
         </div>
 
-        {/* Right panel */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Right column: controls + result + exits */}
+        <div style={{ width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-          {/* Calculate route */}
+          {/* Calculate route card */}
           <div className="glass-card" style={{ padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
+            <div style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 18,
+              fontWeight: 700,
+              color: 'var(--ink-900)',
+              marginBottom: 16,
+            }}>
               Calculate Route
             </div>
 
-            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
-              Origin room
-            </label>
+            {/* Origin room */}
+            <div style={{ fontSize: 11, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+              Origin Room
+            </div>
             <select
               value={origin}
               onChange={e => setOrigin(e.target.value)}
               style={{
-                width: '100%', marginBottom: 12,
+                width: '100%',
+                marginBottom: 14,
                 background: 'var(--bg-inset)',
-                border: '1px solid var(--border-glass)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '8px 10px',
+                boxShadow: 'var(--neo-inset)',
+                border: 'none',
+                borderRadius: 8,
+                padding: '10px 14px',
                 color: 'var(--ink-900)',
                 fontSize: 13,
                 outline: 'none',
-                boxShadow: 'var(--neo-inset)',
+                fontFamily: 'var(--font-sans)',
+                cursor: 'pointer',
               }}
             >
               {rooms.map(r => <option key={r.room_id} value={r.room_id}>{r.name}</option>)}
             </select>
 
-            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
+            {/* Algorithm */}
+            <div style={{ fontSize: 11, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
               Algorithm
-            </label>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              {['dijkstra', 'bfs'].map(a => (
-                <button
-                  key={a}
-                  onClick={() => setAlgo(a)}
-                  style={{
-                    flex: 1, padding: '7px',
-                    background: algo === a ? 'rgba(105,183,255,0.15)' : 'var(--surface-inset)',
-                    border: algo === a ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
-                    borderRadius: 'var(--radius-sm)',
-                    color: algo === a ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    fontSize: 12, fontWeight: algo === a ? 600 : 400,
-                    transition: 'all var(--transition-fast)',
-                  }}
-                >
-                  {a === 'dijkstra' ? 'Dijkstra' : 'BFS'}
-                </button>
-              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              {['dijkstra', 'bfs'].map(a => {
+                const isActive = algo === a
+                return (
+                  <button
+                    key={a}
+                    onClick={() => setAlgo(a)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 16px',
+                      background: 'var(--bg-raised)',
+                      boxShadow: isActive ? 'var(--neo-inset)' : 'var(--neo-raised-sm)',
+                      color: isActive ? 'var(--orange-500)' : 'var(--ink-600)',
+                      border: 'none',
+                      borderRadius: 20,
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: 13,
+                      fontFamily: 'var(--font-sans)',
+                      transition: 'all var(--transition-fast)',
+                    }}
+                  >
+                    {a === 'dijkstra' ? 'Dijkstra' : 'BFS'}
+                  </button>
+                )
+              })}
             </div>
 
+            {/* Calculate button — flat orange */}
             <button
               onClick={handleCalculate}
               disabled={calcLoading}
               style={{
-                width: '100%', padding: '10px 24px',
-                background: '#FF6A1A',
-                border: 'none',
-                borderRadius: 8,
+                width: '100%',
+                padding: '12px 24px',
+                background: calcLoading ? 'var(--ink-400)' : 'var(--orange-500)',
                 color: '#fff',
-                cursor: calcLoading ? 'wait' : 'pointer',
-                fontWeight: 600, fontSize: 14,
-                letterSpacing: '0.02em',
-                transition: 'all var(--transition-fast)',
+                border: 'none',
+                borderRadius: 10,
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: calcLoading ? 'not-allowed' : 'pointer',
+                fontFamily: 'var(--font-sans)',
+                transition: 'background var(--transition-fast)',
               }}
+              onMouseEnter={e => { if (!calcLoading) e.currentTarget.style.background = 'var(--orange-600)' }}
+              onMouseLeave={e => { if (!calcLoading) e.currentTarget.style.background = 'var(--orange-500)' }}
             >
-              {calcLoading ? 'Calculating…' : 'Calculate Route'}
+              {calcLoading ? (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  Calculating…
+                </span>
+              ) : 'Calculate Route'}
             </button>
           </div>
 
-          {/* Route result */}
+          {/* Route result card */}
           {route && route.status !== 'NO_ROUTE_CALCULATED' && (
             <div className="glass-card" style={{
               padding: 16,
-              borderLeft: noRoute ? '3px solid var(--status-critical)' : '3px solid var(--status-normal)',
+              borderLeft: noRoute ? '4px solid var(--red-600)' : '4px solid var(--green-600)',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
-                Route Result
-              </div>
-
-              {/* Status pill */}
               <div style={{ marginBottom: 10 }}>
-                <StatusPill
-                  status={ROUTE_STATUS_MAP[route.status] || 'unknown'}
-                  label={route.status?.replace(/_/g, ' ')}
-                />
+                <StatusPill status={ROUTE_STATUS_MAP[route.status] || 'unknown'} label={route.status?.replace(/_/g, ' ')} size="lg" />
               </div>
 
-              {/* No route warning */}
-              {noRoute && (
+              {noRoute ? (
                 <div style={{
-                  background: 'rgba(214,40,40,0.1)',
-                  border: '2px solid #D62828',
-                  borderRadius: 12,
-                  padding: 24,
-                  textAlign: 'center',
-                  color: '#D62828',
-                  fontWeight: 700,
-                  fontSize: 18,
-                  marginBottom: 10,
+                  background: 'rgba(214,40,40,0.08)',
+                  border: '1px solid var(--red-600)',
+                  borderRadius: 8,
+                  padding: 16,
                 }}>
-                  ⚠️ {route.status === 'NO_AVAILABLE_EXIT'
-                    ? 'All exits are unavailable.'
-                    : 'No valid evacuation route. All paths blocked or unsafe.'}
-                </div>
-              )}
-
-              {/* Destination */}
-              {route.exit_id && (
-                <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Destination Exit</div>
-                  <div style={{ fontWeight: 600, color: 'var(--status-normal)' }}>🚪 {route.exit_id}</div>
-                </div>
-              )}
-
-              {/* Origin */}
-              {route.origin_node_id && (
-                <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Origin</div>
-                  <div style={{ color: 'var(--text-secondary)' }}>{route.origin_node_id.replace(/_/g, ' ')}</div>
-                </div>
-              )}
-
-              {/* Algorithm badge */}
-              {route.algorithm && (
-                <div style={{ marginBottom: 10 }}>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    padding: '3px 10px', borderRadius: 99,
-                    background: 'rgba(105,183,255,0.12)',
-                    border: '1px solid rgba(105,183,255,0.25)',
-                    fontSize: 11, fontWeight: 600, color: 'var(--accent-primary)',
-                    textTransform: 'capitalize',
-                  }}>
-                    {route.algorithm}
-                  </span>
-                  {route.total_cost != null && (
-                    <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-muted)' }} className="tabular">
-                      {route.total_cost} m
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Steps list */}
-              {route.node_ids && route.node_ids.length > 0 && (
-                <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Route Steps</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {route.node_ids.map((n, idx) => (
-                      <div key={`${n}-${idx}`} style={{
-                        borderLeft: '3px solid #FF6A1A',
-                        paddingLeft: 12,
-                        marginBottom: 8,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                      }}>
-                        <span style={{
-                          background: '#FF6A1A',
-                          color: '#fff',
-                          borderRadius: '50%',
-                          width: 22,
-                          height: 22,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          flexShrink: 0,
-                        }}>{idx + 1}</span>
-                        <span style={{ fontSize: 12, color: 'var(--ink-600)' }}>
-                          {n.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-                    ))}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--red-600)', fontWeight: 700, fontSize: 14 }}>
+                    <span>✕</span>
+                    <span>No valid evacuation route found</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-400)', marginTop: 6 }}>
+                    {route.status === 'NO_AVAILABLE_EXIT'
+                      ? 'All exits are currently unavailable.'
+                      : 'All paths to exits are blocked or unsafe.'}
                   </div>
                 </div>
-              )}
+              ) : (
+                <>
+                  {/* Destination */}
+                  {route.exit_id && (
+                    <div style={{ fontSize: 16, color: 'var(--ink-900)', marginBottom: 8 }}>
+                      → {route.exit_id}
+                    </div>
+                  )}
 
-              {/* Timestamp */}
-              {route.calculated_at && (
-                <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-muted)' }} className="tabular">
-                  Calculated: {new Date(route.calculated_at).toLocaleTimeString()}
-                </div>
+                  {/* Cost + algorithm */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    {route.algorithm && (
+                      <span style={{
+                        padding: '2px 8px',
+                        background: 'var(--orange-100)',
+                        color: 'var(--orange-600)',
+                        borderRadius: '100px',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        textTransform: 'capitalize',
+                      }}>
+                        {route.algorithm}
+                      </span>
+                    )}
+                    {route.total_cost != null && (
+                      <span className="tabular" style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-600)', fontSize: 13 }}>
+                        {route.total_cost} m
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Steps list */}
+                  {route.node_ids && route.node_ids.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                        Route Steps
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {route.node_ids.map((n, idx) => (
+                          <div key={`${n}-${idx}`} style={{
+                            borderLeft: '3px solid var(--orange-500)',
+                            paddingLeft: 10,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                          }}>
+                            <span style={{
+                              background: 'var(--orange-500)',
+                              color: '#fff',
+                              borderRadius: '50%',
+                              width: 24,
+                              height: 24,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 11,
+                              fontWeight: 700,
+                              flexShrink: 0,
+                            }}>
+                              {idx + 1}
+                            </span>
+                            <span style={{ fontSize: 14, color: 'var(--ink-900)' }}>
+                              {n.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
 
-          {/* Exits */}
+          {/* Exits card */}
           <div className="glass-card" style={{ padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
-              Exits
+            <div style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 16,
+              fontWeight: 700,
+              color: 'var(--ink-900)',
+              marginBottom: 10,
+            }}>
+              Available Exits
             </div>
             {exits.length === 0 ? (
-              <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>No exit data available</div>
+              <div style={{ color: 'var(--ink-400)', fontSize: 13 }}>No exit data available</div>
             ) : exits.map(e => (
               <div key={e.exit_id} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 padding: '7px 0',
-                borderBottom: '1px solid var(--border-glass)',
+                borderBottom: '1px solid var(--border-subtle)',
               }}>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{e.name || e.exit_id}</span>
+                <span style={{ fontSize: 13, color: 'var(--ink-900)' }}>{e.name || e.exit_id}</span>
                 <StatusPill
-                  status={e.available ? 'normal' : 'critical'}
+                  status={e.available ? 'SAFE' : 'CRITICAL'}
                   label={e.available ? 'Available' : 'Unavailable'}
                 />
               </div>

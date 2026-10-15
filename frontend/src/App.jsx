@@ -24,41 +24,58 @@ class ErrorBoundary extends React.Component {
     if (this.state.error) {
       return (
         <div style={{
-          minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'linear-gradient(145deg, #C8D8F8 0%, #D6E2FB 40%, #E8D8F8 100%)',
-          fontFamily: 'Inter, system-ui, sans-serif',
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--bg-base)',
+          fontFamily: 'var(--font-sans, Inter, system-ui, sans-serif)',
         }}>
           <div style={{
-            background: 'rgba(255,255,255,0.80)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.95)',
-            borderRadius: 16,
-            padding: 32, maxWidth: 520,
-            boxShadow: '0 8px 40px rgba(80,100,180,0.18), inset 0 1px 0 rgba(255,255,255,1)',
+            background: 'var(--bg-raised)',
+            boxShadow: 'var(--neo-raised)',
+            borderRadius: 'var(--radius-xl, 24px)',
+            padding: 32,
+            maxWidth: 520,
           }}>
             <div style={{ fontSize: 28, marginBottom: 12 }}>⚠️</div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1A2340', marginBottom: 8 }}>
+            <h2 style={{
+              fontFamily: 'var(--font-display, Playfair Display, serif)',
+              fontSize: 20,
+              fontWeight: 700,
+              color: 'var(--ink-900)',
+              marginBottom: 8,
+            }}>
               Something went wrong
             </h2>
-            <p style={{ fontSize: 13, color: '#4A5878', marginBottom: 16 }}>
+            <p style={{ fontSize: 13, color: 'var(--ink-600)', marginBottom: 16 }}>
               PyroNav encountered an error. Check the browser console for details.
             </p>
             <pre style={{
-              fontSize: 11, background: 'rgba(232,77,106,0.08)', color: '#C0244C',
-              padding: 12, borderRadius: 8, overflowX: 'auto', whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all', border: '1px solid rgba(232,77,106,0.25)',
+              fontSize: 11,
+              background: 'rgba(214,40,40,0.08)',
+              color: 'var(--red-600)',
+              padding: 12,
+              borderRadius: 8,
+              overflowX: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              border: '1px solid rgba(214,40,40,0.25)',
             }}>
               {this.state.error?.message}
             </pre>
             <button
               onClick={() => window.location.reload()}
               style={{
-                marginTop: 16, padding: '8px 20px', borderRadius: 8,
-                background: 'rgba(91,155,245,0.12)',
-                border: '1px solid rgba(91,155,245,0.40)',
-                color: '#3A6FD8',
-                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                marginTop: 16,
+                padding: '10px 24px',
+                borderRadius: 8,
+                background: 'var(--orange-500)',
+                border: 'none',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
               }}
             >
               Reload page

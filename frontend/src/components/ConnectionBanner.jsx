@@ -1,31 +1,32 @@
 import React from 'react'
 
+// Spec palette — no blue hex
 const CONFIGS = {
   disconnected: {
-    bg: 'rgba(232,77,106,0.08)',
-    border: '#E84D6A',
-    color: '#C0244C',
+    bg: 'rgba(214,40,40,0.10)',
+    border: 'var(--red-600)',
+    color: 'var(--red-600)',
     icon: '⚠',
     text: 'Backend disconnected — showing last known state.',
   },
   delayed: {
-    bg: 'rgba(245,166,35,0.08)',
-    border: '#F5A623',
-    color: '#B8750A',
+    bg: 'rgba(245,164,0,0.10)',
+    border: 'var(--amber-500)',
+    color: 'var(--amber-500)',
     icon: '⏱',
     text: 'Data delayed',
   },
   stale: {
-    bg: 'rgba(245,166,35,0.08)',
-    border: '#F5A623',
-    color: '#B8750A',
+    bg: 'rgba(139,127,118,0.10)',
+    border: 'var(--ink-400)',
+    color: 'var(--ink-400)',
     icon: '⏱',
     text: 'Data may be stale.',
   },
   simulation: {
-    bg: 'rgba(245,166,35,0.08)',
-    border: '#F5A623',
-    color: '#B8750A',
+    bg: 'rgba(245,164,0,0.10)',
+    border: 'var(--amber-500)',
+    color: 'var(--amber-500)',
     icon: '⚗',
     text: 'SIMULATION MODE — TEST DATA — not live sensor readings.',
   },
@@ -58,6 +59,7 @@ export default function ConnectionBanner({ connectionState, state, lastUpdate, o
         color: cfg.color,
         fontSize: 13,
         fontWeight: 500,
+        fontFamily: 'var(--font-sans)',
       }}
     >
       <span style={{

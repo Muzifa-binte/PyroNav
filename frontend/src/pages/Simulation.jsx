@@ -8,22 +8,23 @@ const SCENARIOS = [
   { id: 'invalid_msg', label: 'Invalid Message',            description: 'Malformed sensor message sent to ingestion adapter.' },
 ]
 
+// Warm ivory log colors — no dark blues
 const LOG_COLORS = {
-  '▶': '#43C59E',
-  '■': '#FF5D6C',
-  '↺': '#F5BE55',
-  'ℹ': '#8BA8FF',
-  '✓': '#43C59E',
-  '⚠': '#F5BE55',
-  '✕': '#FF5D6C',
+  '▶': '#2E8B57',
+  '■': '#D62828',
+  '↺': '#F5A400',
+  'ℹ': '#2F6FDE',
+  '✓': '#2E8B57',
+  '⚠': '#F5A400',
+  '✕': '#D62828',
 }
 
 function LogEntry({ time, msg }) {
   const prefix = msg[0]
-  const color = LOG_COLORS[prefix] || '#4A5878'
+  const color = LOG_COLORS[prefix] || 'var(--ink-600)'
   return (
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '3px 0' }}>
-      <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+      <span style={{ color: 'var(--ink-400)', fontFamily: 'var(--font-mono)', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
         {time}
       </span>
       <span style={{ color, fontFamily: 'var(--font-mono)', fontSize: 11, wordBreak: 'break-word' }}>
@@ -34,10 +35,10 @@ function LogEntry({ time, msg }) {
 }
 
 export default function Simulation() {
-  const [active,     setActive]     = useState(null)
-  const [scenario,   setScenario]   = useState(SCENARIOS[0])
-  const [log,        setLog]        = useState([])
-  const [showReset,  setShowReset]  = useState(false)
+  const [active,    setActive]    = useState(null)
+  const [scenario,  setScenario]  = useState(SCENARIOS[0])
+  const [log,       setLog]       = useState([])
+  const [showReset, setShowReset] = useState(false)
 
   const addLog = (msg) => setLog(prev => [...prev, { time: new Date().toLocaleTimeString(), msg }])
 
@@ -61,17 +62,19 @@ export default function Simulation() {
   return (
     <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Page header */}
-      <div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-          Simulation / Developer
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-          Controlled test scenarios
-        </p>
-      </div>
+      {/* Header */}
+      <h2 style={{
+        fontFamily: 'var(--font-display)',
+        fontSize: 26,
+        fontWeight: 700,
+        color: 'var(--ink-900)',
+        margin: 0,
+      }}>
+        Simulation / Developer
+      </h2>
+      <p style={{ fontSize: 13, color: 'var(--ink-400)', marginTop: 0 }}>Controlled test scenarios</p>
 
-      {/* Persistent simulation banner */}
+      {/* Active simulation banner */}
       {active && (
         <div role="alert" style={{
           display: 'flex',
@@ -79,18 +82,18 @@ export default function Simulation() {
           justifyContent: 'center',
           gap: 12,
           padding: '10px 24px',
-          background: 'rgba(245,190,85,0.08)',
-          border: '1px solid #F5BE55',
-          borderRadius: 'var(--radius-sm)',
-          color: '#F5BE55',
+          background: 'rgba(245,164,0,0.10)',
+          border: '1px solid var(--amber-500)',
+          borderRadius: 8,
+          color: 'var(--amber-500)',
           fontWeight: 700,
           fontSize: 13,
           letterSpacing: '0.04em',
-          animation: 'fadeInUp 0.3s ease',
+          fontFamily: 'var(--font-sans)',
         }}>
           <span style={{ fontSize: 16 }}>⚗</span>
           SIMULATION MODE — TEST DATA — not live sensor readings
-          <span style={{ marginLeft: 12, fontWeight: 400, fontSize: 12, color: '#F5BE55' + 'BB' }}>
+          <span style={{ marginLeft: 12, fontWeight: 400, fontSize: 12, color: 'var(--amber-500)', opacity: 0.75 }}>
             {active.label}
           </span>
         </div>
@@ -100,96 +103,104 @@ export default function Simulation() {
 
         {/* Scenario selector */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 4 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-400)', marginBottom: 4, fontFamily: 'var(--font-sans)' }}>
             Select Scenario
           </div>
-          {SCENARIOS.map(s => (
-            <button
-              key={s.id}
-              onClick={() => !active && setScenario(s)}
-              disabled={!!active}
-              style={{
-                textAlign: 'left',
-                padding: '12px 14px',
-                borderRadius: 'var(--radius-md)',
-                background: scenario.id === s.id
-                  ? 'rgba(105,183,255,0.12)'
-                  : 'rgba(255,255,255,0.03)',
-                border: scenario.id === s.id
-                  ? '1px solid var(--accent-primary)'
-                  : '1px solid var(--border-glass)',
-                color: 'var(--text-primary)',
-                cursor: active ? 'not-allowed' : 'pointer',
-                opacity: active && scenario.id !== s.id ? 0.4 : 1,
-                transition: 'all var(--transition-fast)',
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: scenario.id === s.id ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
-                {s.label}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                {s.description}
-              </div>
-            </button>
-          ))}
+          {SCENARIOS.map(s => {
+            const isActive = scenario.id === s.id
+            return (
+              <button
+                key={s.id}
+                onClick={() => !active && setScenario(s)}
+                disabled={!!active}
+                style={{
+                  textAlign: 'left',
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  background: 'var(--bg-raised)',
+                  boxShadow: isActive ? 'var(--neo-inset)' : 'var(--neo-raised-sm)',
+                  border: 'none',
+                  color: isActive ? 'var(--orange-500)' : 'var(--ink-900)',
+                  cursor: active ? 'not-allowed' : 'pointer',
+                  opacity: active && !isActive ? 0.5 : 1,
+                  transition: 'all var(--transition-fast)',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{s.label}</div>
+                <div style={{ fontSize: 11, color: 'var(--ink-400)', lineHeight: 1.4 }}>{s.description}</div>
+              </button>
+            )
+          })}
         </div>
 
         {/* Controls + log */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* Scenario controls */}
+          {/* Scenario controls — glass-card */}
           <div className="glass-card" style={{ padding: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-400)', marginBottom: 12, fontFamily: 'var(--font-sans)' }}>
               Scenario Controls
             </div>
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>
-                {scenario.label}
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{scenario.description}</div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink-900)', marginBottom: 4, fontFamily: 'var(--font-sans)' }}>{scenario.label}</div>
+              <div style={{ fontSize: 13, color: 'var(--ink-600)', fontFamily: 'var(--font-sans)' }}>{scenario.description}</div>
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               {!active ? (
+                /* Primary action — flat orange */
                 <button
                   onClick={handleStart}
                   style={{
                     padding: '8px 22px',
-                    background: 'rgba(67,197,158,0.15)',
-                    border: '1px solid var(--status-normal)',
-                    borderRadius: 'var(--radius-sm)',
-                    color: 'var(--status-normal)',
+                    background: 'var(--orange-500)',
+                    border: 'none',
+                    borderRadius: 8,
+                    color: '#fff',
                     cursor: 'pointer',
-                    fontWeight: 600, fontSize: 13,
-                    transition: 'all var(--transition-fast)',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    fontFamily: 'var(--font-sans)',
+                    transition: 'background var(--transition-fast)',
                   }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--orange-600)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'var(--orange-500)'}
                 >
                   ▶ Start
                 </button>
               ) : (
+                /* Stop — flat red */
                 <button
                   onClick={handleStop}
                   style={{
                     padding: '8px 22px',
-                    background: 'rgba(255,93,108,0.15)',
-                    border: '1px solid var(--status-critical)',
-                    borderRadius: 'var(--radius-sm)',
-                    color: 'var(--status-critical)',
+                    background: 'var(--red-600)',
+                    border: 'none',
+                    borderRadius: 8,
+                    color: '#fff',
                     cursor: 'pointer',
-                    fontWeight: 600, fontSize: 13,
+                    fontWeight: 700,
+                    fontSize: 13,
+                    fontFamily: 'var(--font-sans)',
                   }}
                 >
                   ■ Stop
                 </button>
               )}
+              {/* Reset — neumorphic */}
               <button
                 onClick={() => setShowReset(true)}
                 style={{
                   padding: '8px 22px',
-                  background: 'rgba(245,190,85,0.10)',
-                  border: '1px solid var(--status-warning)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--status-warning)',
-                  cursor: 'pointer', fontSize: 13,
+                  background: 'var(--bg-raised)',
+                  boxShadow: 'var(--neo-raised-sm)',
+                  border: 'none',
+                  borderRadius: 8,
+                  color: 'var(--amber-500)',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 600,
                   transition: 'all var(--transition-fast)',
                 }}
               >
@@ -200,13 +211,13 @@ export default function Simulation() {
             {/* Reset confirm */}
             {showReset && (
               <div style={{
-                marginTop: 14, padding: 14,
-                background: 'rgba(245,190,85,0.08)',
-                border: '1px solid var(--status-warning)',
-                borderRadius: 'var(--radius-sm)',
-                animation: 'fadeInUp 0.2s ease',
+                marginTop: 14,
+                padding: 14,
+                background: 'rgba(245,164,0,0.08)',
+                border: '1px solid var(--amber-500)',
+                borderRadius: 8,
               }}>
-                <div style={{ fontSize: 13, color: 'var(--status-warning)', marginBottom: 10 }}>
+                <div style={{ fontSize: 13, color: 'var(--amber-500)', marginBottom: 10, fontFamily: 'var(--font-sans)' }}>
                   ⚠ Reset will clear all scenario state. Confirm?
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -214,12 +225,14 @@ export default function Simulation() {
                     onClick={handleReset}
                     style={{
                       padding: '5px 16px',
-                      background: 'var(--status-warning)',
+                      background: 'var(--amber-500)',
                       border: 'none',
-                      borderRadius: 'var(--radius-sm)',
-                      color: '#000',
+                      borderRadius: 6,
+                      color: '#fff',
                       cursor: 'pointer',
-                      fontWeight: 700, fontSize: 12,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      fontFamily: 'var(--font-sans)',
                     }}
                   >
                     Confirm Reset
@@ -228,11 +241,14 @@ export default function Simulation() {
                     onClick={() => setShowReset(false)}
                     style={{
                       padding: '5px 16px',
-                      background: 'transparent',
-                      border: '1px solid var(--border-glass)',
-                      borderRadius: 'var(--radius-sm)',
-                      color: 'var(--text-secondary)',
-                      cursor: 'pointer', fontSize: 12,
+                      background: 'var(--bg-raised)',
+                      boxShadow: 'var(--neo-raised-sm)',
+                      border: 'none',
+                      borderRadius: 6,
+                      color: 'var(--ink-600)',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontFamily: 'var(--font-sans)',
                     }}
                   >
                     Cancel
@@ -242,15 +258,15 @@ export default function Simulation() {
             )}
           </div>
 
-          {/* Event log */}
+          {/* Event log — glass-card with warm bg */}
           <div className="glass-card" style={{ flex: 1, padding: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-400)', marginBottom: 12, fontFamily: 'var(--font-sans)' }}>
               Event Log
             </div>
             <div style={{
-              background: '#080E1A',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-glass)',
+              background: 'var(--bg-inset)',
+              borderRadius: 8,
+              border: '1px solid var(--border-subtle)',
               padding: 16,
               fontFamily: 'var(--font-mono)',
               fontSize: 12,
@@ -259,9 +275,10 @@ export default function Simulation() {
               display: 'flex',
               flexDirection: 'column',
               gap: 2,
+              boxShadow: 'var(--neo-inset)',
             }}>
               {log.length === 0 ? (
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+                <div style={{ color: 'var(--ink-400)', fontSize: 11 }}>
                   Start a scenario to see events here
                 </div>
               ) : log.map((entry, i) => (

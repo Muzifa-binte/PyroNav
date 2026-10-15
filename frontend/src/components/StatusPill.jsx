@@ -1,58 +1,97 @@
 import React from 'react'
 
-const STATUS_VARIANTS = {
-  normal:       { bg: 'rgba(34,201,135,0.12)',  color: '#16A97A', dot: '#22C987',  animated: false },
-  NORMAL:       { bg: 'rgba(34,201,135,0.12)',  color: '#16A97A', dot: '#22C987',  animated: false },
-  warning:      { bg: 'rgba(245,166,35,0.12)',  color: '#C8820A', dot: '#F5A623',  animated: false },
-  WARNING:      { bg: 'rgba(245,166,35,0.12)',  color: '#C8820A', dot: '#F5A623',  animated: false },
-  high:         { bg: 'rgba(245,110,59,0.12)',  color: '#C4470E', dot: '#F56E3B',  animated: false },
-  HIGH_RISK:    { bg: 'rgba(245,110,59,0.12)',  color: '#C4470E', dot: '#F56E3B',  animated: false },
-  critical:     { bg: 'rgba(232,77,106,0.12)',  color: '#C0244C', dot: '#E84D6A',  animated: false },
-  CRITICAL:     { bg: 'rgba(232,77,106,0.12)',  color: '#C0244C', dot: '#E84D6A',  animated: false },
-  unknown:      { bg: 'rgba(148,163,184,0.12)', color: '#546280', dot: '#94A3B8',  animated: false },
-  UNKNOWN:      { bg: 'rgba(148,163,184,0.12)', color: '#546280', dot: '#94A3B8',  animated: false },
-  info:         { bg: 'rgba(107,143,255,0.12)', color: '#3A5FD9', dot: '#6B8FFF',  animated: false },
-  INFO:         { bg: 'rgba(107,143,255,0.12)', color: '#3A5FD9', dot: '#6B8FFF',  animated: false },
-  connected:    { bg: 'rgba(34,201,135,0.12)',  color: '#16A97A', dot: '#22C987',  animated: true  },
-  CONNECTED:    { bg: 'rgba(34,201,135,0.12)',  color: '#16A97A', dot: '#22C987',  animated: true  },
-  disconnected: { bg: 'rgba(232,77,106,0.12)',  color: '#C0244C', dot: '#E84D6A',  animated: false },
-  DISCONNECTED: { bg: 'rgba(232,77,106,0.12)',  color: '#C0244C', dot: '#E84D6A',  animated: false },
-  stale:        { bg: 'rgba(245,166,35,0.12)',  color: '#C8820A', dot: '#F5A623',  animated: false },
-  STALE:        { bg: 'rgba(245,166,35,0.12)',  color: '#C8820A', dot: '#F5A623',  animated: false },
+// Spec-aligned status color mapping (Section 3.2 + file instructions)
+const STATUS_MAP = {
+  // Normal / Safe variants
+  normal:   { color: '#2E8B57' },
+  NORMAL:   { color: '#2E8B57' },
+  safe:     { color: '#2E8B57' },
+  SAFE:     { color: '#2E8B57' },
+  // Warning
+  warning:  { color: '#F5A400' },
+  WARNING:  { color: '#F5A400' },
+  // High Risk / Danger
+  high:     { color: '#FF6A1A' },
+  HIGH_RISK:{ color: '#FF6A1A' },
+  danger:   { color: '#FF6A1A' },
+  DANGER:   { color: '#FF6A1A' },
+  // Critical
+  critical: { color: '#D62828' },
+  CRITICAL: { color: '#D62828' },
+  // Unknown / Offline
+  unknown:  { color: '#8B7F76' },
+  UNKNOWN:  { color: '#8B7F76' },
+  offline:  { color: '#8B7F76' },
+  OFFLINE:  { color: '#8B7F76' },
+  // Info / Watch
+  info:     { color: '#2F6FDE' },
+  INFO:     { color: '#2F6FDE' },
+  watch:    { color: '#2F6FDE' },
+  WATCH:    { color: '#2F6FDE' },
+  // Untrusted
+  untrusted:{ color: '#6B4FBB' },
+  UNTRUSTED:{ color: '#6B4FBB' },
+  // Connection states
+  connected:    { color: '#2E8B57', animated: true },
+  CONNECTED:    { color: '#2E8B57', animated: true },
+  disconnected: { color: '#D62828' },
+  DISCONNECTED: { color: '#D62828' },
+  stale:        { color: '#F5A400' },
+  STALE:        { color: '#F5A400' },
+  // Route statuses
+  ROUTE_FOUND:           { color: '#2E8B57' },
+  NO_VALID_ROUTE:        { color: '#D62828' },
+  NO_AVAILABLE_EXIT:     { color: '#D62828' },
+  RECALCULATION_PENDING: { color: '#F5A400' },
+  INVALID_ORIGIN:        { color: '#FF6A1A' },
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r},${g},${b},${alpha})`
 }
 
 export default function StatusPill({ status, level, label, size = 'sm' }) {
   const key = status || level || 'UNKNOWN'
-  const variant = STATUS_VARIANTS[key] || STATUS_VARIANTS.UNKNOWN
+  const variant = STATUS_MAP[key] || STATUS_MAP.UNKNOWN
+  const color = variant.color
   const displayLabel = label ?? String(key).replace(/_/g, ' ')
 
-  const dotSize = size === 'lg' ? 8 : 6
-  const padding = size === 'lg' ? '6px 14px' : '4px 10px'
-  const fontSize = size === 'lg' ? 13 : 11
+  const dotSize = size === 'lg' ? 9 : size === 'md' ? 7 : 6
+  const padding = size === 'lg' ? '6px 14px' : size === 'md' ? '4px 12px' : '2px 10px'
+  const fontSize = size === 'lg' ? 13 : size === 'md' ? 12 : 11
 
   return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 6,
-      padding,
-      borderRadius: 99,
-      fontSize,
-      fontWeight: 600,
-      background: variant.bg,
-      color: variant.color,
-      border: `1px solid ${variant.color}4D`,
-      whiteSpace: 'nowrap',
-      letterSpacing: '0.01em',
-    }}>
-      <span style={{
-        width: dotSize,
-        height: dotSize,
-        borderRadius: '50%',
-        background: variant.dot,
-        flexShrink: 0,
-        animation: variant.animated ? 'pulse-glow 2s infinite' : 'none',
-      }} aria-hidden="true" />
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding,
+        borderRadius: '100px',
+        fontSize,
+        fontWeight: 600,
+        background: hexToRgba(color, 0.12),
+        color,
+        border: `1px solid ${hexToRgba(color, 0.30)}`,
+        whiteSpace: 'nowrap',
+        letterSpacing: '0.01em',
+        fontFamily: 'var(--font-sans)',
+      }}
+    >
+      <span
+        style={{
+          width: dotSize,
+          height: dotSize,
+          borderRadius: '50%',
+          background: color,
+          flexShrink: 0,
+          animation: variant.animated ? 'pulse-glow 2s infinite' : 'none',
+        }}
+        aria-hidden="true"
+      />
       {displayLabel}
     </span>
   )
