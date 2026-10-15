@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-export default function EmergencyBanner({ active, message, exitId }) {
+export default function EmergencyBanner({ active, message, exitId, onDismiss }) {
   const [muted, setMuted] = useState(false);
   const [visible, setVisible] = useState(false);
 
@@ -57,8 +57,8 @@ export default function EmergencyBanner({ active, message, exitId }) {
         onClick={() => setMuted(m => !m)}
         aria-label={muted ? 'Unmute alarm' : 'Mute alarm'}
         style={{
-          background: 'rgba(255,255,255,0.2)',
-          border: '1px solid rgba(255,255,255,0.4)',
+          background: 'rgba(255,255,255,0.15)',
+          border: '1px solid rgba(255,255,255,0.35)',
           borderRadius: 8,
           color: '#fff',
           padding: '4px 12px',
@@ -70,6 +70,26 @@ export default function EmergencyBanner({ active, message, exitId }) {
       >
         {muted ? '🔇 Unmute' : '🔔 Mute'}
       </button>
+      {onDismiss && (
+        <button
+          onClick={onDismiss}
+          aria-label="Dismiss emergency banner"
+          style={{
+            background: 'rgba(255,255,255,0.15)',
+            border: '1px solid rgba(255,255,255,0.35)',
+            borderRadius: 8,
+            color: '#fff',
+            padding: '4px 10px',
+            cursor: 'pointer',
+            fontSize: 16,
+            fontWeight: 700,
+            flexShrink: 0,
+            lineHeight: 1,
+          }}
+        >
+          ✕
+        </button>
+      )}
     </div>
   );
 }

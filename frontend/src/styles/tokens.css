@@ -48,8 +48,36 @@
   --border-subtle: rgba(163, 140, 118, 0.3);
 
   /* Layout */
-  --sidebar-width: 240px;
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 64px;
   --topbar-height: 64px;
+
+  /* Semantic violet for untrusted/IDS state */
+  --violet-600: #6B4FBB;
+  --violet-bg:  rgba(107, 79, 187, 0.10);
+
+  /* Topbar specific */
+  --topbar-bg:               rgba(255, 255, 255, 0.78);
+  --topbar-blur:             blur(22px) saturate(150%);
+  --topbar-border:           rgba(255, 255, 255, 0.88);
+  --topbar-radius:           16px;
+  --topbar-shadow:           0 1px 2px rgba(163,140,118,0.06), 0 4px 18px rgba(163,140,118,0.10), inset 0 1px 0 rgba(255,255,255,0.95);
+  --topbar-pill-live-bg:     rgba(46, 139, 87, 0.12);
+  --topbar-pill-warn-bg:     rgba(245, 164, 0, 0.12);
+  --topbar-pill-crit-bg:     rgba(214, 40, 40, 0.12);
+  --topbar-pill-alert-bg:    rgba(255, 106, 26, 0.12);
+  --topbar-pill-alert-color: var(--orange-600);
+  --sidebar-bg:             rgba(248, 244, 238, 0.96);
+  --sidebar-item-bg:        var(--bg-raised);
+  --sidebar-item-radius:    12px;
+  --sidebar-item-active-bg: var(--bg-raised);
+  --sidebar-item-active-border: var(--orange-500);
+  --sidebar-item-active-color:  var(--orange-600);
+  --sidebar-item-color:         var(--ink-600);
+  --sidebar-item-hover-bg:  rgba(255, 255, 255, 0.70);
+  --sidebar-shadow:         4px 0 32px rgba(163, 140, 118, 0.10);
+  --sidebar-item-shadow:    var(--neo-raised-sm);
+  --sidebar-border:         var(--border-subtle);
 
   /* Spacing */
   --space-1: 4px;

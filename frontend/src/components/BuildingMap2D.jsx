@@ -1019,6 +1019,7 @@ export default function BuildingMap2D({
               <polyline points={pointsStr}
                 fill="none" stroke="#FF6A1A" strokeWidth={5}
                 strokeDasharray="14 8"
+                strokeDashoffset={14}
                 strokeLinejoin="round" strokeLinecap="round"
                 className="route-dash"
                 style={{ animation: 'routeDash 0.7s linear infinite' }}

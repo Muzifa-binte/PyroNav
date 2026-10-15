@@ -22,22 +22,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Animated background dot grid ───────────────────────────────────── */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image: radial-gradient(circle, rgba(255, 106, 26, 0.04) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
+/* body::after dot grid removed — AppShell renders its own minimal grid */
 
 /* ── Scrollbars ──────────────────────────────────────────────────────── */
-::-webkit-scrollbar        { width: 6px; height: 6px; }
-::-webkit-scrollbar-track  { background: var(--bg-inset); }
-::-webkit-scrollbar-thumb  { background: rgba(255,106,26,0.3); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,106,26,0.55); }
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: var(--bg-inset); border-radius: 10px; }
+::-webkit-scrollbar-thumb  { background: rgba(139,127,118,0.30); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,106,26,0.45); }
 
 /* ── Focus ring ──────────────────────────────────────────────────────── */
 :focus-visible {
@@ -51,12 +42,15 @@ body::after {
 
 /* ── Glass card ──────────────────────────────────────────────────────── */
 .glass-card {
-  background: rgba(248,244,238,0.75);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.8);
-  border-radius: 22px;
-  box-shadow: 0 8px 40px rgba(163,140,118,0.18);
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 18px;
+  box-shadow:
+    0 1px 2px rgba(163, 140, 118, 0.06),
+    0 4px 16px rgba(163, 140, 118, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .glass-card--critical {
@@ -83,18 +77,18 @@ body::after {
 
 /* ── Legacy card (preserve backwards compat) ─────────────────────────── */
 .card {
-  background: rgba(248,244,238,0.85);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.8);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: var(--radius-lg);
-  box-shadow: 0 8px 40px rgba(163,140,118,0.14);
+  box-shadow: 0 2px 12px rgba(163,140,118,0.10), 0 6px 30px rgba(163,140,118,0.08);
   padding: var(--space-5);
   transition: box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 .card:hover {
-  box-shadow: 0 16px 50px rgba(163,140,118,0.22);
-  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(163,140,118,0.16), 0 8px 40px rgba(163,140,118,0.10);
+  transform: translateY(-1px);
 }
 
 /* ── Page content wrapper ────────────────────────────────────────────── */
@@ -174,6 +168,23 @@ body::after {
 @keyframes emergencyPulse { 0%,100% { opacity:1; } 50% { opacity:0.7; } }
 @keyframes hazardPulse { 0%,100% { transform: scale(1); opacity:0.8; } 50% { transform: scale(1.3); opacity:0.3; } }
 
+/* ── Orb drifts for the background ──────────────────────────────────── */
+/*   Slow, gentle, never distracting. Two orbs drift in opposite arcs.   */
+@keyframes orbDrift1 {
+  0%   { transform: translate(0px,   0px)  scale(1.00); }
+  25%  { transform: translate(40px, -28px) scale(1.04); }
+  50%  { transform: translate(20px,  36px) scale(0.97); }
+  75%  { transform: translate(-32px, 18px) scale(1.02); }
+  100% { transform: translate(0px,   0px)  scale(1.00); }
+}
+@keyframes orbDrift2 {
+  0%   { transform: translate(0px,   0px)  scale(1.00); }
+  33%  { transform: translate(-36px, 24px) scale(1.05); }
+  66%  { transform: translate(28px, -20px) scale(0.96); }
+  100% { transform: translate(0px,   0px)  scale(1.00); }
+}
+
+/* Legacy float keyframes kept for any component that references them */
 @keyframes float1 {
   0%,100% { transform: translate(0,0) scale(1); }
   33%     { transform: translate(30px,-20px) scale(1.05); }

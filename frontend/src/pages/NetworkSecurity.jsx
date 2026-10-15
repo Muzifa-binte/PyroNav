@@ -4,14 +4,15 @@ import StatusPill from '../components/StatusPill'
 import * as api from '../services/api'
 import { wsEventBus } from '../hooks/useWebSocket'
 
-// Spec palette — no dark blues
-const CAT_COLOR = {
-  INVALID_MESSAGE:    '#FF6A1A',   // orange
-  SUSPICIOUS_PATTERN: '#D62828',   // red
-  UNKNOWN_DEVICE:     '#F5A400',   // amber
-  AUTH_FAILURE:       '#D62828',   // red
-  IDS:                '#6B4FBB',   // violet (untrusted)
-  default:            '#6B4FBB',
+// Spec palette — all as CSS var references via inline style objects
+// CAT_COLOR values are used as CSS custom property values via cssVar() below
+const CAT_COLOR_VAR = {
+  INVALID_MESSAGE:    'var(--orange-500)',
+  SUSPICIOUS_PATTERN: 'var(--red-600)',
+  UNKNOWN_DEVICE:     'var(--amber-500)',
+  AUTH_FAILURE:       'var(--red-600)',
+  IDS:                'var(--violet-600)',
+  default:            'var(--violet-600)',
 }
 
 const SEV_STATUS = {
@@ -60,9 +61,9 @@ export default function NetworkSecurity() {
 
       {/* Summary cards */}
       <div style={{ display: 'flex', gap: 16 }}>
-        <div className="glass-card" style={{ flex: 1, padding: 16, borderLeft: '4px solid #6B4FBB' }}>
+        <div className="glass-card" style={{ flex: 1, padding: 16, borderLeft: '4px solid var(--violet-600)' }}>
           <div style={{ fontSize: 11, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>IDS Events</div>
-          <div className="tabular" style={{ fontSize: 28, fontWeight: 700, color: '#6B4FBB', fontFamily: 'var(--font-mono)' }}>{events.length}</div>
+          <div className="tabular" style={{ fontSize: 28, fontWeight: 700, color: 'var(--violet-600)', fontFamily: 'var(--font-mono)' }}>{events.length}</div>
         </div>
         <div className="glass-card" style={{ flex: 1, padding: 16, borderLeft: '4px solid var(--orange-500)' }}>
           <div style={{ fontSize: 11, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Invalid Messages</div>
@@ -119,7 +120,7 @@ export default function NetworkSecurity() {
             </thead>
             <tbody>
               {events.map((ev, i) => {
-                const catColor = CAT_COLOR[ev.category] || CAT_COLOR.default
+                const catColor = CAT_COLOR_VAR[ev.category] || CAT_COLOR_VAR.default
                 const sevKey = SEV_STATUS[(ev.severity || 'INFO').toUpperCase()] || 'INFO'
                 return (
                   <tr

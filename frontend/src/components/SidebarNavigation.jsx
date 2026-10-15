@@ -1,55 +1,115 @@
+/**
+ * SidebarNavigation
+ *
+ * Matches the reference design exactly:
+ *   - Ivory/warm-base background, no hard border
+ *   - Brand row: flame icon + "PyroNav" in Playfair Display, no sub-label
+ *   - Nav items are neumorphic raised pills (--neo-raised-sm)
+ *   - Active item: orange left accent bar, orange bold text, slightly deeper shadow
+ *   - Inactive items: --ink-600 text, subtle hover lift
+ *   - No icons next to labels (matches reference screenshot)
+ *   - Collapsed mode: icon-only pills
+ *   - ALL colours are CSS variables — zero hardcoded hex values
+ */
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 
+// SVG flame icon — matches the reference screenshot's orange flame mark
+function FlameIcon({ size = 22 }) {
+  return (
+    <svg
+      width={size} height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      style={{ flexShrink: 0 }}
+    >
+      <path
+        d="M12 2C12 2 7 7.5 7 12.5C7 15.537 9.239 18 12 18C14.761 18 17 15.537 17 12.5C17 10.5 15.5 9 15.5 9C15.5 9 15 11 13.5 11C12.672 11 12 10.328 12 9.5C12 8 13 6.5 13 5C13 3.7 12 2 12 2Z"
+        fill="var(--orange-500)"
+      />
+      <path
+        d="M12 14C12 14 10 12.5 10 10.5C10 9.7 10.3 9 10.3 9C10.3 9 10 11.5 12 11.5C12.828 11.5 13.5 10.828 13.5 10C13.5 10 14.5 11 14.5 12.5C14.5 13.5 13.381 15 12 15C12 15 12 14 12 14Z"
+        fill="var(--orange-300)"
+        opacity="0.7"
+      />
+    </svg>
+  )
+}
+
+// Collapsed-mode mini icon (emoji initials)
+const ITEM_ABBR = {
+  '/overview':   'OV',
+  '/map':        'MP',
+  '/sensors':    'SN',
+  '/security':   'IS',
+  '/risk':       'RA',
+  '/alerts':     'AL',
+  '/incidents':  'IN',
+  '/simulation': 'SIM',
+  '/settings':   'CFG',
+  '/evacuation': 'EV',
+}
+
 const NAV_ITEMS = [
-  { path: '/overview',   label: 'Overview',          icon: '🏠' },
-  { path: '/map',        label: 'Live Map',           icon: '🗺️' },
-  { path: '/sensors',    label: 'Sensors',            icon: '📡' },
-  { path: '/evacuation', label: 'Evacuation',         icon: '🚪' },
-  { path: '/alerts',     label: 'Alerts & Incidents', icon: '🔔' },
-  { path: '/security',   label: 'Network Security',   icon: '🛡️' },
-  { path: '/risk',       label: 'Risk Analytics',     icon: '📊' },
+  { path: '/overview',   label: 'Command Overview' },
+  { path: '/map',        label: 'Live Floor Map'   },
+  { path: '/sensors',    label: 'Sensors'          },
+  { path: '/security',   label: 'IoT Security'     },
+  { path: '/risk',       label: 'Risk Analytics'   },
+  { path: '/alerts',     label: 'Alerts'           },
+  { path: '/incidents',  label: 'Incidents'        },
 ]
 
-const TOOLS_ITEMS = [
-  { path: '/simulation', label: 'Simulation',    icon: '⚗️' },
-  { path: '/settings',   label: 'Configuration', icon: '⚙️' },
+const TOOL_ITEMS = [
+  { path: '/simulation', label: 'Simulation'   },
+  { path: '/settings',   label: 'Settings'     },
+  { path: '/evacuation', label: 'Evacuation'   },
 ]
 
 function NavItem({ item, collapsed }) {
   return (
     <NavLink
       to={item.path}
-      title={collapsed ? item.label : undefined}
+      title={item.label}
       aria-label={item.label}
       style={({ isActive }) => ({
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '9px 12px',
-        borderRadius: 'var(--radius-sm)',
+        display:        'flex',
+        alignItems:     'center',
+        gap:            10,
+        padding:        collapsed ? '10px 0' : '11px 16px',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        borderRadius:   'var(--sidebar-item-radius)',
         textDecoration: 'none',
-        color: isActive ? '#1A2340' : '#4A5878',
-        background: isActive ? 'rgba(91,155,245,0.12)' : 'transparent',
-        borderLeft: isActive ? '3px solid #5B9BF5' : '3px solid transparent',
-        fontWeight: isActive ? 600 : 400,
-        fontSize: 13,
-        transition: 'all var(--transition-fast)',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
+        fontFamily:     'var(--font-sans)',
+        fontSize:       14,
+        fontWeight:     isActive ? 600 : 400,
+        color:          isActive ? 'var(--sidebar-item-active-color)' : 'var(--sidebar-item-color)',
+        background:     isActive ? 'var(--sidebar-item-active-bg)' : 'var(--sidebar-item-hover-bg)',
+        boxShadow:      isActive
+                          ? 'var(--neo-raised-sm)'
+                          : 'var(--neo-raised-sm)',
+        borderLeft:     isActive
+                          ? '3px solid var(--sidebar-item-active-border)'
+                          : '3px solid transparent',
+        transition:     'all var(--transition-fast)',
+        whiteSpace:     'nowrap',
+        overflow:       'hidden',
+        letterSpacing:  isActive ? '0' : '0',
       })}
-      onMouseEnter={e => {
-        if (!e.currentTarget.classList.contains('active')) {
-          e.currentTarget.style.background = 'rgba(91,155,245,0.06)'
-        }
-      }}
-      onMouseLeave={e => {
-        const isActive = e.currentTarget.getAttribute('aria-current') === 'page'
-        if (!isActive) e.currentTarget.style.background = 'transparent'
-      }}
     >
-      <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>{item.icon}</span>
-      {!collapsed && <span>{item.label}</span>}
+      {collapsed ? (
+        <span style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: 'inherit',
+          letterSpacing: '0.04em',
+        }}>
+          {ITEM_ABBR[item.path] || item.label.slice(0, 2).toUpperCase()}
+        </span>
+      ) : (
+        <span>{item.label}</span>
+      )}
     </NavLink>
   )
 }
@@ -59,120 +119,187 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
     <nav
       aria-label="Primary navigation"
       style={{
-        width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)',
-        background: 'rgba(255,255,255,0.85)',
-        backdropFilter: 'blur(28px)',
-        WebkitBackdropFilter: 'blur(28px)',
-        borderRight: '1px solid rgba(200,215,245,0.60)',
-        boxShadow: '4px 0 24px rgba(80,100,180,0.10)',
-        display: 'flex',
-        flexDirection: 'column',
-        flexShrink: 0,
-        overflow: 'hidden',
-        transition: 'width var(--transition-med)',
-        position: 'relative',
-        zIndex: 10,
+        width:              collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)',
+        minWidth:           collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)',
+        background:         'var(--sidebar-bg)',
+        backdropFilter:     'blur(20px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+        borderRight:        '1px solid var(--sidebar-border)',
+        boxShadow:          'var(--sidebar-shadow)',
+        display:            'flex',
+        flexDirection:      'column',
+        flexShrink:         0,
+        overflow:           'hidden',
+        transition:         'width var(--transition-med), min-width var(--transition-med)',
+        position:           'relative',
+        zIndex:             10,
       }}
     >
-      {/* Brand */}
+      {/* ── Brand row ── */}
       <div style={{
-        height: 'var(--topbar-height)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '0 14px',
-        borderBottom: '1px solid rgba(180,200,240,0.50)',
-        flexShrink: 0,
+        display:        'flex',
+        alignItems:     'center',
+        gap:            10,
+        padding:        collapsed ? '20px 0' : '22px 20px 18px',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        flexShrink:     0,
       }}>
-        {/* Flame logo */}
+        {/* Flame mark */}
         <div style={{
-          width: 36, height: 36,
-          borderRadius: 10,
-          background: 'linear-gradient(135deg, #5B9BF5, #22C987)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 20, flexShrink: 0,
-          boxShadow: '0 4px 16px rgba(91,155,245,0.30)',
+          width:          38,
+          height:         38,
+          borderRadius:   12,
+          background:     'var(--bg-raised)',
+          boxShadow:      'var(--neo-raised-sm)',
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'center',
+          flexShrink:     0,
         }}>
-          🔥
+          <FlameIcon size={22} />
         </div>
+
+        {/* "PyroNav" wordmark */}
         {!collapsed && (
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: '#1A2340', letterSpacing: '-0.01em' }}>
-              PyroNav
-            </div>
-            <div style={{ fontSize: 10, color: '#8A99B8', fontWeight: 500 }}>
-              Fire Safety
-            </div>
-          </div>
+          <span style={{
+            fontFamily:    'var(--font-display)',
+            fontWeight:    700,
+            fontSize:      20,
+            color:         'var(--ink-900)',
+            letterSpacing: '-0.02em',
+            lineHeight:    1,
+          }}>
+            PyroNav
+          </span>
         )}
-        <button
-          onClick={onToggle}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          style={{
-            marginLeft: 'auto',
-            background: 'rgba(91,155,245,0.08)',
-            border: '1px solid rgba(91,155,245,0.25)',
-            color: '#4A5878',
-            cursor: 'pointer',
-            fontSize: 13,
-            padding: '4px 7px',
-            borderRadius: 6,
-            flexShrink: 0,
-            fontWeight: 700,
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          {collapsed ? '›' : '‹'}
-        </button>
+
+        {/* Collapse toggle — only show when expanded */}
+        {!collapsed && (
+          <button
+            onClick={onToggle}
+            aria-label="Collapse sidebar"
+            style={{
+              marginLeft:   'auto',
+              background:   'var(--bg-inset)',
+              boxShadow:    'var(--neo-raised-sm)',
+              border:       'none',
+              color:        'var(--ink-400)',
+              cursor:       'pointer',
+              fontSize:     12,
+              width:        26,
+              height:       26,
+              borderRadius: 8,
+              flexShrink:   0,
+              fontWeight:   700,
+              display:      'flex',
+              alignItems:   'center',
+              justifyContent: 'center',
+              transition:   'all var(--transition-fast)',
+            }}
+          >
+            ‹
+          </button>
+        )}
+
+        {/* Expand toggle — only when collapsed */}
+        {collapsed && (
+          <button
+            onClick={onToggle}
+            aria-label="Expand sidebar"
+            style={{
+              position:     'absolute',
+              bottom:       20,
+              left:         '50%',
+              transform:    'translateX(-50%)',
+              background:   'var(--bg-inset)',
+              boxShadow:    'var(--neo-raised-sm)',
+              border:       'none',
+              color:        'var(--ink-400)',
+              cursor:       'pointer',
+              fontSize:     12,
+              width:        26,
+              height:       26,
+              borderRadius: 8,
+              fontWeight:   700,
+              display:      'flex',
+              alignItems:   'center',
+              justifyContent: 'center',
+            }}
+          >
+            ›
+          </button>
+        )}
       </div>
 
-      {/* Nav items */}
+      {/* ── Nav list ── */}
       <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '12px 10px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
+        flex:           1,
+        overflowY:      'auto',
+        overflowX:      'hidden',
+        padding:        collapsed ? '4px 10px' : '4px 14px',
+        display:        'flex',
+        flexDirection:  'column',
+        gap:            6,
+        /* hide scrollbar visually but keep it functional */
+        scrollbarWidth: 'none',
       }}>
         {NAV_ITEMS.map(item => (
           <NavItem key={item.path} item={item} collapsed={collapsed} />
         ))}
 
-        {/* Tools divider */}
-        <div style={{ margin: '12px 4px 8px', borderTop: '1px solid rgba(180,200,240,0.40)' }} />
+        {/* Divider before tools */}
         {!collapsed && (
           <div style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
-            textTransform: 'uppercase', color: '#8A99B8',
-            padding: '0 8px 4px',
+            margin:     '10px 4px 6px',
+            borderTop:  '1px solid var(--border-subtle)',
+          }} />
+        )}
+        {collapsed && <div style={{ height: 14 }} />}
+
+        {/* Tools section label */}
+        {!collapsed && (
+          <div style={{
+            fontSize:      10,
+            fontWeight:    700,
+            letterSpacing: '0.09em',
+            textTransform: 'uppercase',
+            color:         'var(--ink-400)',
+            padding:       '0 4px 2px',
           }}>
             Tools
           </div>
         )}
-        {TOOLS_ITEMS.map(item => (
+
+        {TOOL_ITEMS.map(item => (
           <NavItem key={item.path} item={item} collapsed={collapsed} />
         ))}
       </div>
 
-      {/* Footer */}
+      {/* ── Footer status pill ── */}
       {!collapsed && (
         <div style={{
-          padding: '12px 14px',
-          borderTop: '1px solid rgba(180,200,240,0.40)',
-          fontSize: 11, color: '#8A99B8',
-          display: 'flex',
+          padding:    '14px 20px',
+          borderTop:  '1px solid var(--border-subtle)',
+          display:    'flex',
           alignItems: 'center',
-          gap: 6,
+          gap:        7,
+          flexShrink: 0,
         }}>
           <span style={{
-            width: 8, height: 8,
+            width:        7,
+            height:       7,
             borderRadius: '50%',
-            background: 'var(--status-normal)',
-            display: 'inline-block',
-            flexShrink: 0,
+            background:   'var(--green-600)',
+            flexShrink:   0,
+            display:      'inline-block',
           }} />
-          Academic Prototype · v1.0
+          <span style={{
+            fontSize: 11,
+            color:    'var(--ink-400)',
+            fontFamily: 'var(--font-sans)',
+          }}>
+            Academic Prototype · v1.0
+          </span>
         </div>
       )}
     </nav>
