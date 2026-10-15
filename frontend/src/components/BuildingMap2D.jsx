@@ -436,16 +436,20 @@ export default function BuildingMap2D({
         aria-label="Hospital Ground Floor 2D Plan"
       >
         <defs>
-          {/* Pulsing route line marker */}
+          {/* Route arrow marker (legacy, kept for compatibility) */}
           <marker id="route-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-            <polygon points="0 1, 7 4, 0 7" fill="#0284C7" />
+            <polygon points="0 1, 7 4, 0 7" fill="#FF6A1A" />
           </marker>
 
-          {/* Pulse animations */}
+          {/* Red hatch pattern for blocked rooms */}
+          <pattern id="redHatch" patternUnits="userSpaceOnUse" width="8" height="8">
+            <line x1="0" y1="8" x2="8" y2="0" stroke="#D62828" strokeWidth="1.5" opacity="0.6"/>
+          </pattern>
+
+          {/* Animations */}
           <style>{`
-            @keyframes routeDash {
-              to { stroke-dashoffset: -24; }
-            }
+            @keyframes routeDash { to { stroke-dashoffset: -30; } }
+            @keyframes arrowFlow { 0%{opacity:0.3} 50%{opacity:1} 100%{opacity:0.3} }
             @keyframes hazardPulse {
               0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 4px rgba(225, 29, 72, 0.6)); }
               50% { opacity: 0.35; filter: drop-shadow(0 0 12px rgba(225, 29, 72, 0.9)); }
@@ -453,6 +457,14 @@ export default function BuildingMap2D({
             @keyframes warningPulse {
               0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 4px rgba(217, 119, 6, 0.6)); }
               50% { opacity: 0.45; filter: drop-shadow(0 0 10px rgba(217, 119, 6, 0.8)); }
+            }
+            @keyframes exitHalo {
+              0%, 100% { r: 22; opacity: 0.5; }
+              50%       { r: 28; opacity: 0.2; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .route-dash { animation: none !important; }
+              .arrow-flow { animation: none !important; opacity: 1 !important; }
             }
           `}</style>
         </defs>
@@ -813,27 +825,29 @@ export default function BuildingMap2D({
 
         {/* ── Corridors & Safety Infrastructure Overlays ── */}
 
-        {/* Green Evacuation Route Arrows on Corridors */}
-        <g id="evacuation-arrows" opacity={0.92}>
-          {/* Top Corridor: Moving right toward NE Exit */}
-          <EvacuationArrow x={175} y={218} direction="right" />
-          <EvacuationArrow x={345} y={218} direction="right" />
-          <EvacuationArrow x={570} y={218} direction="right" />
+        {/* Static Green Evacuation Arrows — shown only when no live route is active */}
+        {!(hasRoute && routePoints.length >= 2) && (
+          <g id="evacuation-arrows" opacity={0.92}>
+            {/* Top Corridor: Moving right toward NE Exit */}
+            <EvacuationArrow x={175} y={218} direction="right" />
+            <EvacuationArrow x={345} y={218} direction="right" />
+            <EvacuationArrow x={570} y={218} direction="right" />
 
-          {/* Right Corridor: Moving down toward SE Exit */}
-          <EvacuationArrow x={578} y={305} direction="down" />
-          <EvacuationArrow x={578} y={415} direction="down" />
+            {/* Right Corridor: Moving down toward SE Exit */}
+            <EvacuationArrow x={578} y={305} direction="down" />
+            <EvacuationArrow x={578} y={415} direction="down" />
 
-          {/* Left Corridor: Moving up */}
-          <EvacuationArrow x={172} y={305} direction="up" />
+            {/* Left Corridor: Moving up */}
+            <EvacuationArrow x={172} y={305} direction="up" />
 
-          {/* Bottom Corridor: Moving right */}
-          <EvacuationArrow x={235} y={515} direction="right" />
-          <EvacuationArrow x={605} y={515} direction="right" />
+            {/* Bottom Corridor: Moving right */}
+            <EvacuationArrow x={235} y={515} direction="right" />
+            <EvacuationArrow x={605} y={515} direction="right" />
 
-          {/* Main Entrance: Moving up into Lobby */}
-          <EvacuationArrow x={365} y={588} direction="up" />
-        </g>
+            {/* Main Entrance: Moving up into Lobby */}
+            <EvacuationArrow x={365} y={588} direction="up" />
+          </g>
+        )}
 
         {/* Fire Extinguishers (Mounted on Walls) */}
         <g id="fire-extinguishers">
@@ -916,43 +930,159 @@ export default function BuildingMap2D({
           )
         })}
 
-        {/* ── Real-Time Dynamic Route Line (Corridor Path) ── */}
-        {hasRoute && routePoints.length >= 2 && (
-          <g id="live-evacuation-route">
-            <polyline
-              points={routePoints.map(p => `${p.x},${p.y}`).join(' ')}
-              fill="none"
-              stroke="#0284C7"
-              strokeWidth={5}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              strokeDasharray="10 6"
-              markerEnd="url(#route-arrow)"
-              style={{
-                animation: 'routeDash 1s linear infinite',
-                filter: 'drop-shadow(0 0 6px rgba(2, 132, 199, 0.8))',
-              }}
-            />
-            {/* Origin Node Pulse */}
-            <circle
-              cx={routePoints[0].x}
-              cy={routePoints[0].y}
-              r={9}
-              fill="rgba(2, 132, 199, 0.3)"
-              stroke="#0284C7"
-              strokeWidth={2.5}
-            />
-            {/* Destination Exit Pulse */}
-            <circle
-              cx={routePoints[routePoints.length - 1].x}
-              cy={routePoints[routePoints.length - 1].y}
-              r={11}
-              fill="rgba(22, 163, 74, 0.4)"
-              stroke="#16A34A"
-              strokeWidth={3}
-            />
-          </g>
-        )}
+        {/* ── Animated Real-Time Evacuation Route ── */}
+        {hasRoute && routePoints.length >= 2 && (() => {
+          // Compute arrow placements along each segment
+          const arrowMarkers = []
+          let markerIndex = 0
+          for (let i = 0; i < routePoints.length - 1; i++) {
+            const p1 = routePoints[i]
+            const p2 = routePoints[i + 1]
+            const dx = p2.x - p1.x
+            const dy = p2.y - p1.y
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            [0.33, 0.66].forEach((t) => {
+              arrowMarkers.push({
+                x: p1.x + dx * t,
+                y: p1.y + dy * t,
+                angle,
+                delay: (markerIndex * 0.2) % 1.5,
+              })
+              markerIndex++
+            })
+          }
+
+          const start = routePoints[0]
+          const end = routePoints[routePoints.length - 1]
+          const pointsStr = routePoints.map(p => `${p.x},${p.y}`).join(' ')
+          const exitName = route.exit_id || 'EXIT'
+          const cost = route.total_cost ? `${route.total_cost.toFixed(1)} m` : ''
+
+          // Blocked rooms from hazard snapshot
+          const blockedRooms = route.hazard_state_snapshot || []
+
+          // Lookup coordinates for blocked rooms using ROOMS_DATA
+          const roomLookup = {}
+          ROOMS_DATA.forEach(r => {
+            roomLookup[r.id] = { x: r.x, y: r.y, width: r.w, height: r.h }
+          })
+
+          return (
+            <g id="animated-route">
+              {/* Blocked room overlays */}
+              {blockedRooms.map(roomId => {
+                const rd = roomLookup[roomId]
+                if (!rd) return null
+                return (
+                  <rect key={`blocked-${roomId}`}
+                    x={rd.x} y={rd.y}
+                    width={rd.width} height={rd.height}
+                    fill="url(#redHatch)"
+                    rx={4}
+                  />
+                )
+              })}
+
+              {/* Exit halos */}
+              {EXITS.map(exit => {
+                const ep = ROOM_ENTRY_POINTS[exit.id]
+                if (!ep) return null
+                const isTarget = exit.id === route.exit_id
+                return (
+                  <g key={`halo-${exit.id}`}>
+                    <circle cx={ep.x} cy={ep.y} r={isTarget ? 22 : 14}
+                      fill={isTarget ? 'rgba(255,106,26,0.15)' : 'rgba(46,139,87,0.08)'}
+                      stroke={isTarget ? '#FF6A1A' : '#2E8B57'}
+                      strokeWidth={isTarget ? 2 : 1}
+                    />
+                    {isTarget && (
+                      <circle cx={ep.x} cy={ep.y} r={28}
+                        fill="none" stroke="#FF6A1A" strokeWidth={1.5} opacity={0.5}
+                        style={{ animation: 'exitHalo 1.5s ease-in-out infinite' }}
+                      />
+                    )}
+                  </g>
+                )
+              })}
+
+              {/* Route glow layer */}
+              <polyline points={pointsStr}
+                fill="none" stroke="#FF6A1A" strokeWidth={9} opacity={0.25}
+                strokeLinejoin="round" strokeLinecap="round"
+              />
+              {/* Route white outline */}
+              <polyline points={pointsStr}
+                fill="none" stroke="#FFFFFF" strokeWidth={7}
+                strokeLinejoin="round" strokeLinecap="round"
+              />
+              {/* Main animated dashed line */}
+              <polyline points={pointsStr}
+                fill="none" stroke="#FF6A1A" strokeWidth={5}
+                strokeDasharray="14 8"
+                strokeLinejoin="round" strokeLinecap="round"
+                className="route-dash"
+                style={{ animation: 'routeDash 0.7s linear infinite' }}
+              />
+
+              {/* Animated arrowheads along route */}
+              {arrowMarkers.map((am, i) => (
+                <polygon key={`arrow-${i}`}
+                  points="-7,4 7,0 -7,-4"
+                  fill="#FF6A1A"
+                  className="arrow-flow"
+                  style={{ animation: `arrowFlow 1.5s ease-in-out infinite`, animationDelay: `${am.delay}s` }}
+                  transform={`translate(${am.x},${am.y}) rotate(${am.angle})`}
+                />
+              ))}
+
+              {/* Waypoint circles at intermediate points */}
+              {routePoints.slice(1, -1).map((pt, i) => (
+                <g key={`wp-${i}`}>
+                  <circle cx={pt.x} cy={pt.y} r={7} fill="#FF6A1A" stroke="#FFFFFF" strokeWidth={2}/>
+                  <text x={pt.x} y={pt.y + 1} textAnchor="middle" dominantBaseline="middle"
+                    fontSize={8} fill="#fff" fontWeight="bold">{i + 1}</text>
+                </g>
+              ))}
+
+              {/* Origin marker — person icon */}
+              <g>
+                <circle cx={start.x} cy={start.y} r={14}
+                  fill="rgba(255,106,26,0.25)" stroke="#FF6A1A" strokeWidth={2.5}/>
+                {/* head */}
+                <circle cx={start.x} cy={start.y - 4} r={3} fill="#FF6A1A"/>
+                {/* body */}
+                <line x1={start.x} y1={start.y - 1} x2={start.x} y2={start.y + 5}
+                  stroke="#FF6A1A" strokeWidth={2} strokeLinecap="round"/>
+                {/* arms */}
+                <line x1={start.x - 4} y1={start.y + 2} x2={start.x + 4} y2={start.y + 2}
+                  stroke="#FF6A1A" strokeWidth={2} strokeLinecap="round"/>
+              </g>
+
+              {/* Exit destination marker */}
+              <g>
+                <circle cx={end.x} cy={end.y} r={14}
+                  fill="rgba(46,139,87,0.3)" stroke="#2E8B57" strokeWidth={3}/>
+                <circle cx={end.x} cy={end.y} r={20}
+                  fill="none" stroke="#2E8B57" strokeWidth={1.5}
+                  style={{ animation: 'exitHalo 1.5s ease-in-out infinite' }}
+                />
+                <text x={end.x} y={end.y + 1} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={10} fill="#2E8B57" fontWeight="bold">✓</text>
+              </g>
+
+              {/* Exit info badge near destination */}
+              <g transform={`translate(${end.x - 40}, ${end.y + 26})`}>
+                <rect x={0} y={0} width={80} height={22} rx={6}
+                  fill="rgba(248,244,238,0.92)" stroke="rgba(46,139,87,0.6)" strokeWidth={1}
+                />
+                <text x={40} y={11} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={9} fill="#2E8B57" fontWeight="600" fontFamily="Inter, sans-serif">
+                  {exitName}{cost ? ` · ${cost}` : ''}
+                </text>
+              </g>
+            </g>
+          )
+        })()}
 
         {/* ── Top Title Box ── */}
         <g transform="translate(260, 15)">

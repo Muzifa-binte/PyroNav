@@ -1,81 +1,103 @@
 /* ============================================================
-   PyroNav Design Tokens — Light Glassmorphic Command Center
+   PyroNav Design Tokens — Warm Ivory Neumorphic Command Center
    ============================================================ */
 :root {
-  /* ── Backgrounds ─────────────────────────────────────────── */
-  --bg-canvas:       #D8E2F8;
-  --bg-sidebar:      rgba(255,255,255,0.85);
-  --surface-base:    rgba(255,255,255,0.75);
-  --surface-raised:  rgba(255,255,255,0.92);
-  --surface-inset:   rgba(215,225,248,0.85);
-  --surface-glass:   rgba(255,255,255,0.68);
+  /* Backgrounds */
+  --bg-base: #F4EFE9;
+  --bg-raised: #F8F4EE;
+  --bg-inset: #EDE6DD;
+  --bg-canvas: var(--bg-base);
 
-  /* ── Glass ───────────────────────────────────────────────── */
-  --glass-bg:        rgba(255,255,255,0.72);
-  --glass-border:    rgba(255,255,255,0.95);
-  --glass-shadow:    0 8px 40px rgba(80,100,180,0.18), 0 2px 8px rgba(80,100,180,0.10), inset 0 1px 0 rgba(255,255,255,1.0);
-  --glass-blur:      blur(24px);
+  /* Text */
+  --ink-900: #1E1A17;
+  --ink-600: #5A4F47;
+  --ink-400: #8B7F76;
 
-  /* ── Borders ─────────────────────────────────────────────── */
-  --border-subtle:   rgba(180,195,230,0.60);
-  --border-glass:    rgba(200,215,245,0.50);
+  /* Orange accent */
+  --orange-500: #FF6A1A;
+  --orange-600: #E5530A;
+  --orange-300: #FFB27A;
+  --orange-100: #FFE6D3;
 
-  /* ── Typography ──────────────────────────────────────────── */
-  --text-primary:    #1A2340;
-  --text-secondary:  #4A5878;
-  --text-muted:      #8A99B8;
+  /* Semantic status */
+  --amber-500: #F5A400;
+  --red-600: #D62828;
+  --green-600: #2E8B57;
+  --blue-600: #2F6FDE;
 
-  /* ── Accent ──────────────────────────────────────────────── */
-  --accent-primary:  #5B9BF5;
+  /* Neumorphic shadows */
+  --neo-light: rgba(255, 255, 255, 0.9);
+  --neo-dark: rgba(163, 140, 118, 0.35);
+  --neo-raised: 8px 8px 18px var(--neo-dark), -8px -8px 18px var(--neo-light);
+  --neo-raised-sm: 4px 4px 10px var(--neo-dark), -4px -4px 10px var(--neo-light);
+  --neo-inset: inset 6px 6px 12px var(--neo-dark), inset -6px -6px 12px var(--neo-light);
+  --neo-pressed: inset 3px 3px 8px var(--neo-dark), inset -3px -3px 8px var(--neo-light);
 
-  /* ── Status / hazard ─────────────────────────────────────── */
-  --status-normal:   #22C987;
-  --status-warning:  #F5A623;
-  --status-high:     #F56E3B;
-  --status-critical: #E84D6A;
-  --status-unknown:  #94A3B8;
-  --status-info:     #6B8FFF;
+  /* Backward-compatible aliases */
+  --text-primary: var(--ink-900);
+  --text-secondary: var(--ink-600);
+  --text-muted: var(--ink-400);
+  --accent-primary: var(--orange-500);
+  --status-normal: var(--green-600);
+  --status-warning: var(--amber-500);
+  --status-high: var(--orange-500);
+  --status-critical: var(--red-600);
+  --status-unknown: var(--ink-400);
+  --surface-inset: var(--bg-inset);
+  --border-glass: rgba(163, 140, 118, 0.2);
+  --border-subtle: rgba(163, 140, 118, 0.3);
 
-  /* ── Shadows ─────────────────────────────────────────────── */
-  --shadow-raised:   8px 8px 22px rgba(140,160,220,0.30), -4px -4px 14px rgba(255,255,255,0.95), 0 2px 6px rgba(80,100,180,0.10);
-  --shadow-card:     0 6px 30px rgba(80,100,180,0.14), inset 0 1px 0 rgba(255,255,255,1.0);
+  /* Layout */
+  --sidebar-width: 240px;
+  --topbar-height: 64px;
 
-  /* ── Spacing (4px base) ──────────────────────────────────── */
-  --space-1:   4px;
-  --space-2:   8px;
-  --space-3:  12px;
-  --space-4:  16px;
-  --space-5:  20px;
-  --space-6:  24px;
-  --space-7:  28px;
-  --space-8:  32px;
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
-  --space-16: 64px;
 
-  /* ── Radii ───────────────────────────────────────────────── */
-  --radius-sm:  8px;
-  --radius-md: 12px;
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
   --radius-lg: 16px;
-  --radius-xl: 20px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
 
-  /* ── Layout ──────────────────────────────────────────────── */
-  --sidebar-width:     240px;
-  --sidebar-collapsed:  64px;
-  --topbar-height:      64px;
+  /* Legacy aliases kept for backward compat */
+  --bg-sidebar: rgba(248, 244, 238, 0.92);
+  --surface-base: rgba(248, 244, 238, 0.85);
+  --surface-raised: var(--bg-raised);
+  --surface-glass: rgba(248, 244, 238, 0.68);
+  --glass-bg: rgba(248, 244, 238, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-shadow: 0 8px 40px rgba(163, 140, 118, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-blur: blur(18px);
+  --shadow-raised: var(--neo-raised);
+  --shadow-card: 0 6px 30px rgba(163, 140, 118, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 
-  /* ── Motion ──────────────────────────────────────────────── */
+  /* Motion */
   --transition-fast: 120ms ease;
   --transition-med:  200ms ease;
   --transition-slow: 300ms ease;
 
-  /* ── Typography ──────────────────────────────────────────── */
-  --font-sans: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
+  /* Font families */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Consolas', monospace;
+  --font-display: 'Playfair Display', Georgia, serif;
 
-  /* ── Animations ──────────────────────────────────────────── */
+  /* Animation shorthands */
   --anim-float: float 25s ease-in-out infinite;
   --anim-pulse: pulse-glow 2s ease-in-out infinite;
+
+  /* Legacy spacing */
+  --space-7:  28px;
+  --space-16: 64px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -72,15 +72,15 @@ export default function Evacuation() {
   const noRoute = route?.status === 'NO_VALID_ROUTE' || route?.status === 'NO_AVAILABLE_EXIT'
 
   return (
-    <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ padding: 24, background: 'var(--bg-base)', minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            Evacuation & Pathfinding
+          <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--ink-900)', fontFamily: 'Playfair Display, serif' }}>
+            Evacuation &amp; Pathfinding
           </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+          <p style={{ fontSize: 13, color: 'var(--ink-400)', marginTop: 2 }}>
             Current route and status
           </p>
         </div>
@@ -127,13 +127,14 @@ export default function Evacuation() {
               onChange={e => setOrigin(e.target.value)}
               style={{
                 width: '100%', marginBottom: 12,
-                background: 'var(--surface-inset)',
+                background: 'var(--bg-inset)',
                 border: '1px solid var(--border-glass)',
                 borderRadius: 'var(--radius-sm)',
                 padding: '8px 10px',
-                color: 'var(--text-primary)',
+                color: 'var(--ink-900)',
                 fontSize: 13,
                 outline: 'none',
+                boxShadow: 'var(--neo-inset)',
               }}
             >
               {rooms.map(r => <option key={r.room_id} value={r.room_id}>{r.name}</option>)}
@@ -167,13 +168,14 @@ export default function Evacuation() {
               onClick={handleCalculate}
               disabled={calcLoading}
               style={{
-                width: '100%', padding: '9px',
-                background: 'rgba(105,183,255,0.15)',
-                border: '1px solid var(--accent-primary)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--accent-primary)',
+                width: '100%', padding: '10px 24px',
+                background: '#FF6A1A',
+                border: 'none',
+                borderRadius: 8,
+                color: '#fff',
                 cursor: calcLoading ? 'wait' : 'pointer',
-                fontWeight: 600, fontSize: 13,
+                fontWeight: 600, fontSize: 14,
+                letterSpacing: '0.02em',
                 transition: 'all var(--transition-fast)',
               }}
             >
@@ -202,15 +204,17 @@ export default function Evacuation() {
               {/* No route warning */}
               {noRoute && (
                 <div style={{
-                  padding: 12,
-                  background: 'rgba(255,93,108,0.08)',
-                  border: '1px solid var(--status-critical)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--status-critical)',
-                  fontSize: 13,
+                  background: 'rgba(214,40,40,0.1)',
+                  border: '2px solid #D62828',
+                  borderRadius: 12,
+                  padding: 24,
+                  textAlign: 'center',
+                  color: '#D62828',
+                  fontWeight: 700,
+                  fontSize: 18,
                   marginBottom: 10,
                 }}>
-                  ✕ {route.status === 'NO_AVAILABLE_EXIT'
+                  ⚠️ {route.status === 'NO_AVAILABLE_EXIT'
                     ? 'All exits are unavailable.'
                     : 'No valid evacuation route. All paths blocked or unsafe.'}
                 </div>
@@ -260,24 +264,27 @@ export default function Evacuation() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {route.node_ids.map((n, idx) => (
                       <div key={`${n}-${idx}`} style={{
+                        borderLeft: '3px solid #FF6A1A',
+                        paddingLeft: 12,
+                        marginBottom: 8,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
-                        padding: '5px 8px',
-                        borderRadius: 6,
-                        background: 'rgba(255,255,255,0.02)',
                       }}>
-                        <div style={{
-                          width: 20, height: 20, borderRadius: '50%',
-                          background: 'rgba(105,183,255,0.15)',
-                          border: '1px solid rgba(105,183,255,0.3)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 10, fontWeight: 700, color: 'var(--accent-primary)',
+                        <span style={{
+                          background: '#FF6A1A',
+                          color: '#fff',
+                          borderRadius: '50%',
+                          width: 22,
+                          height: 22,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 11,
+                          fontWeight: 700,
                           flexShrink: 0,
-                        }}>
-                          {idx + 1}
-                        </div>
-                        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                        }}>{idx + 1}</span>
+                        <span style={{ fontSize: 12, color: 'var(--ink-600)' }}>
                           {n.replace(/_/g, ' ')}
                         </span>
                       </div>
