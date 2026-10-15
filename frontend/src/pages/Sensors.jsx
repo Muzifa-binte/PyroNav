@@ -90,7 +90,7 @@ export default function Sensors() {
         <div style={{ width: 1, background: 'var(--border-subtle)', alignSelf: 'stretch' }} />
         <div>
           <div style={{ fontSize: 10, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Online</div>
-          <div className="tabular" style={{ fontSize: 22, fontWeight: 700, color: '#2E8B57', fontFamily: 'var(--font-mono)' }}>{online}</div>
+          <div className="tabular" style={{ fontSize: 22, fontWeight: 700, color: 'var(--green-600)', fontFamily: 'var(--font-mono)' }}>{online}</div>
         </div>
         <div style={{ width: 1, background: 'var(--border-subtle)', alignSelf: 'stretch' }} />
         <div>

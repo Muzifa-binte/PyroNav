@@ -72,7 +72,7 @@ export default function Evacuation() {
   const noRoute = route?.status === 'NO_VALID_ROUTE' || route?.status === 'NO_AVAILABLE_EXIT'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
