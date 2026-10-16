@@ -74,6 +74,38 @@ def test_every_room_can_reach_an_exit(building):
     assert stranded == [], f"no route to any available exit from: {stranded}"
 
 
+def test_registry_agrees_with_floor_plan_and_sample_sensors():
+    """Member 1's 3D registry and Member 3's floor plan describe the same rooms;
+    a sensor listed in both files must sit in the same room with the same type."""
+    reg = demo_data.registry()
+    if not reg:
+        pytest.skip("no hospital-3d-sensors.json")
+    plan = {r["room_id"]: r["name"] for f in demo_data._floors() for r in f.get("rooms", [])}
+    reg_rooms = {r["room_id"]: r for r in reg["rooms"]}
+    renamed = [f"{rid}: plan={name!r} registry={reg_rooms[rid]['name']!r}"
+               for rid, name in plan.items() if rid in reg_rooms and reg_rooms[rid]["name"] != name]
+    assert renamed == [], "room names differ between the two files"
+    assert sorted(set(plan) - set(reg_rooms)) == [], "floor-plan rooms missing from the 3D registry"
+
+    reg_sensors = {s["sensor_id"]: s for s in reg["sensors"]}
+    drift = [
+        f"{s['sensor_id']}: sample={s['room_id']}/{s['sensor_type']} "
+        f"registry={reg_sensors[s['sensor_id']]['room_id']}/{reg_sensors[s['sensor_id']]['sensor_type']}"
+        for s in demo_data._load("sample-sensors.json")["sensors"]
+        if s["sensor_id"] in reg_sensors
+        and (s["room_id"], s["sensor_type"]) != (reg_sensors[s["sensor_id"]]["room_id"],
+                                                 reg_sensors[s["sensor_id"]]["sensor_type"])
+    ]
+    assert drift == []
+
+
+def test_every_room_has_floor_and_kind(building):
+    missing = [r["room_id"] for r in building["rooms"] if not r.get("floor_id")]
+    assert missing == [], f"rooms without floor_id: {missing}"
+    if demo_data.registry():
+        assert all(r.get("kind") for r in building["rooms"]), "registry rooms need a kind"
+
+
 # ---------------------------------------------------------------------------
 # The demo hospital loads into a real database (separate throw-away schema)
 # ---------------------------------------------------------------------------
@@ -101,6 +133,12 @@ def test_demo_building_seeds_into_postgresql(building):
             "(SELECT COUNT(*) FROM exits) AS exits")
         # --replace leaves exactly the demo building, whatever migrations seeded before
         assert counts == {k: len(building[k]) for k in ("rooms", "sensors", "nodes", "edges", "exits")}
+        # Registry details landed in the 004 columns
+        details = db_manager.fetch_one(
+            "SELECT COUNT(*) FILTER (WHERE kind IS NOT NULL) AS rooms_with_kind, "
+            "(SELECT COUNT(*) FROM sensors WHERE mount IS NOT NULL) AS sensors_with_mount FROM rooms")
+        assert details["rooms_with_kind"] == sum(1 for r in building["rooms"] if r.get("kind"))
+        assert details["sensors_with_mount"] == sum(1 for x in building["sensors"] if x.get("mount"))
         assert result["upserted"]["rooms"] == len(building["rooms"])
 
         # Re-seeding is safe and changes nothing

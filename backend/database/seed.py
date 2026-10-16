@@ -7,9 +7,11 @@ Usage (from the backend/ directory, after running migrations):
     python -m database.seed --reset-runtime    # ALSO wipe readings, events, notifications and
                                                # routes, and set every room back to UNKNOWN
 
-The demo hospital is whatever /shared-contracts/mock-data defines right now
-(sample-building.json, sample-graph.json, sample-sensors.json). When a teammate
-changes those files, running the seed again picks the change up.
+The demo hospital is whatever /shared-contracts defines right now: the floor
+plan and graph (mock-data/sample-building.json, sample-graph.json — Member 3)
+plus every room and sensor of the 3D-model registry (hospital-3d-sensors.json —
+Member 1). When a teammate changes those files, running the seed again picks
+the change up. Needs migration 004 (floor/kind/category, sensor mount/metadata).
 
 --replace also REMOVES rooms, graph rows and sensors that are not in the demo
 files (with their readings and events). Use it to switch to a new demo layout;
@@ -53,14 +55,19 @@ def seed_building(building: Dict[str, List[dict]], db=db_manager, replace: bool 
         with conn.cursor() as cur:
             cur.executemany(
                 """
-                INSERT INTO rooms (room_id, name, map_position, dimensions)
-                VALUES (%(room_id)s, %(name)s, %(map_position)s, %(dimensions)s)
+                INSERT INTO rooms (room_id, name, map_position, dimensions, floor_id, kind, category)
+                VALUES (%(room_id)s, %(name)s, %(map_position)s, %(dimensions)s,
+                        %(floor_id)s, %(kind)s, %(category)s)
                 ON CONFLICT (room_id) DO UPDATE SET
                     name         = EXCLUDED.name,
                     map_position = EXCLUDED.map_position,
-                    dimensions   = EXCLUDED.dimensions
+                    dimensions   = EXCLUDED.dimensions,
+                    floor_id     = EXCLUDED.floor_id,
+                    kind         = EXCLUDED.kind,
+                    category     = EXCLUDED.category
                 """,
-                [{"map_position": None, "dimensions": None, **r} for r in rooms],
+                [{"map_position": None, "dimensions": None, "floor_id": None,
+                  "kind": None, "category": None, **r} for r in rooms],
             )
             cur.executemany(
                 """
@@ -105,14 +112,17 @@ def seed_building(building: Dict[str, List[dict]], db=db_manager, replace: bool 
             )
             cur.executemany(
                 """
-                INSERT INTO sensors (sensor_id, room_id, sensor_type, unit_config)
-                VALUES (%(sensor_id)s, %(room_id)s, %(sensor_type)s, %(unit_config)s)
+                INSERT INTO sensors (sensor_id, room_id, sensor_type, unit_config, mount, metadata)
+                VALUES (%(sensor_id)s, %(room_id)s, %(sensor_type)s, %(unit_config)s,
+                        %(mount)s, %(metadata)s)
                 ON CONFLICT (sensor_id) DO UPDATE SET
                     room_id     = EXCLUDED.room_id,
                     sensor_type = EXCLUDED.sensor_type,
-                    unit_config = EXCLUDED.unit_config
+                    unit_config = EXCLUDED.unit_config,
+                    mount       = EXCLUDED.mount,
+                    metadata    = EXCLUDED.metadata
                 """,
-                [{"unit_config": None, **s} for s in sensors],
+                [{"unit_config": None, "mount": None, "metadata": None, **s} for s in sensors],
             )
 
             if replace:

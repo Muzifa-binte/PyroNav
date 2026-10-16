@@ -25,10 +25,7 @@ ROOM_COLUMNS = "*"
 def _demo_rooms() -> List[Dict]:
     return [
         {
-            "room_id": r["room_id"],
-            "name": r["name"],
-            "map_position": r["map_position"],
-            "dimensions": r["dimensions"],
+            **r,  # room_id, name, map_position, dimensions, floor_id, kind, category
             "current_hazard_level": "UNKNOWN",
             "data_quality_status": "NO_DATA",
             "last_updated_at": None,

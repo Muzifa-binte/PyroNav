@@ -14,6 +14,7 @@ The API can also apply them at startup (`AUTO_MIGRATE=true`), and the Docker ima
 | `001_initial_schema.sql` | All tables, enums and views for the four members' domains |
 | `002_performance_and_operations.sql` | Composite indexes, integrity checks, `security_events`, `room_sensor_freshness` view, `purge_old_data()`, UTC database default |
 | `003_seed_demo_building.sql` | Member 3: inserts a demo graph if missing. It is an older 6-room layout, so run `python -m database.seed --replace` to get the current demo hospital |
+| `004_member4_hospital3d_registry.sql` | Columns for Member 1's 3D-hospital registry: `rooms.floor_id/kind/category`, `sensors.mount/metadata`. The rows are loaded from `shared-contracts/hospital-3d-sensors.json` by `python -m database.seed` |
 
 ## Adding a schema change
 

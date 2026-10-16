@@ -23,11 +23,11 @@ pytest --durations=10                   # slowest tests
 | `test_api_fallback.py` | **Resilience:** DB down → degraded health, demo data, real routes on the demo graph, 503s, headers, CORS, dev endpoint guard | no |
 | `test_services.py` | Background-service registry: start/stop, health reporting, failure isolation | no |
 | `test_utils.py` | UTC serialisation, retry with backoff | no |
-| `test_demo_data_contract.py` | **Teammates' demo data** (`shared-contracts/mock-data`): unique ids, valid references, non-negative costs, every room can reach an exit, and the building loads into PostgreSQL. Independent of the layout | partly |
+| `test_demo_data_contract.py` | **Teammates' data** (`shared-contracts`): unique ids, valid references, non-negative costs, every room can reach an exit, Member 1's 3D registry agrees with Member 3's floor plan, and the whole building (26 rooms, 57 sensors) loads into PostgreSQL. Independent of the layout | partly |
 | `test_database_integration.py` | Migrations, every domain endpoint on real data, notification acknowledgement over WebSocket, **hazard → automatic route recalculation → broadcast**, audit log, DB logging, sessions, retention, **pool recovery after a killed connection** | yes |
 | `test_dijkstra.py`, `test_bfs.py` | Member 3's algorithms | no |
 
-Last full run: **86 passed** with PostgreSQL 16; **68 passed, 18 skipped** without a database (Windows 11, Python 3.14).
+Last full run: **114 passed** with PostgreSQL 16; **95 passed, 19 skipped** without a database (Windows 11, Python 3.14). Includes Member 1's `test_sensor_ingestion.py`.
 
 ### Regression tests for integration bugs fixed in Week 4
 | Test | Bug |

@@ -119,6 +119,8 @@ Returns 503 if the database is unreachable. If the database is reachable but not
 }
 ```
 
+Sensors also carry `mount` (`ceiling`, `wall` or `panel`) and `metadata` from the 3D registry: `placement`, `baseline` values, `purpose` and, for current sensors, `rated_current_a` (useful for decision-engine thresholds).
+
 ### `GET /sensors/{sensor_id}`
 Returns the sensor fields plus `"latest_reading": {"timestamp", "values", "units", "validation_status"}`, or `null` if the sensor has no readings yet.
 
@@ -151,14 +153,16 @@ Returns `201` with the created sensor. Errors: `409` for a duplicate, `422` for 
 ```json
 {
   "rooms": [
-    {"room_id": "operation_theater", "name": "Operation Theater",
-     "map_position": {"x": 400, "y": 150}, "dimensions": {"w": 120, "h": 100},
+    {"room_id": "operation_theater", "name": "Operating Theatre (OT)",
+     "map_position": {"x": 490, "y": 60}, "dimensions": {"w": 160, "h": 110},
+     "floor_id": "floor_1", "kind": "room", "category": "surgical",
      "current_hazard_level": "CRITICAL", "data_quality_status": "FRESH",
      "last_updated_at": "2026-10-14T10:30:00+00:00"}
   ],
-  "total": 6, "demo_data": false
+  "total": 26, "demo_data": false
 }
 ```
+`kind` is `room`, `hall`, `corridor` or `stairwell` (from Member 1's `hospital-3d-sensors.json`). Corridors, halls and stairwells have sensors too, so they are rooms in the database; they have no `map_position` because the 2D map doesn't draw them. **A UI that only wants real rooms should filter on `kind === "room"`** (or `!== "corridor"` / `"stairwell"`).
 
 ### `GET /rooms/{room_id}`
 This returns the room fields plus:
