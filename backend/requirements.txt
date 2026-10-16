@@ -9,6 +9,9 @@ uvicorn[standard]==0.54.0
 psycopg2-binary==2.9.13
 SQLAlchemy==2.0.49
 
+# MQTT client for Member 1's sensor ingestion (BACKGROUND_SERVICES=sensor_ingestion.service)
+paho-mqtt==2.1.0
+
 # WebSocket
 websockets==17.2
 python-socketio==5.17.0

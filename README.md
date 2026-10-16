@@ -63,6 +63,19 @@ The API also starts **without** a database. Reads are then served from `shared-c
 
 > **Windows tip:** wherever the docs say `python` or `pytest`, use `.\venv\Scripts\python.exe` or `.\venv\Scripts\python.exe -m pytest` from `backend\`. Use `npm.cmd` for `npm`.
 
+### Live sensor data (MQTT → dashboard)
+
+```
+3D app (browser) --MQTT/WebSocket :9001--> Mosquitto --MQTT :1883--> sensor ingestion (inside the API)
+      --> event bus --> ws://localhost:8000/ws/v1/live --> dashboard + 3D app
+```
+With Docker Compose this is all on by default. For local development:
+
+1. **Start an MQTT broker**: `docker compose up -d mosquitto` (or a native Mosquitto with `backend/mqtt/mosquitto.conf`, which opens ports 1883 and 9001).
+2. **Install the MQTT client** (it is in `requirements.txt`): `.\venv\Scripts\python.exe -m pip install -r requirements.txt`.
+3. **Turn the ingestion on** in `backend/.env`: `BACKGROUND_SERVICES=sensor_ingestion.service`, then restart the API.
+4. **Check**: `GET /api/v1/health` shows `"service:mqtt_ingestion": running` and `"mqtt": connected`. Moving a sensor slider in the 3D app (`hospital-3d`, `npm.cmd run dev`) now sends `sensor_reading_updated` events on `/ws/v1/live`.
+
 ## Repository layout
 
 ```

@@ -30,7 +30,7 @@ python scripts/export_openapi.py                 # refresh shared-contracts/open
 ## 2. Docker Compose
 
 ```bash
-docker compose up -d --build     # PostgreSQL 16 + API
+docker compose up -d --build     # PostgreSQL 16 + Mosquitto (MQTT) + API
 docker compose logs -f api
 docker compose down              # keep data      (docker compose down -v deletes it)
 ```
@@ -70,8 +70,8 @@ All are optional; the defaults suit local development. Put them in `backend/.env
 | `WS_HEARTBEAT_SECONDS` | `30` | WebSocket heartbeat interval (`0` = off) |
 | `RETENTION_DAYS` | `0` | Purge data older than N days (`0` = off) |
 | `RETENTION_INTERVAL_HOURS` | `6` | How often the purge runs |
-| `BACKGROUND_SERVICES` | (empty) | Modules whose workers run inside the API (see ARCHITECTURE.md §5.3) |
-| `MQTT_BROKER` / `MQTT_PORT` | `localhost` / `1883` | Member 1's broker |
+| `BACKGROUND_SERVICES` | (empty; Docker: `sensor_ingestion.service`) | Modules whose workers run inside the API (see ARCHITECTURE.md §5.3). `sensor_ingestion.service` = live MQTT sensor data, needs a broker |
+| `MQTT_BROKER` / `MQTT_PORT` | `localhost` / `1883` (Docker: `mosquitto`) | MQTT broker the ingestion subscribes to (`backend/mqtt/mosquitto.conf`: 1883 TCP, 9001 WebSocket for the browser) |
 
 ## 4. Production checklist
 

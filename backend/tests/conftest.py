@@ -15,6 +15,7 @@ os.environ["AUTO_MIGRATE"] = "false"
 os.environ["DEMO_FALLBACK"] = "true"
 os.environ["ENABLE_DEV_ENDPOINTS"] = "true"
 os.environ["RETENTION_DAYS"] = "0"
+os.environ["BACKGROUND_SERVICES"] = ""      # no MQTT broker needed; services are tested explicitly
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
