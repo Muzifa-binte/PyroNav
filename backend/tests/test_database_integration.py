@@ -125,6 +125,9 @@ def test_sensor_readings_newest_first_with_time_filter(client, database):
 
     sensor = client.get(f"{API}/sensors/SMOKE-OT-01").json()
     assert sensor["latest_reading"]["values"] == {"smoke": 30}
+    listed = client.get(f"{API}/sensors", params={"room_id": "operation_theater"}).json()["sensors"]
+    by_id = {s["sensor_id"]: s for s in listed}
+    assert by_id["SMOKE-OT-01"]["latest_reading"]["values"] == {"smoke": 30}
     assert client.get(f"{API}/sensors/NOPE/readings").status_code == 404
 
 

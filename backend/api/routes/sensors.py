@@ -44,7 +44,8 @@ def _demo_sensors():
 @router.get(
     "/sensors",
     summary="List all sensors",
-    description="All registered sensors with their current status. Optional filters narrow the list.",
+    description="All registered sensors with their current status and `latest_reading` "
+                "(null if none yet). Optional filters narrow the list.",
 )
 def get_all_sensors(
     room_id: Optional[str] = None,
@@ -60,10 +61,20 @@ def get_all_sensors(
             f"SELECT {SENSOR_COLUMNS} FROM sensors {where} ORDER BY room_id, sensor_id",
             tuple(v for v in filters.values() if v is not None),
         )
+        # Same shape as GET /sensors/{id}, so a table can show values right after load
+        latest = {
+            r.pop("sensor_id"): r
+            for r in db_manager.fetch_all(
+                'SELECT sensor_id, "timestamp", "values", units, validation_status '
+                "FROM latest_sensor_readings"
+            )
+        }
+        for row in rows:
+            row["latest_reading"] = latest.get(row["sensor_id"])
         return {"sensors": to_jsonable(rows), "total": len(rows), "demo_data": False}
 
     def fallback():
-        rows = [s for s in _demo_sensors()
+        rows = [{**s, "latest_reading": None} for s in _demo_sensors()
                 if all(val is None or s.get(col) == val for col, val in filters.items())]
         return {"sensors": rows, "total": len(rows), "demo_data": True}
 
