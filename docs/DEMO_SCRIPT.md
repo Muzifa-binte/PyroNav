@@ -42,9 +42,9 @@ The route is Isolation Room → ICU → EXIT-NW (13 m). Both terminals receive `
 ```powershell
 .\venv\Scripts\python.exe scripts\simulate_hazard.py icu CRITICAL
 ```
-Both terminals receive `room_status_changed`, `hazard_event_created` and `notification_created`. Then, with no further action, Member 3's route monitor recalculates and `route_updated` arrives (`reason: hazard_change`). The Evacuation page **redraws by itself** to Isolation Room → Patient Room → OT → EXIT-NE (21 m), with no refresh needed.
+Both terminals receive `room_status_changed`, `hazard_event_created` and `notification_created`. Then, with no further action, Member 3's route monitor recalculates and `route_updated` arrives (`reason: hazard_change`). The Evacuation page **redraws by itself** to Isolation Room → Patient Room → Waiting Area → corridor → OT → EXIT-NE (27 m), with no refresh needed.
 
-*Cut-off variant:* calculate from **Records**, then run `simulate_hazard.py administration CRITICAL`. Records can only be left through Administration, so the result is `NO_VALID_ROUTE`.
+*Cut off by a second fire:* now set the Patient Room on fire too: `simulate_hazard.py patient_room CRITICAL`. It is on the new route, so the monitor recalculates again, and with both neighbours burning the Isolation Room has no safe way out: `NO_VALID_ROUTE`. (With the corridor junctions in Member 3's graph, no single fire cuts any room off. It takes two.)
 
 Afterwards, run `.\venv\Scripts\python.exe scripts\simulate_hazard.py --reset` to set every room back to NORMAL.
 
