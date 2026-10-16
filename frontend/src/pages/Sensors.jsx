@@ -21,6 +21,13 @@ function freshnessColor(lastSeen) {
   return '#D62828'
 }
 
+// unit_config / values arrive as objects, e.g. { smoke: 'ppm', temperature: 'degC' }
+function formatPairs(obj, sep = ': ') {
+  if (obj == null) return null
+  if (typeof obj !== 'object') return String(obj)
+  return Object.entries(obj).map(([k, v]) => `${k}${sep}${v}`).join(', ')
+}
+
 function freshnessWidth(lastSeen) {
   if (!lastSeen) return 10
   const age = Date.now() - new Date(lastSeen).getTime()
@@ -39,15 +46,17 @@ export default function Sensors() {
 
   useEffect(() => {
     const onReading = (e) => {
-      const { sensor_id, status, last_seen_at, values, latest_value } = e.detail || {}
+      const d = e.detail?.data ?? e.detail ?? {}  // WebSocket envelope: {event_type, data, timestamp}
+      const { sensor_id, status, values } = d
       if (!sensor_id) return
+      const seen = d.last_seen_at || d.received_at || d.timestamp
       setSensors(prev => prev.map(s =>
         s.sensor_id === sensor_id
-          ? { 
-              ...s, 
-              status: status || s.status, 
-              last_seen_at: last_seen_at || s.last_seen_at,
-              latest_value: latest_value !== undefined ? latest_value : (values ? Object.values(values)[0] : s.latest_value)
+          ? {
+              ...s,
+              status: status || s.status,
+              last_seen_at: seen || s.last_seen_at,
+              latest_value: values ? formatPairs(values, ' ') : s.latest_value,
             }
           : s
       ))
@@ -208,9 +217,7 @@ export default function Sensors() {
                       {latestValue}
                     </td>
                     <td style={{ padding: '12px 16px', color: 'var(--ink-400)', fontSize: 11 }}>
-                      {typeof s.unit_config === 'object' 
-                        ? JSON.stringify(s.unit_config) 
-                        : (s.unit_config || '—')}
+                      {formatPairs(s.unit_config) || '—'}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <div className="tabular" style={{ color: 'var(--ink-400)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
@@ -254,7 +261,7 @@ export default function Sensors() {
               ['Type',      selected.sensor_type],
               ['Room',      selected.room_id],
               ['Status',    selected.status],
-              ['Unit',      selected.unit_config],
+              ['Unit',      formatPairs(selected.unit_config)],
               ['Last Seen', selected.last_seen_at ? new Date(selected.last_seen_at).toLocaleTimeString() : '—'],
             ].map(([k, v]) => (
               <div key={k}>
