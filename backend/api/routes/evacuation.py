@@ -123,8 +123,12 @@ def _demo_route(req: RouteRequest) -> Dict:
         else:
             edge_ids = []
             for a, b in zip(path, path[1:]):
-                edge = next(e for e in graph["edges"].get(a, []) if e["to"] == b)
-                edge_ids.append(edge["edge_id"])
+                edge = next(
+                    (e for e in graph["edges"].get(a, []) if e["to"] == b),
+                    None
+                )
+                if edge:
+                    edge_ids.append(edge["edge_id"])
             result.update(status="ROUTE_FOUND", exit_id=exit_id, node_ids=path,
                           edge_ids=edge_ids, total_cost=cost)
     _fallback_route = result
@@ -209,6 +213,56 @@ def get_route(route_id: UUID):
     if row is None:
         raise not_found("Route", route_id)
     return to_jsonable(row)
+
+
+@router.post("/routes/compare", summary="Compare Dijkstra vs BFS routes side-by-side")
+def compare_routes(req: RouteRequest):
+    """
+    Run both Dijkstra and BFS from the same origin and return both results.
+    Useful for the dual-path visualization on the Evacuation screen.
+    Response: { dijkstra: RouteResult, bfs: RouteResult, origin_room_id, calculated_at }
+    """
+    from datetime import datetime, timezone
+
+    def query():
+        monitor = get_route_monitor()
+        dijk = monitor.calculator.calculate_route(req.origin_room_id, "dijkstra", req.target_exit_id)
+        bfs  = monitor.calculator.calculate_route(req.origin_room_id, "bfs",      req.target_exit_id)
+        # Register the Dijkstra route as the "active" one for WebSocket broadcasts
+        monitor.set_route(dijk)
+        return {
+            "dijkstra": to_jsonable(dijk),
+            "bfs":      to_jsonable(bfs),
+            "origin_room_id": req.origin_room_id,
+            "calculated_at":  datetime.now(timezone.utc).isoformat(),
+            "demo_data": False,
+        }
+
+    def fallback():
+        dijk_req = RouteRequest(origin_room_id=req.origin_room_id,
+                                algorithm="dijkstra",
+                                target_exit_id=req.target_exit_id)
+        bfs_req  = RouteRequest(origin_room_id=req.origin_room_id,
+                                algorithm="bfs",
+                                target_exit_id=req.target_exit_id)
+        dijk = _demo_route(dijk_req)
+        bfs  = _demo_route(bfs_req)
+        return {
+            "dijkstra": dijk,
+            "bfs":      bfs,
+            "origin_room_id": req.origin_room_id,
+            "calculated_at":  dijk.get("calculated_at"),
+            "demo_data": True,
+        }
+
+    result = with_fallback(query, fallback)
+    # Broadcast Dijkstra as the active route for all dashboards
+    event_bus.publish_sync(Event(ev.ROUTE_UPDATED, {
+        **result.get("dijkstra", {}),
+        "bfs_route": result.get("bfs"),
+        "reason": "compare_request",
+    }))
+    return result
 
 
 @router.get("/exits", summary="All exits with availability")

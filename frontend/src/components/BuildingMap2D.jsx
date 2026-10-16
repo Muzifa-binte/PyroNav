@@ -196,29 +196,227 @@ const EXITS = [
   { id: 'EXIT-S',  name: 'Main Entrance',  x: 325, y: 620, w: 80,  h: 22, connected: 'main_lobby' },
 ]
 
-// ── Corridor Waypoints for Safe Route Navigation ───────────────────────────
+// ── Corridor Geometry ────────────────────────────────────────────────────────
+// Physical corridor centerlines (gaps between room groups in SVG coordinates):
+//   TOP_CY   = 217  (between top-row rooms bottom y=195 and middle rooms top y=240)
+//   LEFT_CX  = 172  (between left-col rooms right x=155 and pharmacy left x=190)
+//   RIGHT_CX = 578  (between admin/records right x=560 and wards left x=595)
+//   BOT_CY   = 447  (between center-section bottom y=430 and bottom-row top y=465)
+//
+// Each room's "door point" is the corridor-side coordinate where the room meets
+// the nearest corridor — NOT the room center.  The route renderer concatenates
+// these via EDGE_WAYPOINTS so paths always stay inside corridor lanes.
+
+const TC = 217   // top horizontal corridor y
+const LC = 172   // left vertical corridor x
+const RC = 578   // right vertical corridor x
+const BC = 447   // bottom horizontal corridor y (between centre and bottom row)
+const BX = 570   // bottom outer corridor y (below main-lobby/ED row)  ← y=570
+
+// Door-to-corridor junction for every node
+// These are the exact points where the path ENTERS the corridor network
 const ROOM_ENTRY_POINTS = {
-  icu:               { x: 97,  y: 218 },
-  isolation_room:    { x: 262, y: 218 },
-  patient_room:      { x: 357, y: 218 },
-  operation_theater: { x: 647, y: 218 },
-  radiology:         { x: 172, y: 302 },
-  lab:               { x: 172, y: 407 },
-  cafeteria:         { x: 202, y: 502 },
-  pharmacy:          { x: 232, y: 218 },
-  waiting_area:      { x: 365, y: 300 },
-  administration:    { x: 420, y: 297 },
-  records:           { x: 420, y: 412 },
-  general_ward:      { x: 578, y: 302 },
-  maternity_ward:    { x: 578, y: 422 },
-  blood_bank:        { x: 670, y: 532 },
-  main_lobby:        { x: 365, y: 450 },
-  emergency_dept:    { x: 512, y: 450 },
-  'EXIT-NW':         { x: 55,  y: 218 },
-  'EXIT-NE':         { x: 745, y: 218 },
-  'EXIT-SW':         { x: 55,  y: 532 },
-  'EXIT-S':          { x: 365, y: 555 },
-  'EXIT-SE':         { x: 745, y: 532 },
+  // Top-row rooms → top horizontal corridor (TC=217)
+  icu:               { x: 157, y: TC  },   // ICU door opens at x≈85+24=109 → use corridor midpoint
+  isolation_room:    { x: 274, y: TC  },   // Isolation door x=250+12=262 → midpoint
+  patient_room:      { x: 407, y: TC  },   // Patient door x=345+12=357
+  operation_theater: { x: 647, y: TC  },   // OT door x=635
+
+  // Left-column rooms → left vertical corridor (LC=172)
+  radiology:         { x: LC,  y: 292 },   // Radiology right wall at x=155 → corridor x=172, room center-y
+  lab:               { x: LC,  y: 397 },   // Lab right wall at x=155
+  cafeteria:         { x: LC,  y: 510 },   // Cafeteria right wall at x=185 → use LC
+
+  // Centre rooms — pharmacy & waiting area connect to both top and left corridors
+  pharmacy:          { x: LC,  y: TC  },   // Corner junction: top-corridor meets left-corridor
+  waiting_area:      { x: 365, y: TC  },   // Waiting area top wall at y=240; door to top corridor
+
+  // Admin / Records → right vertical corridor (RC=578)
+  administration:    { x: RC,  y: 277 },   // Admin left wall at x=445, but connects via corridor RC
+  records:           { x: RC,  y: 382 },   // Records left wall at x=445
+
+  // Ward rooms → right vertical corridor (RC=578)
+  general_ward:      { x: RC,  y: 300 },   // General Ward left wall at x=595
+  maternity_ward:    { x: RC,  y: 412 },   // Maternity left wall at x=595
+
+  // Bottom-row rooms → bottom horizontal corridor (BC=447)
+  main_lobby:        { x: 365, y: BC  },   // Lobby top wall at y=465
+  emergency_dept:    { x: 512, y: BC  },   // ED top wall at y=465
+  blood_bank:        { x: RC,  y: 512 },   // Blood Bank left wall at x=690; route via RC
+
+  // Exits — physical door locations on building perimeter
+  'EXIT-NW':         { x: 78,  y: TC  },   // Top-left; in top corridor just inside NW corner
+  'EXIT-NE':         { x: 740, y: TC  },   // Top-right; in top corridor just inside NE corner
+  'EXIT-SW':         { x: LC,  y: BX  },   // Left side; in left corridor at bottom
+  'EXIT-S':          { x: 365, y: BX  },   // Main entrance; bottom of lobby
+  'EXIT-SE':         { x: RC,  y: BX  },   // Right side; in right corridor at bottom
+
+  // Corridor junction nodes (no room, just a turning point in the corridor)
+  'J_TOP_RC':        { x: RC,  y: TC  },   // Top corridor meets right corridor
+  'J_BOT_LC':        { x: LC,  y: BC  },   // Bottom corridor meets left corridor
+  'J_BOT_RC':        { x: RC,  y: BC  },   // Bottom corridor meets right corridor
+}
+
+// ── Edge waypoints ──────────────────────────────────────────────────────────
+// For each graph edge (from → to), list the INTERMEDIATE corridor junction
+// points the polyline must pass through so it never cuts through a room.
+// Points are in order from→to.  Bidirectional edges are handled by reversing.
+//
+// Corridor layout summary:
+//   TC=217: horizontal, x from 78 (EXIT-NW) to 740 (EXIT-NE)
+//   LC=172: vertical,   y from TC(217) down to BX(570)
+//   RC=578: vertical,   y from TC(217) down to BX(570)
+//   BC=447: horizontal, x from LC(172) to RC(578)
+//   BX=570: at building south wall, connects SW/S/SE exits
+//
+const EDGE_WAYPOINTS = {
+  // ── Top corridor connections ──────────────────────────────────────────
+  // icu ↔ isolation_room  (both on TC)
+  'icu|isolation_room':      [],   // direct along TC
+  'isolation_room|patient_room': [], // direct along TC
+  'patient_room|operation_theater': [], // direct along TC
+
+  // icu ↔ EXIT-NW  (along TC to left end)
+  'icu|EXIT-NW':             [],
+  'EXIT-NW|icu':             [],
+
+  // operation_theater ↔ EXIT-NE
+  'operation_theater|EXIT-NE': [],
+  'EXIT-NE|operation_theater': [],
+
+  // ── Left-corridor connections ──────────────────────────────────────────
+  // icu ↔ radiology: drop from top-corridor at x=157 down to LC=172, then to radiology
+  'icu|radiology':       [{ x: LC, y: TC }],         // corner via pharmacy junction
+  'radiology|icu':       [{ x: LC, y: TC }],
+
+  // radiology ↔ lab: both on LC, direct vertical
+  'radiology|lab':       [],
+  'lab|radiology':       [],
+
+  // radiology ↔ pharmacy: both have entry at (LC, TC) corner — via that corner
+  'radiology|pharmacy':  [],    // radiology=(LC,292), pharmacy=(LC,TC)→ go up LC
+  'pharmacy|radiology':  [],
+
+  // lab ↔ cafeteria: both on LC
+  'lab|cafeteria':       [],
+  'cafeteria|lab':       [],
+
+  // cafeteria ↔ EXIT-SW: cafeteria is at (LC,510), EXIT-SW at (LC,BX=570)
+  'cafeteria|EXIT-SW':   [],
+  'EXIT-SW|cafeteria':   [],
+
+  // ── Pharmacy ↔ waiting_area ────────────────────────────────────────────
+  // pharmacy=(LC,TC),  waiting_area=(365,TC) — both on TC, go along TC
+  'pharmacy|waiting_area': [],
+  'waiting_area|pharmacy': [],
+
+  // ── Waiting area connections ───────────────────────────────────────────
+  // waiting_area ↔ administration:  waiting_area=(365,TC), admin=(RC,277)
+  //   go right along TC to RC, then down to admin
+  'waiting_area|administration': [{ x: RC, y: TC }],
+  'administration|waiting_area': [{ x: RC, y: TC }],
+
+  // waiting_area ↔ main_lobby: go down from (365,TC) through (365,BC)
+  'waiting_area|main_lobby': [{ x: 365, y: BC }],
+  'main_lobby|waiting_area': [{ x: 365, y: BC }],
+
+  // ── Admin / Records on right corridor ──────────────────────────────────
+  'administration|records':  [],   // both on RC, direct vertical
+  'records|administration':  [],
+
+  // administration ↔ general_ward: admin=(RC,277), gen_ward=(RC,300) — both on RC
+  'administration|general_ward':  [],
+  'general_ward|administration':  [],
+
+  // general_ward ↔ maternity_ward: both on RC
+  'general_ward|maternity_ward':  [],
+  'maternity_ward|general_ward':  [],
+
+  // operation_theater ↔ general_ward:
+  //   OT=(647,TC), gen_ward=(RC,300)  → right along TC to RC, then down
+  'operation_theater|general_ward': [{ x: RC, y: TC }],
+  'general_ward|operation_theater': [{ x: RC, y: TC }],
+
+  // ── Bottom row connections ──────────────────────────────────────────────
+  // cafeteria ↔ main_lobby:
+  //   cafeteria=(LC,510), go down to (LC,BC=447)? No: BC is above cafeteria.
+  //   cafeteria bottom = y=570, lobby top = y=465 → use BC corridor (y=447)
+  //   cafeteria(LC,510) → up to (LC,BC=447) → right to (365,BC) = main_lobby
+  'cafeteria|main_lobby': [{ x: LC, y: BC }],
+  'main_lobby|cafeteria': [{ x: LC, y: BC }],
+
+  // main_lobby ↔ emergency_dept: both on BC
+  'main_lobby|emergency_dept': [],
+  'emergency_dept|main_lobby': [],
+
+  // emergency_dept ↔ blood_bank: ED=(512,BC), blood_bank=(RC,512)
+  //   go right along BC to (RC,BC), then down to blood_bank
+  'emergency_dept|blood_bank': [{ x: RC, y: BC }],
+  'blood_bank|emergency_dept': [{ x: RC, y: BC }],
+
+  // ── Exit connections ────────────────────────────────────────────────────
+  // main_lobby ↔ EXIT-S
+  'main_lobby|EXIT-S':   [{ x: 365, y: BX }],
+  'EXIT-S|main_lobby':   [{ x: 365, y: BX }],
+
+  // blood_bank ↔ EXIT-SE
+  'blood_bank|EXIT-SE':  [{ x: RC, y: BX }],
+  'EXIT-SE|blood_bank':  [{ x: RC, y: BX }],
+
+  // ── Junction node edges — no intermediate waypoints needed ──────────────
+  // These junctions sit exactly at corridor intersections so no extra bends needed
+  'waiting_area|J_TOP_RC':      [],
+  'J_TOP_RC|waiting_area':      [],
+  'J_TOP_RC|operation_theater': [],
+  'operation_theater|J_TOP_RC': [],
+  'J_TOP_RC|administration':    [],
+  'administration|J_TOP_RC':    [],
+  'J_BOT_LC|main_lobby':        [],
+  'main_lobby|J_BOT_LC':        [],
+  'J_BOT_LC|cafeteria':         [],
+  'cafeteria|J_BOT_LC':         [],
+  'J_BOT_LC|EXIT-SW':           [],
+  'EXIT-SW|J_BOT_LC':           [],
+  'J_BOT_RC|blood_bank':        [],
+  'blood_bank|J_BOT_RC':        [],
+  'J_BOT_RC|emergency_dept':    [],
+  'emergency_dept|J_BOT_RC':    [],
+  'J_BOT_RC|records':           [],
+  'records|J_BOT_RC':           [],
+  'J_BOT_RC|maternity_ward':    [],
+  'maternity_ward|J_BOT_RC':    [],
+  'J_BOT_RC|EXIT-SE':           [{ x: RC, y: BX }],
+  'EXIT-SE|J_BOT_RC':           [{ x: RC, y: BX }],
+  'patient_room|waiting_area':  [],
+  'waiting_area|patient_room':  [],
+}
+
+// Build the full corridor polyline from a path of node IDs.
+// Looks up each edge's waypoints and concatenates: entry_A → waypoints → entry_B
+function buildCorridorPath(nodeIds) {
+  if (!nodeIds || nodeIds.length < 2) {
+    if (nodeIds?.length === 1) {
+      const pt = ROOM_ENTRY_POINTS[nodeIds[0]]
+      return pt ? [pt] : []
+    }
+    return []
+  }
+  const points = [ROOM_ENTRY_POINTS[nodeIds[0]]].filter(Boolean)
+  for (let i = 0; i < nodeIds.length - 1; i++) {
+    const a = nodeIds[i], b = nodeIds[i + 1]
+    const key    = `${a}|${b}`
+    const revKey = `${b}|${a}`
+    const mids   = EDGE_WAYPOINTS[key] ?? (EDGE_WAYPOINTS[revKey] ? [...(EDGE_WAYPOINTS[revKey])].reverse() : [])
+    mids.forEach(p => { if (p) points.push(p) })
+    const ep = ROOM_ENTRY_POINTS[b]
+    if (ep) points.push(ep)
+  }
+  // Deduplicate consecutive identical points
+  return points.filter((p, i) => {
+    if (!p) return false
+    if (i === 0) return true
+    return points[i - 1].x !== p.x || points[i - 1].y !== p.y
+  })
 }
 
 // ── Room Icons & Furniture Helpers ──────────────────────────────────────────
@@ -393,6 +591,8 @@ export default function BuildingMap2D({
   building,
   rooms = [],
   route,
+  dijkstraRoute,
+  bfsRoute,
   onRoomSelect,
   selectedRoom,
   compact = false,
@@ -404,17 +604,53 @@ export default function BuildingMap2D({
     (rooms || []).map(r => [r.room_id, r.current_hazard_level || 'NORMAL'])
   )
 
-  const routeNodes = new Set(route?.node_ids || [])
-  const hasRoute   = route?.status === 'ROUTE_FOUND' && routeNodes.size > 0
+  // Resolve which routes to show:
+  // If dijkstraRoute/bfsRoute are passed (compare mode), use them
+  // Otherwise fall back to the single `route` prop
+  const activeRoute    = dijkstraRoute || route
+  const activeBfsRoute = bfsRoute || null
 
-  // Build clean corridor route polyline
-  const routePoints = []
-  if (hasRoute && route?.node_ids && route.node_ids.length > 0) {
-    for (const nodeId of route.node_ids) {
-      const pt = ROOM_ENTRY_POINTS[nodeId]
-      if (pt) routePoints.push(pt)
-    }
-  }
+  const routeNodes   = new Set(activeRoute?.node_ids || [])
+  const bfsRouteNodes = new Set(activeBfsRoute?.node_ids || [])
+  const hasRoute     = activeRoute?.status === 'ROUTE_FOUND' && routeNodes.size > 0
+  const hasBfsRoute  = activeBfsRoute?.status === 'ROUTE_FOUND' && bfsRouteNodes.size > 0
+
+  // Build corridor-following polyline for Dijkstra route (orange)
+  const routePoints = buildCorridorPath(activeRoute?.node_ids)
+
+  // Build corridor-following polyline for BFS route (blue) — offset 4px so both visible
+  const bfsPointsRaw = buildCorridorPath(activeBfsRoute?.node_ids)
+  const bfsPoints = bfsPointsRaw.map(p => ({ x: p.x + 4, y: p.y + 4 }))
+
+  // Outer perimeter path: clockwise around the building's corridor boundary
+  // Follows the TOP → RIGHT → BOTTOM → LEFT corridor walls, connecting all exits
+  const outerPerimeterPath = [
+    ROOM_ENTRY_POINTS['EXIT-NW'],            // (78, TC=217)
+    { x: 157, y: TC },                        // ICU junction on top corridor
+    { x: 274, y: TC },                        // Isolation junction
+    { x: 407, y: TC },                        // Patient Room junction
+    { x: 570, y: TC },                        // OT area
+    { x: 647, y: TC },                        // OT junction
+    ROOM_ENTRY_POINTS['EXIT-NE'],            // (740, TC=217)
+    { x: RC, y: TC },                         // Turn down right corridor
+    { x: RC, y: 300 },                        // General Ward level
+    { x: RC, y: 412 },                        // Maternity Ward level
+    { x: RC, y: BC },                         // Bottom-right corridor junction
+    { x: RC, y: 512 },                        // Blood Bank level
+    ROOM_ENTRY_POINTS['EXIT-SE'],            // (RC=578, BX=570)
+    { x: 512, y: BX },                        // ED bottom
+    { x: 365, y: BX },                        // Lobby bottom
+    ROOM_ENTRY_POINTS['EXIT-S'],             // (365, BX=570)
+    { x: 172, y: BX },                        // Cafeteria bottom area (LC corridor)
+    ROOM_ENTRY_POINTS['EXIT-SW'],            // (LC=172, BX=570)
+    { x: LC, y: 510 },                        // Cafeteria level
+    { x: LC, y: BC },                         // Bottom corridor junction
+    { x: LC, y: 397 },                        // Lab level
+    { x: LC, y: 292 },                        // Radiology level
+    ROOM_ENTRY_POINTS['EXIT-NW'],            // back to start (78, TC=217) via (LC,TC) corner
+  ]
+
+  const showOuterPath = hasRoute || hasBfsRoute // show outer path when any route is active
 
   return (
     <div
@@ -490,6 +726,7 @@ export default function BuildingMap2D({
           const isSelected = selectedRoom === room.id
           const isHovered  = hoveredRoom === room.id
           const isOnRoute  = routeNodes.has(room.id)
+          const isOnBfs    = bfsRouteNodes.has(room.id)
 
           let roomFill = room.fill
           if (isCritical) roomFill = 'rgba(254, 205, 211, 0.85)'
@@ -524,16 +761,16 @@ export default function BuildingMap2D({
               />
 
               {/* Selection / Route Glow Ring */}
-              {(isSelected || isOnRoute) && (
+              {(isSelected || isOnRoute || isOnBfs) && (
                 <rect
                   x={room.x - 3}
                   y={room.y - 3}
                   width={room.w + 6}
                   height={room.h + 6}
                   fill="none"
-                  stroke={isSelected ? '#0284C7' : '#38BDF8'}
+                  stroke={isSelected ? '#0284C7' : isOnRoute ? '#FF6A1A' : '#2F6FDE'}
                   strokeWidth={3}
-                  strokeDasharray={isOnRoute && !isSelected ? '6 4' : 'none'}
+                  strokeDasharray={(isOnRoute || isOnBfs) && !isSelected ? '6 4' : 'none'}
                   rx={2}
                   opacity={0.8}
                 />
@@ -826,7 +1063,7 @@ export default function BuildingMap2D({
         {/* ── Corridors & Safety Infrastructure Overlays ── */}
 
         {/* Static Green Evacuation Arrows — shown only when no live route is active */}
-        {!(hasRoute && routePoints.length >= 2) && (
+        {!hasRoute && !hasBfsRoute && (
           <g id="evacuation-arrows" opacity={0.92}>
             {/* Top Corridor: Moving right toward NE Exit */}
             <EvacuationArrow x={175} y={218} direction="right" />
@@ -930,7 +1167,7 @@ export default function BuildingMap2D({
           )
         })}
 
-        {/* ── Animated Real-Time Evacuation Route ── */}
+        {/* ── Animated Real-Time Evacuation Route (Dijkstra — orange) ── */}
         {hasRoute && routePoints.length >= 2 && (() => {
           // Compute arrow placements along each segment
           const arrowMarkers = []
@@ -955,11 +1192,11 @@ export default function BuildingMap2D({
           const start = routePoints[0]
           const end = routePoints[routePoints.length - 1]
           const pointsStr = routePoints.map(p => `${p.x},${p.y}`).join(' ')
-          const exitName = route.exit_id || 'EXIT'
-          const cost = route.total_cost ? `${route.total_cost.toFixed(1)} m` : ''
+          const exitName = activeRoute.exit_id || 'EXIT'
+          const cost = activeRoute.total_cost ? `${activeRoute.total_cost.toFixed(1)} m` : ''
 
           // Blocked rooms from hazard snapshot
-          const blockedRooms = route.hazard_state_snapshot || []
+          const blockedRooms = activeRoute.hazard_state_snapshot || []
 
           // Lookup coordinates for blocked rooms using ROOMS_DATA
           const roomLookup = {}
@@ -987,7 +1224,7 @@ export default function BuildingMap2D({
               {EXITS.map(exit => {
                 const ep = ROOM_ENTRY_POINTS[exit.id]
                 if (!ep) return null
-                const isTarget = exit.id === route.exit_id
+                const isTarget = exit.id === activeRoute.exit_id
                 return (
                   <g key={`halo-${exit.id}`}>
                     <circle cx={ep.x} cy={ep.y} r={isTarget ? 22 : 14}
@@ -1085,6 +1322,88 @@ export default function BuildingMap2D({
           )
         })()}
 
+        {/* ── BFS Route Layer (Blue — minimum hops path) ── */}
+        {hasBfsRoute && bfsPoints.length >= 2 && (() => {
+          const pointsStr = bfsPoints.map(p => `${p.x},${p.y}`).join(' ')
+          const bfsStart  = bfsPoints[0]
+          const bfsEnd    = bfsPoints[bfsPoints.length - 1]
+          const bfsCost   = activeBfsRoute.total_cost != null
+            ? `${activeBfsRoute.total_cost} hops`
+            : `${(activeBfsRoute.node_ids?.length || 1) - 1} hops`
+
+          return (
+            <g id="bfs-route">
+              {/* BFS glow */}
+              <polyline points={pointsStr}
+                fill="none" stroke="#2F6FDE" strokeWidth={9} opacity={0.2}
+                strokeLinejoin="round" strokeLinecap="round"
+              />
+              {/* BFS white outline */}
+              <polyline points={pointsStr}
+                fill="none" stroke="#FFFFFF" strokeWidth={6}
+                strokeLinejoin="round" strokeLinecap="round"
+              />
+              {/* BFS main dashed line */}
+              <polyline points={pointsStr}
+                fill="none" stroke="#2F6FDE" strokeWidth={4}
+                strokeDasharray="10 6"
+                strokeLinejoin="round" strokeLinecap="round"
+                style={{ animation: 'routeDash 1.2s linear infinite' }}
+              />
+
+              {/* BFS waypoint dots */}
+              {bfsPoints.slice(1, -1).map((pt, i) => (
+                <g key={`bwp-${i}`}>
+                  <circle cx={pt.x} cy={pt.y} r={6} fill="#2F6FDE" stroke="#FFFFFF" strokeWidth={2}/>
+                  <text x={pt.x} y={pt.y + 1} textAnchor="middle" dominantBaseline="middle"
+                    fontSize={7} fill="#fff" fontWeight="bold">{i + 1}</text>
+                </g>
+              ))}
+
+              {/* BFS origin marker (diamond shape) */}
+              <polygon
+                points={`${bfsStart.x},${bfsStart.y - 12} ${bfsStart.x + 10},${bfsStart.y} ${bfsStart.x},${bfsStart.y + 12} ${bfsStart.x - 10},${bfsStart.y}`}
+                fill="rgba(47,111,222,0.2)" stroke="#2F6FDE" strokeWidth={2.5}
+              />
+
+              {/* BFS badge label */}
+              <g transform={`translate(${bfsEnd.x - 45}, ${bfsEnd.y - 38})`}>
+                <rect x={0} y={0} width={90} height={22} rx={6}
+                  fill="rgba(47,111,222,0.9)" />
+                <text x={45} y={11} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={9} fill="#FFFFFF" fontWeight="700" fontFamily="Inter, sans-serif">
+                  BFS · {bfsCost}
+                </text>
+              </g>
+            </g>
+          )
+        })()}
+
+        {/* ── Outer Perimeter Path (Green dashed — corridor boundary route) ── */}
+        {showOuterPath && (() => {
+          const outerStr = outerPerimeterPath.map(p => `${p.x},${p.y}`).join(' ')
+          return (
+            <g id="outer-path" opacity={0.55}>
+              <polyline points={outerStr}
+                fill="none" stroke="#2E8B57" strokeWidth={3}
+                strokeDasharray="8 10"
+                strokeLinejoin="round" strokeLinecap="round"
+                style={{ animation: 'routeDash 2s linear infinite reverse' }}
+              />
+              {/* Corner marker dots at each exit */}
+              {['EXIT-NW', 'EXIT-NE', 'EXIT-SW', 'EXIT-S', 'EXIT-SE'].map(exitId => {
+                const pt = ROOM_ENTRY_POINTS[exitId]
+                if (!pt) return null
+                return (
+                  <g key={`op-${exitId}`}>
+                    <circle cx={pt.x} cy={pt.y} r={5} fill="#2E8B57" stroke="#FFFFFF" strokeWidth={1.5} opacity={0.9}/>
+                  </g>
+                )
+              })}
+            </g>
+          )
+        })()}
+
         {/* ── Top Title Box ── */}
         <g transform="translate(260, 15)">
           <rect
@@ -1116,7 +1435,7 @@ export default function BuildingMap2D({
         <g transform="translate(820, 75)">
           {/* Legend Border Card */}
           <rect
-            x={0} y={0} width={180} height={425} rx={8}
+            x={0} y={0} width={180} height={460} rx={8}
             fill="#FFFFFF"
             stroke="#2563EB"
             strokeWidth={2}
@@ -1159,20 +1478,33 @@ export default function BuildingMap2D({
 
           {/* Evacuation Route arrow item */}
           <g transform="translate(14, 290)">
-            <line x1={0} y1={7} x2={16} y2={7} stroke="#15803D" strokeWidth={3} strokeLinecap="round" />
-            <polygon points="14,3 20,7 14,11" fill="#15803D" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Evacuation Route</text>
+            <line x1={0} y1={7} x2={16} y2={7} stroke="#FF6A1A" strokeWidth={3} strokeLinecap="round" />
+            <polygon points="14,3 20,7 14,11" fill="#FF6A1A" />
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Dijkstra Route</text>
+          </g>
+
+          {/* BFS Route item */}
+          <g transform="translate(14, 315)">
+            <line x1={0} y1={7} x2={14} y2={7} stroke="#2F6FDE" strokeWidth={3} strokeDasharray="4 2" strokeLinecap="round" />
+            <circle cx={20} cy={7} r={3} fill="#2F6FDE" />
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">BFS Route</text>
+          </g>
+
+          {/* Outer perimeter path item */}
+          <g transform="translate(14, 340)">
+            <line x1={0} y1={7} x2={20} y2={7} stroke="#2E8B57" strokeWidth={2.5} strokeDasharray="5 4" strokeLinecap="round" />
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Outer Path</text>
           </g>
 
           {/* Fire Extinguisher icon item */}
-          <g transform="translate(14, 315)">
+          <g transform="translate(14, 365)">
             <rect x={6} y={0} width={8} height={14} rx={2} fill="#DC2626" />
             <line x1={7} y1={-2} x2={13} y2={-2} stroke="#0F172A" strokeWidth={1} />
             <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Fire Extinguisher</text>
           </g>
 
           {/* Fire Alarm icon item */}
-          <g transform="translate(14, 340)">
+          <g transform="translate(14, 390)">
             <circle cx={10} cy={7} r={6.5} fill="#DC2626" stroke="#991B1B" strokeWidth={1} />
             <circle cx={10} cy={7} r={4} fill="#FFFFFF" />
             <circle cx={10} cy={7} r={2} fill="#DC2626" />

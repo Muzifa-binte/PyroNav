@@ -57,22 +57,30 @@ class GraphLoader:
         """
         Convert Member 1's building-config.json format to the pathfinding graph.
         building_json should have 'nodes' and 'edges' lists.
+        Handles both 'from_node'/'to_node' and 'from_node_id'/'to_node_id' key styles.
+        Skips comment/section marker entries that lack 'node_id' or 'edge_id'.
         """
-        nodes = {
-            n["node_id"]: {
+        nodes = {}
+        for n in building_json.get("nodes", []):
+            if "node_id" not in n:
+                continue  # skip _comment entries
+            nodes[n["node_id"]] = {
                 "node_type":  n.get("node_type", "room"),
                 "room_id":    n.get("room_id"),
                 "position":   n.get("position", {"x": 0, "y": 0}),
                 "traversable": n.get("traversable", True),
             }
-            for n in building_json.get("nodes", [])
-        }
 
         edges: Dict = {}
         for e in building_json.get("edges", []):
-            from_node = e["from_node"]
-            to_node   = e["to_node"]
-            cost      = e.get("cost", 1.0)
+            if "edge_id" not in e:
+                continue  # skip _section entries
+            # Support both key naming conventions
+            from_node   = e.get("from_node") or e.get("from_node_id")
+            to_node     = e.get("to_node")   or e.get("to_node_id")
+            if not from_node or not to_node:
+                continue
+            cost        = e.get("cost", 1.0)
             traversable = e.get("traversable", True)
             bidirectional = e.get("bidirectional", True)
 

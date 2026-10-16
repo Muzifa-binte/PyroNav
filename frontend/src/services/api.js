@@ -38,6 +38,16 @@ export const calculateRoute = (originRoomId, algorithm = 'dijkstra', targetExitI
     body: JSON.stringify({ origin_room_id: originRoomId, algorithm, target_exit_id: targetExitId }),
   })
 
+/**
+ * Calculate BOTH Dijkstra and BFS routes simultaneously for comparison.
+ * Returns { dijkstra: RouteResult, bfs: RouteResult, origin_room_id, calculated_at }
+ */
+export const compareRoutes = (originRoomId, targetExitId = null) =>
+  request('/routes/compare', {
+    method: 'POST',
+    body: JSON.stringify({ origin_room_id: originRoomId, target_exit_id: targetExitId }),
+  })
+
 export const getCurrentRoute = () => request('/routes/current')
 export const getExits        = () => request('/exits')
 

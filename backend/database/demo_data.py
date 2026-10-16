@@ -99,11 +99,13 @@ def exits() -> List[Dict]:
 
 
 def graph_nodes() -> List[Dict]:
-    return [dict(n) for n in _load("sample-graph.json")["nodes"]]
+    # Skip comment/section marker entries that lack node_id
+    return [dict(n) for n in _load("sample-graph.json")["nodes"] if "node_id" in n]
 
 
 def graph_edges() -> List[Dict]:
-    return [dict(e) for e in _load("sample-graph.json")["edges"]]
+    # Skip comment/section marker entries that lack edge_id
+    return [dict(e) for e in _load("sample-graph.json")["edges"] if "edge_id" in e]
 
 
 def sensors() -> List[Dict]:
