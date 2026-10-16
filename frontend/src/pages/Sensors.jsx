@@ -39,11 +39,16 @@ export default function Sensors() {
 
   useEffect(() => {
     const onReading = (e) => {
-      const { sensor_id, status, last_seen_at } = e.detail || {}
+      const { sensor_id, status, last_seen_at, values, latest_value } = e.detail || {}
       if (!sensor_id) return
       setSensors(prev => prev.map(s =>
         s.sensor_id === sensor_id
-          ? { ...s, status: status || s.status, last_seen_at: last_seen_at || s.last_seen_at }
+          ? { 
+              ...s, 
+              status: status || s.status, 
+              last_seen_at: last_seen_at || s.last_seen_at,
+              latest_value: latest_value !== undefined ? latest_value : (values ? Object.values(values)[0] : s.latest_value)
+            }
           : s
       ))
     }
@@ -203,7 +208,9 @@ export default function Sensors() {
                       {latestValue}
                     </td>
                     <td style={{ padding: '12px 16px', color: 'var(--ink-400)', fontSize: 11 }}>
-                      {s.unit_config || '—'}
+                      {typeof s.unit_config === 'object' 
+                        ? JSON.stringify(s.unit_config) 
+                        : (s.unit_config || '—')}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <div className="tabular" style={{ color: 'var(--ink-400)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
