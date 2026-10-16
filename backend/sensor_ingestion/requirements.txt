@@ -1,0 +1,6 @@
+# Extra dependency of the MQTT ingestion service (Member 1).
+# Install on top of backend/requirements.txt:
+#     pip install -r sensor_ingestion/requirements.txt        (from backend/)
+# When merging into main, this line can move into backend/requirements.txt so
+# the Docker image includes it.
+paho-mqtt==2.1.0

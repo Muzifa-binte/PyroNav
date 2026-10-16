@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pyronav.local/contracts/sensor-message-schema.json",
+  "title": "PyroNav MQTT sensor reading",
+  "description": "One reading from one sensor. Owner: Member 1 (MQTT ingestion + 3D hospital). Publishers: the 3D hospital app (hospital-3d/), the virtual sensor simulator and real devices. Consumers: backend/sensor_ingestion (stores the reading and forwards it to the Decision Engine as the in-process event 'sensor_reading_received'), or any service that subscribes to the topic directly.",
+
+  "x-mqtt": {
+    "broker": "Eclipse Mosquitto 2.x — backend/mqtt/mosquitto.conf",
+    "listeners": {
+      "mqtt": "tcp://<host>:1883   (Python services, simulator, mosquitto_sub)",
+      "websockets": "ws://<host>:9001  (browser clients such as hospital-3d)"
+    },
+    "topic": "pyronav/v1/sensors/{room_id}/{sensor_id}/reading",
+    "subscribe_all": "pyronav/v1/sensors/+/+/reading",
+    "qos": 1,
+    "retain": false,
+    "rules": [
+      "The {room_id} and {sensor_id} topic levels MUST equal the payload's room_id and sensor_id; ingestion marks a mismatch as invalid.",
+      "sensor_id must be registered in the sensors table and belong to room_id (see hospital-3d-sensors.json and sample-sensors.json).",
+      "values holds every measurement the device reports in this message; a smoke_heat detector sends smoke AND temperature.",
+      "message_id is the idempotency key (sensor_readings.message_id is UNIQUE): a QoS 1 redelivery with the same id is stored and forwarded once.",
+      "timestamp is UTC. Readings older than INGESTION_MAX_AGE_SECONDS (default 300 s) or more than 60 s in the future are stored as 'stale' and not forwarded to the Decision Engine."
+    ],
+    "informative_topics": {
+      "pyronav/v1/clients/{client_id}/status": "Retained {\"status\": \"online\"|\"offline\"} published by hospital-3d (MQTT last will). Not consumed by the backend."
+    }
+  },
+
+  "type": "object",
+  "required": ["sensor_id", "room_id", "sensor_type", "timestamp", "values"],
+  "additionalProperties": true,
+  "properties": {
+    "message_id": {
+      "type": "string",
+      "maxLength": 100,
+      "description": "Unique per message. hospital-3d uses 'h3d-<uuid>'. If omitted, ingestion derives one from sensor_id + timestamp.",
+      "examples": ["h3d-6f1c2b9e-4d0a-4f4e-9a57-0d6b1f3c2a11"]
+    },
+    "sensor_id":   { "type": "string", "minLength": 1, "maxLength": 50, "examples": ["SMOKE-OT-01"] },
+    "room_id":     { "type": "string", "minLength": 1, "maxLength": 50, "examples": ["operation_theater"] },
+    "sensor_type": { "type": "string", "enum": ["smoke_heat", "co", "current"], "description": "Same enum as hazard-levels.json → sensor_type and the sensor_type_enum database type." },
+    "timestamp":   { "type": "string", "format": "date-time", "examples": ["2026-10-15T10:30:00.000Z"] },
+    "values": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Measurement name → number. Field names per sensor_type: smoke_heat → smoke, temperature; co → co; current → current.",
+      "additionalProperties": { "type": "number" },
+      "properties": {
+        "smoke":       { "type": "number", "minimum": 0, "maximum": 10000, "description": "ppm" },
+        "temperature": { "type": "number", "minimum": -40, "maximum": 1200, "description": "degC" },
+        "co":          { "type": "number", "minimum": 0, "maximum": 10000, "description": "ppm" },
+        "current":     { "type": "number", "minimum": 0, "maximum": 2000, "description": "A" }
+      }
+    },
+    "units": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "examples": [{ "smoke": "ppm", "temperature": "degC" }]
+    },
+    "source":         { "type": "string", "description": "Publisher name: hospital-3d | simulator | device", "examples": ["hospital-3d"] },
+    "trigger":        { "type": "string", "description": "Why it was sent: slider | manual | periodic | reset | sync | test", "examples": ["slider"] },
+    "schema_version": { "type": "string", "examples": ["1.0"] },
+    "building_id":    { "type": "string", "examples": ["HOSPITAL-DEMO-01"] },
+    "floor_id":       { "type": "string", "examples": ["floor_1"] }
+  },
+
+  "examples": [
+    {
+      "message_id": "h3d-6f1c2b9e-4d0a-4f4e-9a57-0d6b1f3c2a11",
+      "sensor_id": "SMOKE-OT-01",
+      "room_id": "operation_theater",
+      "sensor_type": "smoke_heat",
+      "timestamp": "2026-10-15T10:30:00.000Z",
+      "values": { "smoke": 120, "temperature": 64.5 },
+      "units": { "smoke": "ppm", "temperature": "degC" },
+      "source": "hospital-3d",
+      "trigger": "slider",
+      "schema_version": "1.0",
+      "building_id": "HOSPITAL-DEMO-01",
+      "floor_id": "floor_1"
+    }
+  ],
+
+  "x-forwarded-event": {
+    "_doc": "After validation and storage, backend/sensor_ingestion publishes this on the in-process event bus. Member 2's Decision Engine subscribes with event_bus.subscribe(ev.SENSOR_READING_RECEIVED, handler). The WebSocket broadcaster forwards it to browsers as 'sensor_reading_updated' (see websocket-events.json).",
+    "event_type": "sensor_reading_received",
+    "data": {
+      "message_id": "string",
+      "sensor_id": "string",
+      "room_id": "string",
+      "sensor_type": "smoke_heat | co | current",
+      "values": "object",
+      "units": "object",
+      "timestamp": "ISO-8601 +00:00",
+      "received_at": "ISO-8601 +00:00",
+      "validation_status": "valid (only valid readings are forwarded)",
+      "persisted": "boolean — false when PostgreSQL was unreachable; the reading is still forwarded in real time",
+      "source": "string | null",
+      "trigger": "string | null"
+    }
+  }
+}

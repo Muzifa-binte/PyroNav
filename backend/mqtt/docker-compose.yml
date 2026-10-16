@@ -1,0 +1,19 @@
+# PyroNav MQTT broker (Eclipse Mosquitto) — standalone, does not touch the
+# root docker-compose.yml (database + API).
+#
+#   docker compose -f backend/mqtt/docker-compose.yml up -d      # start
+#   docker compose -f backend/mqtt/docker-compose.yml logs -f    # watch connections
+#   docker compose -f backend/mqtt/docker-compose.yml down       # stop
+#
+# Ports: 1883 = MQTT/TCP (Python services), 9001 = MQTT over WebSockets (browser).
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0.18
+    container_name: pyronav-mosquitto
+    ports:
+      - "${MQTT_PUBLISH_PORT:-1883}:1883"
+      - "${MQTT_WS_PUBLISH_PORT:-9001}:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped
