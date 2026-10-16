@@ -152,7 +152,10 @@ export default function Configuration() {
                 s.sensor_type,
                 s.room_id,
                 <StatusPill key="pill" status={s.status === 'active' ? 'NORMAL' : 'UNKNOWN'} label={s.status || '—'} />,
-                s.unit_config || '—',
+                // unit_config arrives as an object, e.g. { smoke: 'ppm', temperature: 'degC' }
+                (s.unit_config && typeof s.unit_config === 'object'
+                  ? Object.entries(s.unit_config).map(([k, v]) => `${k}: ${v}`).join(', ')
+                  : s.unit_config) || '—',
               ]} />
             ))}
           </div>

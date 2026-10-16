@@ -35,11 +35,11 @@ export default function NetworkSecurity() {
 
   useEffect(() => {
     const onIDSEvent = (e) => {
-      const ev = e.detail
+      const ev = e.detail?.data ?? e.detail  // WebSocket envelope: {event_type, data, timestamp}
       if (ev) setEvents(prev => [ev, ...prev.slice(0, 99)])
     }
-    wsEventBus.addEventListener('ids_event_created', onIDSEvent)
-    return () => wsEventBus.removeEventListener('ids_event_created', onIDSEvent)
+    wsEventBus.addEventListener('ids_event_detected', onIDSEvent)
+    return () => wsEventBus.removeEventListener('ids_event_detected', onIDSEvent)
   }, [])
 
   const invalidCount    = events.filter(e => e.category === 'INVALID_MESSAGE').length

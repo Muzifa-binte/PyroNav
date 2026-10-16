@@ -24,7 +24,7 @@ export default function RiskAnalytics() {
 
   useEffect(() => {
     const onRoomStatus = (e) => {
-      const { room_id, hazard_level, current_hazard_level } = e.detail || {}
+      const { room_id, hazard_level, current_hazard_level } = e.detail?.data ?? e.detail ?? {}  // WebSocket envelope: {event_type, data, timestamp}
       const level = hazard_level || current_hazard_level
       if (!room_id || !level) return
       setRooms(prev => prev.map(r =>
