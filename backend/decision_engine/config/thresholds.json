@@ -1,0 +1,185 @@
+{
+  "_doc": "Threshold Configuration for PyroNav Decision Engine - Member 2",
+  "_warning": "These are DEMONSTRATION values for academic prototype. NOT certified for real fire safety use.",
+  "_sources": "Values derived from OSHA, NFPA, NIST research. See THRESHOLD-JUSTIFICATION.md for full defense.",
+  "version": "1.0",
+  "last_updated": "2026-10-15",
+  "_references": {
+    "smoke": "NIST smoke detector research - obscuration thresholds 4-40%/m",
+    "temperature": "Heat detector specs: 57-90°C activation (Honeywell, System Sensor)",
+    "co": "OSHA 29 CFR 1917.24 (50ppm TWA, 100ppm ceiling), NIOSH (35ppm TWA, 200ppm ceiling)",
+    "current": "Standard circuit capacity 15-20A, NEC electrical code"
+  },
+  
+  "rules": [
+    {
+      "rule_id": "SMOKE_WARNING",
+      "sensor_type": "smoke_heat",
+      "field": "smoke",
+      "condition": ">=",
+      "threshold": 50,
+      "unit": "ppm",
+      "hazard_level": "WARNING",
+      "requires_notification": true,
+      "message_template": "Elevated smoke level detected in {room_name}",
+      "description": "Smoke concentration exceeds normal operating threshold"
+    },
+    {
+      "rule_id": "SMOKE_HIGH_RISK",
+      "sensor_type": "smoke_heat",
+      "field": "smoke",
+      "condition": ">=",
+      "threshold": 80,
+      "unit": "ppm",
+      "hazard_level": "HIGH_RISK",
+      "requires_notification": true,
+      "message_template": "High smoke concentration in {room_name}",
+      "description": "Significant smoke indicates potential fire hazard"
+    },
+    {
+      "rule_id": "SMOKE_CRITICAL",
+      "sensor_type": "smoke_heat",
+      "field": "smoke",
+      "condition": ">=",
+      "threshold": 100,
+      "unit": "ppm",
+      "hazard_level": "CRITICAL",
+      "requires_notification": true,
+      "message_template": "CRITICAL: Dangerous smoke levels in {room_name}",
+      "description": "Critical smoke level - immediate evacuation required"
+    },
+    {
+      "rule_id": "TEMP_WARNING",
+      "sensor_type": "smoke_heat",
+      "field": "temperature",
+      "condition": ">=",
+      "threshold": 45,
+      "unit": "degC",
+      "hazard_level": "WARNING",
+      "requires_notification": true,
+      "message_template": "Elevated temperature detected in {room_name}",
+      "description": "Temperature above normal operating range"
+    },
+    {
+      "rule_id": "TEMP_HIGH_RISK",
+      "sensor_type": "smoke_heat",
+      "field": "temperature",
+      "condition": ">=",
+      "threshold": 60,
+      "unit": "degC",
+      "hazard_level": "HIGH_RISK",
+      "requires_notification": true,
+      "message_template": "High temperature in {room_name}",
+      "description": "Dangerous heat level detected"
+    },
+    {
+      "rule_id": "TEMP_CRITICAL",
+      "sensor_type": "smoke_heat",
+      "field": "temperature",
+      "condition": ">=",
+      "threshold": 75,
+      "unit": "degC",
+      "hazard_level": "CRITICAL",
+      "requires_notification": true,
+      "message_template": "CRITICAL: Extreme temperature in {room_name}",
+      "description": "Critical temperature - fire likely present"
+    },
+    {
+      "rule_id": "CO_WARNING",
+      "sensor_type": "co",
+      "field": "co_level",
+      "condition": ">=",
+      "threshold": 35,
+      "unit": "ppm",
+      "hazard_level": "WARNING",
+      "requires_notification": true,
+      "message_template": "Elevated CO level in {room_name}",
+      "description": "Carbon monoxide above safe threshold"
+    },
+    {
+      "rule_id": "CO_HIGH_RISK",
+      "sensor_type": "co",
+      "field": "co_level",
+      "condition": ">=",
+      "threshold": 100,
+      "unit": "ppm",
+      "hazard_level": "HIGH_RISK",
+      "requires_notification": true,
+      "message_template": "Dangerous CO levels in {room_name}",
+      "description": "High carbon monoxide - health hazard"
+    },
+    {
+      "rule_id": "CO_CRITICAL",
+      "sensor_type": "co",
+      "field": "co_level",
+      "condition": ">=",
+      "threshold": 200,
+      "unit": "ppm",
+      "hazard_level": "CRITICAL",
+      "requires_notification": true,
+      "message_template": "CRITICAL: Life-threatening CO levels in {room_name}",
+      "description": "Critical CO concentration - immediate evacuation"
+    },
+    {
+      "rule_id": "CURRENT_ABNORMAL",
+      "sensor_type": "current",
+      "field": "current",
+      "condition": ">=",
+      "threshold": 15,
+      "unit": "A",
+      "hazard_level": "WARNING",
+      "requires_notification": true,
+      "message_template": "Abnormal electrical current in {room_name}",
+      "description": "Electrical overload detected"
+    },
+    {
+      "rule_id": "CURRENT_CRITICAL",
+      "sensor_type": "current",
+      "field": "current",
+      "condition": ">=",
+      "threshold": 25,
+      "unit": "A",
+      "hazard_level": "HIGH_RISK",
+      "requires_notification": true,
+      "message_template": "Critical electrical overload in {room_name}",
+      "description": "Dangerous electrical current - fire risk"
+    }
+  ],
+
+  "room_level_rules": [
+    {
+      "rule_id": "COMBINED_CRITICAL",
+      "description": "If smoke >= 80 AND temperature >= 50, escalate to CRITICAL",
+      "conditions": {
+        "smoke": {"min": 80},
+        "temperature": {"min": 50}
+      },
+      "hazard_level": "CRITICAL",
+      "message_template": "CRITICAL: Fire detected in {room_name} - smoke and heat confirmed"
+    },
+    {
+      "rule_id": "COMBINED_HIGH_RISK",
+      "description": "If smoke >= 50 AND temperature >= 40, escalate to HIGH_RISK",
+      "conditions": {
+        "smoke": {"min": 50},
+        "temperature": {"min": 40}
+      },
+      "hazard_level": "HIGH_RISK",
+      "message_template": "High fire risk in {room_name} - multiple indicators"
+    }
+  ],
+
+  "stale_data_policy": {
+    "fresh_window_seconds": 60,
+    "stale_threshold_seconds": 120,
+    "unknown_after_seconds": 300,
+    "description": "Sensor readings older than fresh_window are STALE, older than unknown_after are UNKNOWN"
+  },
+
+  "recovery_policy": {
+    "auto_resolve": true,
+    "resolution_delay_seconds": 30,
+    "requires_all_sensors_normal": true,
+    "description": "Hazard events auto-resolve when all sensors return to normal for resolution_delay period"
+  }
+}

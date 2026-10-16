@@ -728,6 +728,7 @@ export default function BuildingMap2D({
           const isOnRoute  = routeNodes.has(room.id)
           const isOnBfs    = bfsRouteNodes.has(room.id)
 
+          // Use original room colors, only override on hazard
           let roomFill = room.fill
           if (isCritical) roomFill = 'rgba(254, 205, 211, 0.85)'
           else if (isWarning) roomFill = 'rgba(254, 240, 138, 0.85)'

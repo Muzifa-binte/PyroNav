@@ -23,6 +23,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BuildingMap2D from '../components/BuildingMap2D'
+import BuildingHeatmap from '../components/BuildingHeatmap'
 import StatusPill from '../components/StatusPill'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import * as api from '../services/api'
@@ -352,7 +353,218 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* ── Row 2: Mini floor map (full width) ── */}
+      {/* ── Row 2: Side-by-Side Heatmap + Evacuation Map ── */}
+      <div style={{ display: 'flex', gap: 16 }}>
+        
+        {/* Left: Heatmap */}
+        <div className="glass-card" style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
+          <div style={{
+            display:        'flex',
+            justifyContent: 'space-between',
+            alignItems:     'center',
+            padding:        '13px 18px',
+            borderBottom:   '1px solid var(--border-subtle)',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize:   16,
+              color:      'var(--ink-900)',
+            }}>
+              🌡️ Live Heatmap
+            </span>
+            <button
+              onClick={() => navigate('/live-map')}
+              style={{
+                padding:      '6px 14px',
+                background:   'var(--bg-raised)',
+                border:       'none',
+                borderRadius: 'var(--radius-md)',
+                fontSize:     12,
+                fontWeight:   600,
+                cursor:       'pointer',
+                color:        'var(--orange-500)',
+                boxShadow:    'var(--neo-raised-sm)',
+              }}
+            >
+              Full View →
+            </button>
+          </div>
+          <div style={{ padding: 16, position: 'relative' }}>
+            {loading ? (
+              <LoadingSkeleton type="map" height={340} />
+            ) : (
+              <BuildingHeatmap
+                building={building}
+                rooms={rooms}
+                route={null}
+                compact
+                showRoute={false}
+                onRoomSelect={() => navigate('/live-map')}
+                style={{ height: 340 }}
+              />
+            )}
+            {/* Legend overlay */}
+            <div style={{
+              position: 'absolute',
+              bottom: 24,
+              right: 24,
+              background: 'rgba(255,255,255,0.95)',
+              padding: 12,
+              borderRadius: 8,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              fontSize: 10,
+            }}>
+              <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--ink-900)' }}>Risk Level</div>
+              {[
+                { color: '#10B981', label: 'Normal' },
+                { color: '#FBBF24', label: 'Caution' },
+                { color: '#F59E0B', label: 'High Risk' },
+                { color: '#EF4444', label: 'Critical' },
+              ].map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                  <div style={{ width: 16, height: 12, background: item.color, borderRadius: 2 }} />
+                  <span style={{ color: 'var(--ink-600)' }}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Evacuation Map */}
+        <div className="glass-card" style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
+          <div style={{
+            display:        'flex',
+            justifyContent: 'space-between',
+            alignItems:     'center',
+            padding:        '13px 18px',
+            borderBottom:   '1px solid var(--border-subtle)',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize:   16,
+              color:      'var(--ink-900)',
+            }}>
+              🚪 Evacuation Routes
+            </span>
+            {route?.status === 'ROUTE_FOUND' && (
+              <span style={{
+                padding:      '4px 12px',
+                background:   'var(--orange-100)',
+                color:        'var(--orange-600)',
+                borderRadius: 'var(--radius-full)',
+                fontSize:     12,
+                fontWeight:   600,
+                marginRight:  8,
+              }}>
+                → {route.exit_id}
+              </span>
+            )}
+            <button
+              onClick={() => navigate('/evacuation')}
+              style={{
+                padding:      '6px 14px',
+                background:   'var(--bg-raised)',
+                border:       'none',
+                borderRadius: 'var(--radius-md)',
+                fontSize:     12,
+                fontWeight:   600,
+                cursor:       'pointer',
+                color:        'var(--orange-500)',
+                boxShadow:    'var(--neo-raised-sm)',
+              }}
+            >
+              Full View →
+            </button>
+          </div>
+          <div style={{ padding: 16, position: 'relative' }}>
+            {loading ? (
+              <LoadingSkeleton type="map" height={340} />
+            ) : (
+              <BuildingMap2D
+                building={building}
+                rooms={rooms}
+                route={route}
+                compact
+                showRoute={true}
+                onRoomSelect={() => navigate('/evacuation')}
+                style={{ height: 340 }}
+              />
+            )}
+            {/* Route info overlay */}
+            {route?.status === 'ROUTE_FOUND' && (
+              <div style={{
+                position: 'absolute',
+                bottom: 24,
+                left: 24,
+                background: 'rgba(255,255,255,0.95)',
+                padding: 12,
+                borderRadius: 8,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                fontSize: 11,
+              }}>
+                <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--ink-900)' }}>Active Route</div>
+                <div style={{ color: 'var(--ink-600)' }}>
+                  <div>Exit: <span style={{ fontWeight: 600, color: 'var(--orange-500)' }}>{route.exit_id}</span></div>
+                  {route.total_cost && (
+                    <div>Distance: <span style={{ fontWeight: 600 }}>{route.total_cost} m</span></div>
+                  )}
+                  {route.algorithm && (
+                    <div style={{ marginTop: 4, fontSize: 10 }}>
+                      <span style={{
+                        background: 'var(--orange-100)',
+                        color: 'var(--orange-600)',
+                        padding: '2px 6px',
+                        borderRadius: 100,
+                        fontWeight: 600,
+                      }}>
+                        {route.algorithm}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {route?.status !== 'ROUTE_FOUND' && (
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                background: 'rgba(255,255,255,0.95)',
+                padding: '16px 24px',
+                borderRadius: 8,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>🧭</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-600)' }}>
+                  No route calculated
+                </div>
+                <button
+                  onClick={() => navigate('/evacuation')}
+                  style={{
+                    marginTop: 12,
+                    padding: '8px 16px',
+                    background: 'var(--orange-500)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Calculate Route
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 3: Mini floor map (full width) ── */}
       <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
         {/* Card header */}
         <div style={{
@@ -431,7 +643,7 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* ── Row 3: Sensor coverage + Route status ── */}
+      {/* ── Row 4: Sensor coverage + Route status ── */}
       <div style={{ display: 'flex', gap: 16 }}>
 
         {/* Sensor coverage */}

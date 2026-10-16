@@ -2,6 +2,9 @@
 .kiro/
 .agents/
 
+# ── Member personal tracking files (not for team) ────────────
+.member-*-personal/
+
 # ── Python ───────────────────────────────────────────────────
 backend/venv/
 backend/__pycache__/

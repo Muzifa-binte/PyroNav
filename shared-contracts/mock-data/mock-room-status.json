@@ -1,0 +1,50 @@
+{
+  "_doc": "Mock room status data for Member 2 (Decision Engine) - For testing before Member 1 provides real building",
+  "rooms": [
+    {
+      "room_id": "reception",
+      "name": "Reception Area",
+      "current_hazard_level": "NORMAL",
+      "data_quality_status": "FRESH",
+      "last_updated_at": "2026-10-15T14:00:00Z",
+      "map_position": {"x": 0, "y": 0, "z": 0},
+      "dimensions": {"width": 10, "height": 3, "depth": 8}
+    },
+    {
+      "room_id": "operation_theater",
+      "name": "Operation Theater",
+      "current_hazard_level": "CRITICAL",
+      "data_quality_status": "FRESH",
+      "last_updated_at": "2026-10-15T14:00:00Z",
+      "map_position": {"x": 15, "y": 0, "z": 0},
+      "dimensions": {"width": 12, "height": 4, "depth": 10}
+    },
+    {
+      "room_id": "corridor_1",
+      "name": "Main Corridor",
+      "current_hazard_level": "WARNING",
+      "data_quality_status": "FRESH",
+      "last_updated_at": "2026-10-15T14:00:00Z",
+      "map_position": {"x": 10, "y": 0, "z": 0},
+      "dimensions": {"width": 15, "height": 3, "depth": 3}
+    },
+    {
+      "room_id": "ward_1",
+      "name": "Patient Ward 1",
+      "current_hazard_level": "NORMAL",
+      "data_quality_status": "PARTIAL",
+      "last_updated_at": "2026-10-15T13:58:00Z",
+      "map_position": {"x": 30, "y": 0, "z": 0},
+      "dimensions": {"width": 15, "height": 3, "depth": 12}
+    },
+    {
+      "room_id": "storage",
+      "name": "Storage Room",
+      "current_hazard_level": "UNKNOWN",
+      "data_quality_status": "STALE",
+      "last_updated_at": "2026-10-15T13:45:00Z",
+      "map_position": {"x": 0, "y": 0, "z": 10},
+      "dimensions": {"width": 8, "height": 3, "depth": 8}
+    }
+  ]
+}
