@@ -71,7 +71,8 @@ The API also starts **without** a database. Reads are then served from `shared-c
 ```
 With Docker Compose this is all on by default. For local development:
 
-1. **Start an MQTT broker**: `docker compose up -d mosquitto` (or a native Mosquitto with `backend/mqtt/mosquitto.conf`, which opens ports 1883 and 9001).
+1. **Start an MQTT broker**: `docker compose up -d mosquitto`.
+   *Windows without Docker:* install Mosquitto (`winget install EclipseFoundation.Mosquitto`), then in an **administrator** PowerShell copy `backend\mqtt\mosquitto.windows.conf` over `C:\Program Files\mosquitto\mosquitto.conf` and run `Restart-Service mosquitto`. That config listens on 1883 and 9001 for **this computer only**, so the anonymous broker is not reachable from the network.
 2. **Install the MQTT client** (it is in `requirements.txt`): `.\venv\Scripts\python.exe -m pip install -r requirements.txt`.
 3. **Turn the ingestion on** in `backend/.env`: `BACKGROUND_SERVICES=sensor_ingestion.service`, then restart the API.
 4. **Check**: `GET /api/v1/health` shows `"service:mqtt_ingestion": running` and `"mqtt": connected`. Moving a sensor slider in the 3D app (`hospital-3d`, `npm.cmd run dev`) now sends `sensor_reading_updated` events on `/ws/v1/live`.
