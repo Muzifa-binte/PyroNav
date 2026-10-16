@@ -197,18 +197,6 @@ export default function Alerts() {
         />
       )}
 
-      {/* Header */}
-      <h2 style={{
-        fontFamily:    'var(--font-display)',
-        fontSize:      26,
-        fontWeight:    700,
-        color:         'var(--ink-900)',
-        margin:        0,
-        letterSpacing: '-0.02em',
-      }}>
-        Alerts &amp; Incidents
-      </h2>
-
       {/* Summary 3-card grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {[

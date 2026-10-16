@@ -1,5 +1,6 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { ThemeProvider } from './contexts/ThemeContext'
 import AppShell from './components/AppShell'
 import Overview from './pages/Overview'
 import LiveMap from './pages/LiveMap'
@@ -91,20 +92,22 @@ class ErrorBoundary extends React.Component {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AppShell>
-        <Routes>
-          <Route path="/"            element={<Navigate to="/overview" replace />} />
-          <Route path="/overview"    element={<Overview />} />
-          <Route path="/map"         element={<LiveMap />} />
-          <Route path="/sensors"     element={<Sensors />} />
-          <Route path="/evacuation"  element={<Evacuation />} />
-          <Route path="/alerts"      element={<Alerts />} />
-          <Route path="/security"    element={<NetworkSecurity />} />
-          <Route path="/risk"        element={<RiskAnalytics />} />
-          <Route path="/simulation"  element={<Simulation />} />
-          <Route path="/settings"    element={<Configuration />} />
-        </Routes>
-      </AppShell>
+      <ThemeProvider>
+        <AppShell>
+          <Routes>
+            <Route path="/"            element={<Navigate to="/overview" replace />} />
+            <Route path="/overview"    element={<Overview />} />
+            <Route path="/map"         element={<LiveMap />} />
+            <Route path="/sensors"     element={<Sensors />} />
+            <Route path="/evacuation"  element={<Evacuation />} />
+            <Route path="/alerts"      element={<Alerts />} />
+            <Route path="/security"    element={<NetworkSecurity />} />
+            <Route path="/risk"        element={<RiskAnalytics />} />
+            <Route path="/simulation"  element={<Simulation />} />
+            <Route path="/settings"    element={<Configuration />} />
+          </Routes>
+        </AppShell>
+      </ThemeProvider>
     </ErrorBoundary>
   )
 }

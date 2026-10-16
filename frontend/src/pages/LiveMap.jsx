@@ -115,17 +115,6 @@ export default function LiveMap() {
         exitId={route?.exit_id || 'nearest exit'}
       />
 
-      {/* Page header */}
-      <h2 style={{
-        fontFamily: 'var(--font-display)',
-        color: 'var(--ink-900)',
-        fontSize: 28,
-        fontWeight: 700,
-        marginBottom: 0,
-      }}>
-        Live Map
-      </h2>
-
       {/* Layer toggle bar — neumorphic pills */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
         {['Heat', 'Route', 'Sensors', 'Blocked', 'IDS'].map(layer => {

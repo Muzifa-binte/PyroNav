@@ -41,17 +41,6 @@ export default function RiskAnalytics() {
   return (
     <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Header */}
-      <h2 style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 26,
-        fontWeight: 700,
-        color: 'var(--ink-900)',
-        margin: 0,
-      }}>
-        Risk Analytics
-      </h2>
-
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
 
         {/* Left: scrollable room list */}

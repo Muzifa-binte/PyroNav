@@ -48,17 +48,6 @@ export default function NetworkSecurity() {
   return (
     <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Header */}
-      <h2 style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 26,
-        fontWeight: 700,
-        color: 'var(--ink-900)',
-        margin: 0,
-      }}>
-        Network Security
-      </h2>
-
       {/* Summary cards */}
       <div style={{ display: 'flex', gap: 16 }}>
         <div className="glass-card" style={{ flex: 1, padding: 16, borderLeft: '4px solid var(--violet-600)' }}>

@@ -268,18 +268,13 @@ export default function Evacuation() {
         </div>
       )}
 
-      {/* ── Page title + toast ── */}
+      {/* ── Algorithm legend + toast ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <div>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--ink-900)', margin: 0 }}>
-            Evacuation &amp; Pathfinding
-          </h2>
-          <p style={{ fontSize: 12, color: 'var(--ink-400)', marginTop: 3, marginBottom: 0 }}>
-            Dijkstra <span style={{ color: '#FF6A1A' }}>●</span> optimal distance &nbsp;·&nbsp;
-            BFS <span style={{ color: '#2F6FDE' }}>●</span> fewest hops &nbsp;·&nbsp;
-            Outer path <span style={{ color: '#2E8B57' }}>- -</span>
-          </p>
-        </div>
+        <p style={{ fontSize: 12, color: 'var(--ink-400)', margin: 0 }}>
+          Dijkstra <span style={{ color: '#FF6A1A' }}>●</span> optimal distance &nbsp;·&nbsp;
+          BFS <span style={{ color: '#2F6FDE' }}>●</span> fewest hops &nbsp;·&nbsp;
+          Outer path <span style={{ color: '#2E8B57' }}>- -</span>
+        </p>
         {toast && (
           <div style={{
             padding: '6px 14px',
@@ -295,8 +290,6 @@ export default function Evacuation() {
           </div>
         )}
       </div>
-
-      {/* ── View mode tabs ── */}
       <div style={{ display: 'flex', gap: 6 }}>
         {[
           { id: VIEW_MODES.SINGLE,  label: 'Single Algorithm' },

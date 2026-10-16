@@ -62,18 +62,6 @@ export default function Simulation() {
   return (
     <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Header */}
-      <h2 style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 26,
-        fontWeight: 700,
-        color: 'var(--ink-900)',
-        margin: 0,
-      }}>
-        Simulation / Developer
-      </h2>
-      <p style={{ fontSize: 13, color: 'var(--ink-400)', marginTop: 0 }}>Controlled test scenarios</p>
-
       {/* Active simulation banner */}
       {active && (
         <div role="alert" style={{

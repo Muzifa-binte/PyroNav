@@ -4,12 +4,13 @@
  * Matches the reference design:
  *   - Single neumorphic pill / glass strip spanning the full content width
  *   - Left: page title (Playfair Display, bold) + subtitle in smaller ink-400
- *   - Right: live clock (tabular mono), "Live" green pill, "N active alerts" orange pill
+ *   - Right: theme switcher, live clock (tabular mono), "Live" green pill, "N active alerts" orange pill
  *   - Orange scan-line sweeps under the bar on each new WebSocket message
  *   - Zero hardcoded colour values — all CSS variables for theme-engine readiness
  */
 import React, { useState, useEffect } from 'react'
 import { useLocation, Link } from 'react-router-dom'
+import ThemeSwitcher from './ThemeSwitcher'
 
 const PAGE_META = {
   '/overview':   { title: 'Command Overview',         subtitle: 'Hospital prototype building, Block A' },
@@ -68,7 +69,7 @@ export default function TopStatusBar({
       style={{
         position:   'sticky',
         top:        0,
-        zIndex:     20,
+        zIndex:     1100,  /* High z-index so dropdown floats above main content */
         flexShrink: 0,
         padding:    '10px 20px',
         background: 'transparent',   // container is transparent — the bar is the card below
@@ -87,7 +88,6 @@ export default function TopStatusBar({
         borderRadius:   'var(--topbar-radius)',
         boxShadow:      'var(--topbar-shadow)',
         position:       'relative',
-        overflow:       'hidden',
         transition:     'box-shadow var(--transition-med)',
       }}>
 
@@ -100,15 +100,24 @@ export default function TopStatusBar({
               position:        'absolute',
               bottom:          0,
               left:            0,
+              right:           0,
               height:          2,
-              width:           '100%',
-              background:      'var(--orange-500)',
-              transformOrigin: 'left center',
-              animation:       'scanLine 0.9s ease-out forwards',
+              borderRadius:    '0 0 var(--topbar-radius) var(--topbar-radius)',
+              overflow:        'hidden',
               pointerEvents:   'none',
-              opacity:         0.7,
             }}
-          />
+          >
+            <div
+              style={{
+                height:          '100%',
+                width:           '100%',
+                background:      'var(--orange-500)',
+                transformOrigin: 'left center',
+                animation:       'scanLine 0.9s ease-out forwards',
+                opacity:         0.7,
+              }}
+            />
+          </div>
         )}
 
         {/* Emergency pulse border */}
@@ -153,8 +162,11 @@ export default function TopStatusBar({
           )}
         </div>
 
-        {/* ── Right: clock + connection pill + alerts pill ── */}
+        {/* ── Right: theme + clock + connection pill + alerts pill ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+
+          {/* Theme Switcher */}
+          <ThemeSwitcher />
 
           {/* Live clock */}
           <LiveClock />

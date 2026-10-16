@@ -75,6 +75,7 @@ export default function Sensors() {
           : s
       ))
     }
+    
     wsEventBus.addEventListener('sensor_reading_updated', onReading)
     wsEventBus.addEventListener('sensor_status_changed',  onReading)
     return () => {
@@ -117,18 +118,6 @@ export default function Sensors() {
 
   return (
     <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-      {/* Page header */}
-      <h2 style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 26,
-        fontWeight: 700,
-        color: 'var(--ink-900)',
-        margin: 0,
-        letterSpacing: '-0.01em',
-      }}>
-        Sensors &amp; Monitoring
-      </h2>
 
       {/* Count strip */}
       <div className="glass-card" style={{ padding: '16px 24px', display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>

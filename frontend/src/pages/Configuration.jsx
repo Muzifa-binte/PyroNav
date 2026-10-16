@@ -93,18 +93,6 @@ export default function Configuration() {
   return (
     <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 900 }}>
 
-      {/* Header */}
-      <h2 style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 26,
-        fontWeight: 700,
-        color: 'var(--ink-900)',
-        margin: 0,
-      }}>
-        Configuration
-      </h2>
-      <p style={{ fontSize: 13, color: 'var(--ink-400)', marginTop: 0 }}>System settings and mappings</p>
-
       {/* Read-only notice — warm ivory */}
       <div style={{
         padding: '10px 16px',

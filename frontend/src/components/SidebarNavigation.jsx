@@ -68,34 +68,41 @@ const TOOL_ITEMS = [
 ]
 
 function NavItem({ item, collapsed }) {
+  const [hovered, setHovered] = React.useState(false)
   return (
     <NavLink
       to={item.path}
       title={item.label}
       aria-label={item.label}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={({ isActive }) => ({
         display:        'flex',
         alignItems:     'center',
         gap:            10,
         padding:        collapsed ? '10px 0' : '11px 16px',
         justifyContent: collapsed ? 'center' : 'flex-start',
-        borderRadius:   'var(--sidebar-item-radius)',
+        borderRadius:   'var(--sidebar-item-radius, 12px)',
         textDecoration: 'none',
         fontFamily:     'var(--font-sans)',
         fontSize:       14,
         fontWeight:     isActive ? 600 : 400,
-        color:          isActive ? 'var(--sidebar-item-active-color)' : 'var(--sidebar-item-color)',
-        background:     isActive ? 'var(--sidebar-item-active-bg)' : 'var(--sidebar-item-hover-bg)',
+        color:          isActive
+                          ? 'var(--sidebar-item-active-color)'
+                          : (hovered ? 'var(--ink-900)' : 'var(--sidebar-item-color)'),
+        background:     isActive
+                          ? 'var(--sidebar-item-active-bg)'
+                          : (hovered ? 'var(--sidebar-item-hover-bg)' : 'var(--sidebar-item-bg, transparent)'),
         boxShadow:      isActive
-                          ? 'var(--neo-raised-sm)'
-                          : 'var(--neo-raised-sm)',
+                          ? 'var(--sidebar-item-shadow, var(--neo-raised-sm))'
+                          : (hovered ? 'var(--neo-raised-sm)' : 'none'),
         borderLeft:     isActive
                           ? '3px solid var(--sidebar-item-active-border)'
                           : '3px solid transparent',
         transition:     'all var(--transition-fast)',
         whiteSpace:     'nowrap',
         overflow:       'hidden',
-        letterSpacing:  isActive ? '0' : '0',
+        letterSpacing:  0,
       })}
     >
       {collapsed ? (
