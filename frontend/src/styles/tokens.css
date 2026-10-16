@@ -68,16 +68,29 @@
   --topbar-pill-alert-bg:    rgba(255, 106, 26, 0.12);
   --topbar-pill-alert-color: var(--orange-600);
   --sidebar-bg:             rgba(248, 244, 238, 0.96);
-  --sidebar-item-bg:        var(--bg-raised);
+  --sidebar-item-bg:        transparent;
   --sidebar-item-radius:    12px;
   --sidebar-item-active-bg: var(--bg-raised);
   --sidebar-item-active-border: var(--orange-500);
   --sidebar-item-active-color:  var(--orange-600);
   --sidebar-item-color:         var(--ink-600);
-  --sidebar-item-hover-bg:  rgba(255, 255, 255, 0.70);
+  --sidebar-item-hover-bg:  rgba(0, 0, 0, 0.04);
   --sidebar-shadow:         4px 0 32px rgba(163, 140, 118, 0.10);
   --sidebar-item-shadow:    var(--neo-raised-sm);
   --sidebar-border:         var(--border-subtle);
+
+  /* Map Canvas Defaults */
+  --map-canvas-bg:          #F8FAFC;
+  --map-corridor-bg:        #FFFFFF;
+  --map-corridor-border:    #1E293B;
+  --map-title-bg:           #EFF6FF;
+  --map-title-border:       #2563EB;
+  --map-title-text:         #1E3A8A;
+  --map-title-sub:          #1E40AF;
+  --map-legend-bg:          #FFFFFF;
+  --map-legend-border:      #2563EB;
+  --map-legend-title:       #1E3A8A;
+  --map-legend-text:        #1E293B;
 
   /* Spacing */
   --space-1: 4px;

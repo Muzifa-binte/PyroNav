@@ -35,11 +35,11 @@ export default function NetworkSecurity() {
 
   useEffect(() => {
     const onIDSEvent = (e) => {
-      const ev = e.detail
+      const ev = e.detail?.data ?? e.detail  // WebSocket envelope: {event_type, data, timestamp}
       if (ev) setEvents(prev => [ev, ...prev.slice(0, 99)])
     }
-    wsEventBus.addEventListener('ids_event_created', onIDSEvent)
-    return () => wsEventBus.removeEventListener('ids_event_created', onIDSEvent)
+    wsEventBus.addEventListener('ids_event_detected', onIDSEvent)
+    return () => wsEventBus.removeEventListener('ids_event_detected', onIDSEvent)
   }, [])
 
   const invalidCount    = events.filter(e => e.category === 'INVALID_MESSAGE').length
@@ -47,17 +47,6 @@ export default function NetworkSecurity() {
 
   return (
     <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-      {/* Header */}
-      <h2 style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 26,
-        fontWeight: 700,
-        color: 'var(--ink-900)',
-        margin: 0,
-      }}>
-        Network Security
-      </h2>
 
       {/* Summary cards */}
       <div style={{ display: 'flex', gap: 16 }}>

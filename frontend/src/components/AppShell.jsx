@@ -3,6 +3,7 @@ import '../styles/tokens.css'
 import '../styles/global.css'
 import SidebarNavigation from './SidebarNavigation'
 import TopStatusBar from './TopStatusBar'
+import ThemeSwitcher from './ThemeSwitcher'
 import EmergencyBanner from './EmergencyBanner'
 import { useWebSocket, wsEventBus } from '../hooks/useWebSocket'
 

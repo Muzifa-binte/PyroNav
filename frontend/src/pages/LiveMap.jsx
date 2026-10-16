@@ -1,28 +1,57 @@
 import React, { useEffect, useState } from 'react'
 import BuildingHeatmap from '../components/BuildingHeatmap'
+import BuildingMap2D from '../components/BuildingMap2D'
 import StatusPill from '../components/StatusPill'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import RoomAnalysisPanel from '../components/RoomAnalysisPanel'
+import EmergencyBanner from '../components/EmergencyBanner'
 import * as api from '../services/api'
 import { wsEventBus } from '../hooks/useWebSocket'
+
+const DEMO_ROUTE = {
+  route_id: 'demo-route-001',
+  origin_node_id: 'main_lobby',
+  exit_id: 'EXIT-NW',
+  node_ids: ['main_lobby', 'waiting_area', 'pharmacy', 'icu', 'EXIT-NW'],
+  status: 'ROUTE_FOUND',
+  total_cost: 31.0,
+  algorithm: 'dijkstra',
+  hazard_state_snapshot: [],
+  calculated_at: new Date().toISOString(),
+}
+
+const LAYER_EMOJI = { Heat: '🔥', Route: '🚶', Sensors: '📡', Blocked: '🚫', IDS: '🛡️' }
 
 export default function LiveMap() {
   const [building, setBuilding] = useState(null)
   const [rooms, setRooms] = useState([])
+  const [route, setCurrentRoute] = useState(null)
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [emergencyMode, setEmergencyMode] = useState(false)
+  const [emergencyMessage, setEmergencyMessage] = useState('Building hazard detected')
   const [isDemoMode, setIsDemoMode] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(null)
   const [alerts, setAlerts] = useState([])
+  const [activeLayers, setActiveLayers] = useState(new Set(['Heat', 'Route', 'Sensors', 'Blocked']))
+
+  const toggleLayer = (layer) => {
+    setActiveLayers(prev => {
+      const next = new Set(prev)
+      next.has(layer) ? next.delete(layer) : next.add(layer)
+      return next
+    })
+  }
 
   useEffect(() => {
     async function load() {
       try {
-        const [b, r] = await Promise.all([
-          api.getBuilding(), api.getRooms(),
+        const [b, r, rt] = await Promise.all([
+          api.getBuilding(), api.getRooms(), api.getCurrentRoute(),
         ])
         setBuilding(b)
         setRooms(r.rooms || [])
+        setCurrentRoute(rt)
         
         // Load alerts
         try {
@@ -33,6 +62,7 @@ export default function LiveMap() {
         }
       } catch {
         setIsDemoMode(true)
+        setCurrentRoute(DEMO_ROUTE)
         setRooms([
           { room_id: 'main_lobby',        name: 'Main Lobby & Reception',    current_hazard_level: 'NORMAL' },
           { room_id: 'icu',               name: 'ICU (4 Beds)',              current_hazard_level: 'NORMAL' },
@@ -67,7 +97,19 @@ export default function LiveMap() {
       setRooms(prev => prev.map(r =>
         r.room_id === room_id ? { ...r, current_hazard_level: level } : r
       ))
+      if (level === 'CRITICAL' || level === 'HIGH_RISK') {
+        setEmergencyMode(true)
+        setEmergencyMessage(`Hazard detected in room ${room_id.replace(/_/g, ' ')}`)
+      }
       setLastUpdate(new Date().toISOString())
+    }
+    const handleRouteUpdate = (e) => {
+      const data = e.detail?.data ?? e.detail
+      const incoming = data?.route || data
+      if (incoming?.status) {
+        setCurrentRoute(incoming)
+        setLastUpdate(new Date().toISOString())
+      }
     }
     const handleNotification = (e) => {
       const notification = e.detail?.data ?? e.detail
@@ -76,15 +118,18 @@ export default function LiveMap() {
       }
     }
     wsEventBus.addEventListener('room_status_changed', handleRoomStatus)
+    wsEventBus.addEventListener('route_updated', handleRouteUpdate)
     wsEventBus.addEventListener('notification_created', handleNotification)
     return () => {
       wsEventBus.removeEventListener('room_status_changed', handleRoomStatus)
+      wsEventBus.removeEventListener('route_updated', handleRouteUpdate)
       wsEventBus.removeEventListener('notification_created', handleNotification)
     }
   }, [])
 
   const roomMap = Object.fromEntries((rooms || []).map(r => [r.room_id, r]))
   const selectedRoomData = selected ? roomMap[selected] : null
+  const noValidRoute = route?.status === 'NO_VALID_ROUTE' || route?.status === 'NO_AVAILABLE_EXIT'
 
   return (
     <div className="page-content" style={{ 
@@ -94,9 +139,16 @@ export default function LiveMap() {
       minHeight: '100vh',
     }}>
       
+      {/* Emergency Banner */}
+      <EmergencyBanner
+        active={emergencyMode}
+        message={emergencyMessage}
+        exitId={route?.exit_id || 'nearest exit'}
+      />
+
       {/* Header with gradient accent */}
       <div style={{ 
-        marginBottom: 24,
+        marginBottom: 20,
         padding: '20px 24px',
         background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 51, 234, 0.08) 100%)',
         borderRadius: 16,
@@ -153,6 +205,49 @@ export default function LiveMap() {
         </div>
       </div>
 
+      {/* Layer toggle bar - Member 3's feature */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {['Heat', 'Route', 'Sensors', 'Blocked', 'IDS'].map(layer => {
+          const isActive = activeLayers.has(layer)
+          return (
+            <button
+              key={layer}
+              onClick={() => toggleLayer(layer)}
+              aria-pressed={isActive}
+              style={{
+                background: isActive 
+                  ? 'linear-gradient(135deg, rgba(255,106,26,0.15) 0%, rgba(255,106,26,0.08) 100%)'
+                  : 'var(--bg-raised)',
+                boxShadow: isActive ? 'var(--neo-inset)' : 'var(--neo-raised-sm)',
+                color: isActive ? 'var(--orange-500)' : 'var(--ink-600)',
+                borderRadius: 20,
+                padding: '8px 16px',
+                border: isActive ? '1.5px solid rgba(255,106,26,0.3)' : '1px solid var(--ink-200)',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: 600,
+                transition: 'all 200ms ease',
+                fontFamily: 'var(--font-sans)',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.target.style.background = 'linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)'
+                  e.target.style.transform = 'translateY(-2px)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.target.style.background = 'var(--bg-raised)'
+                  e.target.style.transform = 'translateY(0)'
+                }
+              }}
+            >
+              {LAYER_EMOJI[layer]} {layer}
+            </button>
+          )
+        })}
+      </div>
+
       {/* Main Content */}
       <div style={{ display: 'flex', gap: 20 }}>
         
@@ -162,7 +257,7 @@ export default function LiveMap() {
             padding: 24,
             position: 'relative',
             background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
-            border: '2px solid rgba(148, 163, 184, 0.15)',
+            border: emergencyMode ? '3px solid #EF4444' : '2px solid rgba(148, 163, 184, 0.15)',
             boxShadow: '0 10px 40px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.5) inset',
             borderRadius: 16,
             overflow: 'hidden',
@@ -193,6 +288,25 @@ export default function LiveMap() {
               </span>
             </div>
 
+            {/* Scan line on data update */}
+            {lastUpdate && (
+              <div
+                key={lastUpdate}
+                style={{
+                  position: 'absolute',
+                  top: 0, left: 0,
+                  height: 3,
+                  width: '100%',
+                  background: 'linear-gradient(90deg, transparent 0%, var(--orange-500) 50%, transparent 100%)',
+                  transformOrigin: 'left center',
+                  animation: 'scanLine 0.8s ease-out forwards',
+                  pointerEvents: 'none',
+                  zIndex: 10,
+                }}
+                aria-hidden="true"
+              />
+            )}
+
             {/* Loading state or map */}
             {loading ? (
               <LoadingSkeleton type="map" height={600} />
@@ -203,15 +317,28 @@ export default function LiveMap() {
                 padding: 16,
                 boxShadow: '0 0 0 1px rgba(148, 163, 184, 0.1) inset',
               }}>
-                <BuildingHeatmap
-                  building={building}
-                  rooms={rooms}
-                  route={null}
-                  onRoomSelect={setSelected}
-                  selectedRoom={selected}
-                  showRoute={false}
-                  style={{ height: 600 }}
-                />
+                {activeLayers.has('Route') ? (
+                  <BuildingMap2D
+                    building={building}
+                    rooms={rooms}
+                    route={route}
+                    onRoomSelect={setSelected}
+                    selectedRoom={selected}
+                    showRoute={true}
+                    showBlocked={activeLayers.has('Blocked')}
+                    style={{ height: 600 }}
+                  />
+                ) : (
+                  <BuildingHeatmap
+                    building={building}
+                    rooms={rooms}
+                    route={null}
+                    onRoomSelect={setSelected}
+                    selectedRoom={selected}
+                    showRoute={false}
+                    style={{ height: 600 }}
+                  />
+                )}
               </div>
             )}
 
@@ -274,6 +401,30 @@ export default function LiveMap() {
               </div>
             </div>
           </div>
+
+          {/* No valid route banner */}
+          {noValidRoute && (
+            <div className="glass-card" style={{
+              marginTop: 16,
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.08) 100%)',
+              border: '2px solid rgba(239, 68, 68, 0.3)',
+              padding: '16px 20px',
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}>
+              <div style={{ fontSize: 32 }}>⚠️</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#DC2626', marginBottom: 4 }}>
+                  No Valid Evacuation Route
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--ink-600)' }}>
+                  All exits may be blocked or inaccessible. Contact emergency services immediately.
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: Sidebar */}
@@ -649,6 +800,8 @@ export default function LiveMap() {
                     message: 'Fire detected in Operating Theatre',
                     created_at: new Date().toISOString(),
                   }])
+                  setEmergencyMode(true)
+                  setEmergencyMessage('Fire detected in operation_theater')
                   setLastUpdate(new Date().toISOString())
                 }}
                 style={{
@@ -685,6 +838,7 @@ export default function LiveMap() {
                 onClick={() => {
                   setRooms(prev => prev.map(r => ({ ...r, current_hazard_level: 'NORMAL' })))
                   setAlerts([])
+                  setEmergencyMode(false)
                   setLastUpdate(new Date().toISOString())
                 }}
                 style={{
@@ -745,6 +899,15 @@ export default function LiveMap() {
           }
         }
         
+        @keyframes scanLine {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        
         .glass-card {
           animation: fadeInUp 0.5s ease-out;
         }
@@ -757,12 +920,12 @@ export default function LiveMap() {
         
         *::-webkit-scrollbar-track {
           background: rgba(148, 163, 184, 0.1);
-          border-radius: 4px;
+          borderRadius: 4px;
         }
         
         *::-webkit-scrollbar-thumb {
           background: linear-gradient(135deg, #94A3B8 0%, #64748B 100%);
-          border-radius: 4px;
+          borderRadius: 4px;
         }
         
         *::-webkit-scrollbar-thumb:hover {

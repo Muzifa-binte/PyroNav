@@ -37,8 +37,10 @@ class Settings(BaseSettings):
     retention_days: int = 0
     retention_interval_hours: float = 6.0
 
-    # Comma-separated modules that register in-process workers (see api/services.py)
-    background_services: str = ""
+    # Comma-separated modules that register in-process workers (see api/services.py).
+    # MQTT ingestion is on by default so 3D-app readings reach /ws/v1/live; without
+    # a broker it keeps retrying in the background and /health reports "mqtt".
+    background_services: str = "sensor_ingestion.service"
 
     @property
     def cors_origin_list(self) -> List[str]:

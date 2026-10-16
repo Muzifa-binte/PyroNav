@@ -93,18 +93,6 @@ export default function Configuration() {
   return (
     <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 900 }}>
 
-      {/* Header */}
-      <h2 style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 26,
-        fontWeight: 700,
-        color: 'var(--ink-900)',
-        margin: 0,
-      }}>
-        Configuration
-      </h2>
-      <p style={{ fontSize: 13, color: 'var(--ink-400)', marginTop: 0 }}>System settings and mappings</p>
-
       {/* Read-only notice — warm ivory */}
       <div style={{
         padding: '10px 16px',
@@ -152,7 +140,10 @@ export default function Configuration() {
                 s.sensor_type,
                 s.room_id,
                 <StatusPill key="pill" status={s.status === 'active' ? 'NORMAL' : 'UNKNOWN'} label={s.status || '—'} />,
-                s.unit_config || '—',
+                // unit_config arrives as an object, e.g. { smoke: 'ppm', temperature: 'degC' }
+                (s.unit_config && typeof s.unit_config === 'object'
+                  ? Object.entries(s.unit_config).map(([k, v]) => `${k}: ${v}`).join(', ')
+                  : s.unit_config) || '—',
               ]} />
             ))}
           </div>

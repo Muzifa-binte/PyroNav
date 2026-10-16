@@ -88,7 +88,7 @@
           "Sensors"
         ],
         "summary": "List all sensors",
-        "description": "All registered sensors with their current status. Optional filters narrow the list.",
+        "description": "All registered sensors with their current status and `latest_reading` (null if none yet). Optional filters narrow the list.",
         "operationId": "get_all_sensors_api_v1_sensors_get",
         "parameters": [
           {
@@ -813,6 +813,46 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/routes/compare": {
+      "post": {
+        "tags": [
+          "Evacuation & Routes"
+        ],
+        "summary": "Compare Dijkstra vs BFS routes side-by-side",
+        "description": "Run both Dijkstra and BFS from the same origin and return both results.\nUseful for the dual-path visualization on the Evacuation screen.\nResponse: { dijkstra: RouteResult, bfs: RouteResult, origin_room_id, calculated_at }",
+        "operationId": "compare_routes_api_v1_routes_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",

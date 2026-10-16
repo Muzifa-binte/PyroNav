@@ -1,5 +1,7 @@
 /**
- * useWebSocket — connects to PyroNav's live WebSocket endpoint.
+ * useWebSocket — connects to PyroNav's live WebSocket endpoint via FastAPI.
+ * Member 4 has implemented the WebSocket relay at /ws/v1/live that bridges
+ * MQTT messages from Mosquitto to browser clients.
  * Returns { connectionState, lastUpdate, lastEvent } and exposes the
  * event via a global EventTarget so any component can subscribe without
  * prop-drilling.
@@ -11,7 +13,9 @@ export const wsEventBus = new EventTarget()
 
 function getWsUrl() {
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-  return `${protocol}://${window.location.hostname}:8000/ws/v1/live?client_id=frontend`
+  const hostname = window.location.hostname
+  // Connect to FastAPI WebSocket relay
+  return `${protocol}://${hostname}:8000/ws/v1/live?client_id=frontend`
 }
 
 export function useWebSocket() {
@@ -31,6 +35,7 @@ export function useWebSocket() {
 
       ws.onopen = () => {
         if (!mountedRef.current) return
+        console.log('✅ WebSocket connected to FastAPI at ws://localhost:8000/ws/v1/live')
         setConnectionState('connected')
         setLastUpdate(new Date().toISOString())
       }
@@ -39,29 +44,38 @@ export function useWebSocket() {
         if (!mountedRef.current) return
         try {
           const msg = JSON.parse(ev.data)
-          setLastUpdate(msg.timestamp || new Date().toISOString())
+          const timestamp = msg.timestamp || new Date().toISOString()
+          setLastUpdate(timestamp)
           setLastEvent(msg)
+          
+          const eventType = msg.event_type || 'message'
+          
           // Dispatch to subscribers
           wsEventBus.dispatchEvent(
-            Object.assign(new Event(msg.event_type || 'message'), { detail: msg })
+            Object.assign(new Event(eventType), { detail: msg })
           )
-        } catch {
-          // non-JSON frame — ignore
+          
+          console.log('📨 WebSocket message received:', { eventType, msg })
+        } catch (error) {
+          console.warn('⚠️ Failed to parse WebSocket message:', error)
         }
       }
 
-      ws.onerror = () => {
+      ws.onerror = (error) => {
         if (!mountedRef.current) return
+        console.error('❌ WebSocket error:', error)
         setConnectionState('disconnected')
       }
 
       ws.onclose = () => {
         if (!mountedRef.current) return
+        console.log('🔌 WebSocket connection closed')
         setConnectionState('disconnected')
-        // Reconnect after 3 s
+        // Reconnect after 3 seconds
         reconnectTimer.current = setTimeout(connect, 3000)
       }
-    } catch {
+    } catch (error) {
+      console.error('❌ Failed to create WebSocket:', error)
       setConnectionState('disconnected')
       reconnectTimer.current = setTimeout(connect, 5000)
     }

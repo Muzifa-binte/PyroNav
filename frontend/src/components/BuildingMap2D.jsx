@@ -658,11 +658,11 @@ export default function BuildingMap2D({
         position: 'relative',
         width: '100%',
         aspectRatio: compact ? '16/10' : `${VW}/${VH}`,
-        background: '#F8FAFC',
+        background: 'var(--map-canvas-bg, #F8FAFC)',
         borderRadius: 14,
         overflow: 'hidden',
-        border: '1px solid #CBD5E1',
-        boxShadow: '0 4px 20px rgba(15, 23, 42, 0.06)',
+        border: '1px solid var(--border-subtle, #CBD5E1)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
       }}
     >
       <svg
@@ -706,14 +706,14 @@ export default function BuildingMap2D({
         </defs>
 
         {/* ── Background: Canvas ── */}
-        <rect x={0} y={0} width={VW} height={VH} fill="#F8FAFC" />
+        <rect x={0} y={0} width={VW} height={VH} fill="var(--map-canvas-bg, #F8FAFC)" />
 
         {/* ── Outer Building Envelope & Corridor Base ── */}
-        {/* The entire interior walkable corridor is crisp white */}
+        {/* The entire interior walkable corridor */}
         <rect
           x={38} y={78} width={744} height={494}
-          fill="#FFFFFF"
-          stroke="#1E293B"
+          fill="var(--map-corridor-bg, #FFFFFF)"
+          stroke="var(--map-corridor-border, #1E293B)"
           strokeWidth={4}
           rx={2}
         />
@@ -1409,16 +1409,16 @@ export default function BuildingMap2D({
         <g transform="translate(260, 15)">
           <rect
             x={0} y={0} width={300} height={46} rx={8}
-            fill="#EFF6FF"
-            stroke="#2563EB"
+            fill="var(--map-title-bg, #EFF6FF)"
+            stroke="var(--map-title-border, #2563EB)"
             strokeWidth={2}
-            filter="drop-shadow(0 2px 6px rgba(37, 99, 235, 0.15))"
+            filter="drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15))"
           />
           <text
             x={150} y={20}
             textAnchor="middle"
             fontFamily="'Inter', system-ui, sans-serif"
-            fontSize={15} fontWeight={800} fill="#1E3A8A"
+            fontSize={15} fontWeight={800} fill="var(--map-title-text, #1E3A8A)"
           >
             Hospital – 2D Floor Map
           </text>
@@ -1426,7 +1426,7 @@ export default function BuildingMap2D({
             x={150} y={36}
             textAnchor="middle"
             fontFamily="'Inter', system-ui, sans-serif"
-            fontSize={12} fontWeight={700} fill="#1E40AF"
+            fontSize={12} fontWeight={700} fill="var(--map-title-sub, #1E40AF)"
           >
             (Ground Floor)
           </text>
@@ -1437,15 +1437,15 @@ export default function BuildingMap2D({
           {/* Legend Border Card */}
           <rect
             x={0} y={0} width={180} height={460} rx={8}
-            fill="#FFFFFF"
-            stroke="#2563EB"
+            fill="var(--map-legend-bg, #FFFFFF)"
+            stroke="var(--map-legend-border, #2563EB)"
             strokeWidth={2}
-            filter="drop-shadow(0 4px 12px rgba(37, 99, 235, 0.10))"
+            filter="drop-shadow(0 4px 12px rgba(0, 0, 0, 0.10))"
           />
           <text
             x={14} y={25}
             fontFamily="'Inter', system-ui, sans-serif"
-            fontSize={15} fontWeight={800} fill="#1E3A8A"
+            fontSize={15} fontWeight={800} fill="var(--map-legend-title, #1E3A8A)"
           >
             Legend
           </text>
@@ -1464,7 +1464,7 @@ export default function BuildingMap2D({
           ].map((item, i) => (
             <g key={item.label} transform={`translate(14, ${45 + i * 24})`}>
               <rect x={0} y={0} width={20} height={14} rx={2} fill={item.color} stroke="#1E293B" strokeWidth={0.8} />
-              <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">
+              <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="var(--map-legend-text, #1E293B)">
                 {item.label}
               </text>
             </g>
@@ -1474,34 +1474,34 @@ export default function BuildingMap2D({
           <g transform="translate(14, 265)">
             <rect x={0} y={0} width={20} height={14} rx={2} fill="#15803D" />
             <path d="M4,10 L2,12 L5,12 L6,9 L8,12 L11,12 L9,7 Z" fill="#FFFFFF" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Emergency Exit</text>
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="var(--map-legend-text, #1E293B)">Emergency Exit</text>
           </g>
 
           {/* Evacuation Route arrow item */}
           <g transform="translate(14, 290)">
             <line x1={0} y1={7} x2={16} y2={7} stroke="#FF6A1A" strokeWidth={3} strokeLinecap="round" />
             <polygon points="14,3 20,7 14,11" fill="#FF6A1A" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Dijkstra Route</text>
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="var(--map-legend-text, #1E293B)">Dijkstra Route</text>
           </g>
 
           {/* BFS Route item */}
           <g transform="translate(14, 315)">
             <line x1={0} y1={7} x2={14} y2={7} stroke="#2F6FDE" strokeWidth={3} strokeDasharray="4 2" strokeLinecap="round" />
             <circle cx={20} cy={7} r={3} fill="#2F6FDE" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">BFS Route</text>
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="var(--map-legend-text, #1E293B)">BFS Route</text>
           </g>
 
           {/* Outer perimeter path item */}
           <g transform="translate(14, 340)">
             <line x1={0} y1={7} x2={20} y2={7} stroke="#2E8B57" strokeWidth={2.5} strokeDasharray="5 4" strokeLinecap="round" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Outer Path</text>
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="var(--map-legend-text, #1E293B)">Outer Path</text>
           </g>
 
           {/* Fire Extinguisher icon item */}
           <g transform="translate(14, 365)">
             <rect x={6} y={0} width={8} height={14} rx={2} fill="#DC2626" />
             <line x1={7} y1={-2} x2={13} y2={-2} stroke="#0F172A" strokeWidth={1} />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Fire Extinguisher</text>
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="var(--map-legend-text, #1E293B)">Fire Extinguisher</text>
           </g>
 
           {/* Fire Alarm icon item */}
@@ -1509,7 +1509,7 @@ export default function BuildingMap2D({
             <circle cx={10} cy={7} r={6.5} fill="#DC2626" stroke="#991B1B" strokeWidth={1} />
             <circle cx={10} cy={7} r={4} fill="#FFFFFF" />
             <circle cx={10} cy={7} r={2} fill="#DC2626" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Fire Alarm</text>
+            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="var(--map-legend-text, #1E293B)">Fire Alarm</text>
           </g>
         </g>
 
