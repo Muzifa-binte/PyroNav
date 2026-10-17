@@ -232,6 +232,7 @@ export default function Overview() {
   const navigate = useNavigate()
 
   const [rooms,    setRooms]    = useState([])
+  const [sensors,  setSensors]  = useState([])
   const [building, setBuilding] = useState(null)
   const [route,    setRoute]    = useState(null)
   const [alerts,   setAlerts]   = useState([])
@@ -241,13 +242,18 @@ export default function Overview() {
   useEffect(() => {
     async function load() {
       try {
-        const [r, b, rt, al] = await Promise.all([
-          api.getRooms(), api.getBuilding(), api.getCurrentRoute(), api.getAlerts(),
+        const [r, b, rt, al, sn] = await Promise.all([
+          api.getRooms().catch(() => ({ rooms: [] })),
+          api.getBuilding().catch(() => null),
+          api.getCurrentRoute().catch(() => null),
+          api.getAlerts().catch(() => ({ alerts: [] })),
+          api.getSensors().catch(() => ({ sensors: [] })),
         ])
         setRooms(r.rooms || [])
         setBuilding(b)
         setRoute(rt)
         setAlerts(al.alerts || [])
+        setSensors(sn?.sensors || [])
       } catch {
         // backend not running — demo mode, leave defaults
       } finally {
@@ -276,13 +282,31 @@ export default function Overview() {
       const r = d?.route || d
       if (r?.status) setRoute(r)
     }
-    wsEventBus.addEventListener('room_status_changed',  onRoom)
-    wsEventBus.addEventListener('hazard_event_created', onAlert)
-    wsEventBus.addEventListener('route_updated',        onRoute)
+    const onSensorReading = (e) => {
+      const d = e.detail?.data ?? e.detail ?? {}
+      const { sensor_id, status } = d
+      if (!sensor_id) return
+      setSensors(prev => prev.map(s =>
+        s.sensor_id === sensor_id
+          ? {
+              ...s,
+              status: status || s.status,
+              last_seen_at: d.last_seen_at || d.received_at || d.timestamp || s.last_seen_at,
+            }
+          : s
+      ))
+    }
+    wsEventBus.addEventListener('room_status_changed',    onRoom)
+    wsEventBus.addEventListener('hazard_event_created',   onAlert)
+    wsEventBus.addEventListener('route_updated',          onRoute)
+    wsEventBus.addEventListener('sensor_reading_updated', onSensorReading)
+    wsEventBus.addEventListener('sensor_status_changed',  onSensorReading)
     return () => {
-      wsEventBus.removeEventListener('room_status_changed',  onRoom)
-      wsEventBus.removeEventListener('hazard_event_created', onAlert)
-      wsEventBus.removeEventListener('route_updated',        onRoute)
+      wsEventBus.removeEventListener('room_status_changed',    onRoom)
+      wsEventBus.removeEventListener('hazard_event_created',   onAlert)
+      wsEventBus.removeEventListener('route_updated',          onRoute)
+      wsEventBus.removeEventListener('sensor_reading_updated', onSensorReading)
+      wsEventBus.removeEventListener('sensor_status_changed',  onSensorReading)
     }
   }, [])
 
@@ -290,7 +314,18 @@ export default function Overview() {
   const buildingState  = worstSeverity(rooms, alerts)
   const affectedRooms  = rooms.filter(r => ['CRITICAL','HIGH_RISK','WARNING'].includes(r.current_hazard_level))
   const criticalRooms  = rooms.filter(r => r.current_hazard_level === 'CRITICAL')
-  const sensorsTotal   = rooms.length || 16
+  // 3D model sensor registry (hospital-3d-sensors.json) defines 57 sensors across 26 zones
+  const SENSORS_3D_TOTAL = 57
+  const sensorsTotal   = sensors.length > 0 ? sensors.length : SENSORS_3D_TOTAL
+  const sensorsOnline  = sensors.length > 0
+    ? sensors.filter(s => s.status === 'active' || s.status === 'NORMAL' || s.status === 'online').length
+    : SENSORS_3D_TOTAL
+  const sensorsStale   = sensors.length > 0
+    ? sensors.filter(s => s.status === 'stale').length
+    : 0
+  const sensorsOffline = sensors.length > 0
+    ? sensors.filter(s => ['inactive', 'error', 'offline', 'CRITICAL'].includes(s.status)).length
+    : 0
   // Count untrusted rooms (placeholder — replace with real sensor trust data when available)
   const untrustedCount = 0
   const avgRisk        = affectedRooms.length > 0
@@ -334,7 +369,7 @@ export default function Overview() {
           />
           <KpiCard
             label="Sensors online"
-            value={`${sensorsTotal - 1}/${sensorsTotal}`}
+            value={`${sensorsOnline}/${sensorsTotal}`}
             valueColor="var(--ink-900)"
             onClick={() => navigate('/sensors')}
           />
@@ -587,16 +622,16 @@ export default function Overview() {
           }}>
             <div style={{
               height:     '100%',
-              width:      `${Math.round(((sensorsTotal - 1) / sensorsTotal) * 100)}%`,
+              width:      `${sensorsTotal > 0 ? Math.round((sensorsOnline / sensorsTotal) * 100) : 100}%`,
               background: 'var(--green-600)',
               borderRadius: 4,
               transition: 'width 0.6s ease',
             }} />
           </div>
           <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
-            <span style={{ color: 'var(--green-600)', fontWeight: 600 }}>● {sensorsTotal - 1} Online</span>
-            <span style={{ color: 'var(--amber-500)', fontWeight: 600 }}>● 0 Stale</span>
-            <span style={{ color: 'var(--red-600)',   fontWeight: 600 }}>● 1 Offline</span>
+            <span style={{ color: 'var(--green-600)', fontWeight: 600 }}>● {sensorsOnline} Online</span>
+            <span style={{ color: 'var(--amber-500)', fontWeight: 600 }}>● {sensorsStale} Stale</span>
+            <span style={{ color: 'var(--red-600)',   fontWeight: 600 }}>● {sensorsOffline} Offline</span>
           </div>
         </div>
 

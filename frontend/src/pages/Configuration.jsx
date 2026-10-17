@@ -897,11 +897,11 @@ export default function Configuration() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
               <div style={{ padding: 12, background: 'var(--bg-inset)', borderRadius: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--ink-400)', marginBottom: 2 }}>Registered Rooms</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>{rooms.length || 16}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>{rooms.length || 26}</div>
               </div>
               <div style={{ padding: 12, background: 'var(--bg-inset)', borderRadius: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--ink-400)', marginBottom: 2 }}>Physical Sensors</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>{sensors.length || 62}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>{sensors.length || 57}</div>
               </div>
               <div style={{ padding: 12, background: 'var(--bg-inset)', borderRadius: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--ink-400)', marginBottom: 2 }}>Designated Exits</div>
