@@ -163,3 +163,87 @@ async def publish_event(body: PublishRequest):
         "websocket_clients": manager.connection_count,
         "timestamp": utc_now_iso(),
     }
+
+
+# ---------------------------------------------------------------------------
+# 3D Hospital Model Management
+# ---------------------------------------------------------------------------
+import os
+import pathlib
+import socket
+import subprocess
+
+_HOSPITAL_3D_PROC = None
+
+
+def _is_3d_model_running(port: int = 5173) -> bool:
+    for host in ("127.0.0.1", "localhost"):
+        try:
+            with socket.create_connection((host, port), timeout=0.4):
+                return True
+        except (socket.timeout, ConnectionRefusedError, OSError):
+            continue
+    return False
+
+
+def _start_3d_model_process() -> bool:
+    global _HOSPITAL_3D_PROC
+    if _is_3d_model_running():
+        return True
+
+    proj_root = pathlib.Path(__file__).resolve().parents[3]
+    h3d_dir = proj_root / "hospital-3d"
+    if not h3d_dir.exists():
+        return False
+
+    cmd = ["npm.cmd" if os.name == "nt" else "npm", "run", "dev"]
+    flags = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS) if os.name == "nt" else 0
+    _HOSPITAL_3D_PROC = subprocess.Popen(
+        cmd,
+        cwd=str(h3d_dir),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=flags,
+        shell=(os.name == "nt"),
+    )
+    return True
+
+
+@router.get("/system/3d-model/status", summary="Check if 3D Hospital Digital Twin is running")
+async def model_3d_status():
+    running = _is_3d_model_running()
+    return {
+        "running": running,
+        "url": "http://localhost:5173",
+        "timestamp": utc_now_iso(),
+    }
+
+
+@router.post("/system/3d-model/start", summary="Start 3D Hospital Digital Twin server if not running")
+async def start_3d_model():
+    if _is_3d_model_running():
+        return {
+            "started": False,
+            "running": True,
+            "url": "http://localhost:5173",
+            "message": "3D Model server is already running.",
+        }
+
+    _start_3d_model_process()
+    for _ in range(25):
+        await asyncio.sleep(0.3)
+        if _is_3d_model_running():
+            return {
+                "started": True,
+                "running": True,
+                "url": "http://localhost:5173",
+                "message": "3D Model server started successfully.",
+            }
+
+    return {
+        "started": False,
+        "running": False,
+        "url": "http://localhost:5173",
+        "message": "3D Model server process launched but port 5173 did not respond within timeout.",
+    }
+

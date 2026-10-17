@@ -110,6 +110,91 @@ function NavItem({ item, collapsed }) {
 }
 
 export default function SidebarNavigation({ collapsed, onToggle }) {
+  const [launching3D, setLaunching3D] = React.useState(false)
+
+  const handleLaunch3DModel = async (e) => {
+    e.preventDefault()
+    if (launching3D) return
+    setLaunching3D(true)
+
+    // Pre-open window immediately to satisfy browser popup blocker policies
+    const win = window.open('about:blank', '_blank')
+    if (win) {
+      try {
+        win.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Launching PyroNav 3D Hospital Twin...</title>
+              <style>
+                body {
+                  margin: 0;
+                  height: 100vh;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justifyContent: center;
+                  background: #0d1117;
+                  color: #c9d1d9;
+                  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                }
+                .card {
+                  text-align: center;
+                  padding: 36px 44px;
+                  border-radius: 16px;
+                  background: #161b22;
+                  border: 1px solid rgba(255,106,26,0.3);
+                  box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+                  max-width: 400px;
+                }
+                .spinner {
+                  width: 44px;
+                  height: 44px;
+                  border: 4px solid rgba(255,106,26,0.2);
+                  border-top-color: #ff6a1a;
+                  border-radius: 50%;
+                  animation: spin 0.8s infinite linear;
+                  margin: 0 auto 18px;
+                }
+                @keyframes spin { 100% { transform: rotate(360deg); } }
+                h2 { margin: 0 0 8px 0; color: #f0f6fc; font-size: 19px; }
+                p { margin: 0; color: #8b949e; font-size: 13px; line-height: 1.5; }
+              </style>
+            </head>
+            <body>
+              <div class="card">
+                <div class="spinner"></div>
+                <h2>Launching 3D Digital Twin</h2>
+                <p>Initializing PyroNav 3D Hospital simulator on port 5173...</p>
+              </div>
+            </body>
+          </html>
+        `)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    try {
+      const res = await fetch('/api/v1/system/3d-model/start', { method: 'POST' })
+      const data = await res.json()
+      const targetUrl = data.url || 'http://localhost:5173'
+      if (win) {
+        win.location.href = targetUrl
+      } else {
+        window.open(targetUrl, '_blank')
+      }
+    } catch {
+      if (win) {
+        win.location.href = 'http://localhost:5173'
+      } else {
+        window.open('http://localhost:5173', '_blank')
+      }
+    } finally {
+      setTimeout(() => setLaunching3D(false), 1200)
+    }
+  }
+
   return (
     <nav
       aria-label="Primary navigation"
@@ -244,12 +329,12 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
 
       {/* ── 3D Hospital Model Shortcut ── */}
       <div style={{ padding: collapsed ? '8px 10px' : '8px 14px' }}>
-        <a
-          href="http://localhost:5173"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Open 3D Hospital Model (Sensor Input Simulator)"
+        <button
+          onClick={handleLaunch3DModel}
+          disabled={launching3D}
+          title="Open 3D Hospital Model in Browser (Sensor Input Simulator)"
           style={{
+            width: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
@@ -259,24 +344,32 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
             border: '1px solid rgba(255,106,26,0.35)',
             borderRadius: 'var(--sidebar-item-radius, 12px)',
             color: 'var(--orange-500)',
-            textDecoration: 'none',
+            cursor: launching3D ? 'wait' : 'pointer',
             fontSize: 13,
             fontWeight: 700,
             fontFamily: 'var(--font-sans)',
             transition: 'all var(--transition-fast)',
+            opacity: launching3D ? 0.75 : 1,
+            outline: 'none',
           }}
           onMouseEnter={e => {
-            e.currentTarget.style.background = 'var(--orange-500)'
-            e.currentTarget.style.color = '#fff'
+            if (!launching3D) {
+              e.currentTarget.style.background = 'var(--orange-500)'
+              e.currentTarget.style.color = '#fff'
+            }
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,106,26,0.15) 0%, rgba(255,178,122,0.10) 100%)'
-            e.currentTarget.style.color = 'var(--orange-500)'
+            if (!launching3D) {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,106,26,0.15) 0%, rgba(255,178,122,0.10) 100%)'
+              e.currentTarget.style.color = 'var(--orange-500)'
+            }
           }}
         >
-          <span style={{ fontSize: 16 }}>🧊</span>
-          {!collapsed && <span>3D Model Input ↗</span>}
-        </a>
+          <span style={{ fontSize: 16 }}>{launching3D ? '⏳' : '🧊'}</span>
+          {!collapsed && (
+            <span>{launching3D ? 'Starting 3D... ⏳' : '3D Model Input ↗'}</span>
+          )}
+        </button>
       </div>
 
       {/* ── Footer status pill ── */}
