@@ -4,6 +4,7 @@ import LoadingSkeleton from '../components/LoadingSkeleton'
 import RoomAnalysisPanel from '../components/RoomAnalysisPanel'
 import * as api from '../services/api'
 import { wsEventBus } from '../hooks/useWebSocket'
+import { SENSOR_TYPES } from '../utils/hazard'
 
 const DEMO_ROUTE = {
   route_id: 'demo-route-001',
@@ -154,6 +155,18 @@ export default function LiveMap() {
   const [lastUpdate, setLastUpdate] = useState(null)
   const [alerts, setAlerts] = useState([])
   const [activeLayers, setActiveLayers] = useState(new Set(['Fire', 'Sensors', 'Blocked']))
+  const [sensorTypeCounts, setSensorTypeCounts] = useState({})
+
+  // Legend counts per sensor type (smoke_heat / co / current)
+  useEffect(() => {
+    api.getSensors()
+      .then(d => {
+        const counts = {}
+        for (const s of d.sensors || []) counts[s.sensor_type] = (counts[s.sensor_type] || 0) + 1
+        setSensorTypeCounts(counts)
+      })
+      .catch(() => {})
+  }, [])
 
   const toggleLayer = (layer) => {
     setActiveLayers(prev => {
@@ -1122,12 +1135,12 @@ export default function LiveMap() {
                 🔬 SENSOR TYPES
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  { icon: '🌡️', label: 'Temperature Sensor', color: '#FF6A1A', gradient: 'linear-gradient(135deg, #FF6A1A 0%, #FF8C42 100%)' },
-                  { icon: '💨', label: 'Smoke Sensor', color: '#666', gradient: 'linear-gradient(135deg, #666 0%, #888 100%)' },
-                  { icon: '⚡', label: 'Electrical Sensor', color: '#FFB800', gradient: 'linear-gradient(135deg, #FFB800 0%, #FFC933 100%)' },
-                  { icon: '🔥', label: 'Flame Sensor', color: '#9333EA', gradient: 'linear-gradient(135deg, #9333EA 0%, #A855F7 100%)' },
-                ].map((sensor, idx) => (
+                {/* The hospital's three real sensor types (hospital-3d-sensors.json) */}
+                {Object.entries(SENSOR_TYPES).map(([type, t]) => ({
+                  ...t,
+                  label: `${t.label}${sensorTypeCounts[type] ? ` (${sensorTypeCounts[type]})` : ''}`,
+                  gradient: `linear-gradient(135deg, ${t.color} 0%, ${t.color}CC 100%)`,
+                })).map((sensor, idx) => (
                   <div key={idx} style={{ 
                     display: 'flex', 
                     alignItems: 'center', 

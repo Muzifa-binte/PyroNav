@@ -42,6 +42,9 @@ export const getSensorReadings = (params = {}, limit) => {
   return request(`/sensors/readings?${queryParams.toString()}`)
 }
 
+// ── Decision engine ─────────────────────────────────────────
+export const getThresholds = () => request('/thresholds')
+
 // ── Routes ─────────────────────────────────────────────────
 export const calculateRoute = (originRoomId, algorithm = 'dijkstra', targetExitId = null) =>
   request('/routes/calculate', {
@@ -64,6 +67,8 @@ export const getExits        = () => request('/exits')
 
 // ── Alerts ─────────────────────────────────────────────────
 export const getAlerts          = (status = 'ACTIVE') => request(`/alerts?status=${status}`)
+// Hazard events old and new (ACTIVE + RESOLVED), for the Incidents page
+export const getIncidents       = (limit = 200) => request(`/alerts?status=ALL&limit=${limit}`)
 export const getSecurityEvents  = (limit = 50) => request(`/security/events?limit=${limit}`)
 export const getNotifications   = (params = {}) => {
   const queryParams = new URLSearchParams()
@@ -76,4 +81,12 @@ export const getNotifications   = (params = {}) => {
 
 // ── System ─────────────────────────────────────────────────
 export const getSystemStats     = () => request('/system/stats')
+
+// ── Simulation (development endpoints) ─────────────────────
+// Publishes a real MQTT reading: broker → ingestion → decision engine → WebSocket
+export const simulateReading = (sensorId, values = null, invalid = false) =>
+  request('/system/simulate/reading', {
+    method: 'POST',
+    body: JSON.stringify({ sensor_id: sensorId, values, invalid }),
+  })
 export const getWebSocketStats  = () => request('/system/websocket/stats')

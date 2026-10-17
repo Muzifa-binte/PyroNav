@@ -3,6 +3,7 @@ import StatusPill from '../components/StatusPill'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import * as api from '../services/api'
 import { wsEventBus } from '../hooks/useWebSocket'
+import { describeRule, loadThresholds, readingLevel } from '../utils/hazard'
 
 // Spec Section 3.1 palette — warm ivory tokens
 const HAZARD_COLOR = {
@@ -13,13 +14,108 @@ const HAZARD_COLOR = {
   UNKNOWN:   '#8B7F76',
 }
 
+// Which sensor type measures what (shared-contracts/hazard-levels.json)
+const MEASUREMENT_TYPE = { smoke: 'smoke_heat', temperature: 'smoke_heat', co: 'co', current: 'current' }
+const MEASUREMENT_LABEL = { smoke: 'Smoke', temperature: 'Temperature', co: 'Carbon monoxide', current: 'Current' }
+
+/**
+ * Why a room has its level: the measurements the decision engine evaluated
+ * (GET /rooms/{id} → latest_readings, worst value per measurement) and the
+ * rules that fired (active hazard event → reason_codes).
+ */
+function RoomEvidence({ roomId, level, thresholds, ratedBySensor }) {
+  const [detail, setDetail] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const load = () => api.getRoomDetails(roomId)
+      .then(d => { if (!cancelled) setDetail(d) })
+      .catch(() => { if (!cancelled) setDetail({ error: true }) })
+    load()
+    const timer = setInterval(load, 5000)
+    return () => { cancelled = true; clearInterval(timer) }
+  }, [roomId, level])
+
+  const box = { marginTop: 16, background: 'var(--bg-inset)', borderRadius: 'var(--radius-sm)', padding: 12 }
+  const heading = { fontSize: 10, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, fontFamily: 'var(--font-sans)' }
+
+  if (!detail) return <div style={{ ...box, fontSize: 12, color: 'var(--ink-400)' }}>Loading measurements…</div>
+  if (detail.error || detail.demo_data) {
+    return <div style={{ ...box, fontSize: 12, color: 'var(--ink-400)' }}>Measurements unavailable (database not connected).</div>
+  }
+
+  const measurements = Object.entries(detail.latest_readings || {})
+  const event = (detail.active_events || [])[0]
+
+  return (
+    <>
+      <div style={box}>
+        <div style={heading}>Contributing measurements</div>
+        {measurements.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--ink-400)' }}>No readings received from this room yet.</div>
+        ) : measurements.map(([field, m]) => {
+          const mLevel = readingLevel(thresholds, MEASUREMENT_TYPE[field], { [field]: m.value },
+                                      ratedBySensor[m.sensor_id], field)
+          const color = HAZARD_COLOR[mLevel] || 'var(--ink-900)'
+          return (
+            <div key={field} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: 12 }}>
+              <div>
+                <div style={{ color: 'var(--ink-900)', fontWeight: 600 }}>{MEASUREMENT_LABEL[field] || field}</div>
+                <div style={{ color: 'var(--ink-400)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>{m.sensor_id}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div className="tabular" style={{ color, fontWeight: 700 }}>{m.value} {m.unit || ''}</div>
+                <div style={{ fontSize: 10, color }}>{mLevel || '—'}</div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={box}>
+        <div style={heading}>Why this level</div>
+        {event ? (
+          <>
+            <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: 'var(--ink-600)', lineHeight: 1.5 }}>
+              {(event.reason_codes || []).map(code => (
+                <li key={code}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-900)' }}>{code}</span>
+                  {' — '}{describeRule(thresholds, code)}
+                </li>
+              ))}
+            </ul>
+            <div style={{ fontSize: 11, color: 'var(--ink-400)', marginTop: 6 }}>
+              Since {new Date(event.detected_at).toLocaleTimeString()}
+              {event.source_sensor_ids?.length ? ` · sensors ${event.source_sensor_ids.join(', ')}` : ''}
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: 12, color: 'var(--ink-600)' }}>
+            {level === 'NORMAL' ? 'All measurements are within the decision engine thresholds.'
+              : level === 'UNKNOWN' ? 'No recent readings: the room cannot be classified.'
+              : 'No active hazard event.'}
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
 export default function RiskAnalytics() {
   const [rooms,    setRooms]    = useState([])
   const [selected, setSelected] = useState(null)
   const [loading,  setLoading]  = useState(true)
+  const [thresholds, setThresholds] = useState(null)       // the decision engine's rules
+  const [ratedBySensor, setRatedBySensor] = useState({})   // current thresholds scale with these
 
   useEffect(() => {
     api.getRooms().then(d => setRooms(d.rooms || [])).finally(() => setLoading(false))
+    loadThresholds().then(setThresholds).catch(() => {})
+    api.getSensors()
+      .then(d => setRatedBySensor(Object.fromEntries(
+        (d.sensors || []).map(s => [s.sensor_id, s.metadata?.rated_current_a])
+      )))
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -89,7 +185,7 @@ export default function RiskAnalytics() {
 
         {/* Right: sticky detail panel */}
         <div style={{ width: 320, flexShrink: 0 }}>
-          <div className="glass-card" style={{ padding: 20, position: 'sticky', top: 16 }}>
+          <div className="glass-card" style={{ padding: 20, position: 'sticky', top: 16, maxHeight: 'calc(100vh - 140px)', overflowY: 'auto' }}>
             {selected ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
@@ -147,19 +243,13 @@ export default function RiskAnalytics() {
                   ))}
                 </div>
 
-                {/* Note box */}
-                <div style={{
-                  marginTop: 16,
-                  background: 'var(--bg-inset)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: 12,
-                  fontSize: 12,
-                  color: 'var(--ink-400)',
-                  fontStyle: 'italic',
-                  lineHeight: 1.5,
-                }}>
-                  Connect decision engine for contributing measurements and reason codes.
-                </div>
+                {/* Measurements and fired rules from the decision engine */}
+                <RoomEvidence
+                  roomId={selected.room_id}
+                  level={selected.current_hazard_level || 'UNKNOWN'}
+                  thresholds={thresholds}
+                  ratedBySensor={ratedBySensor}
+                />
               </>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12, textAlign: 'center' }}>

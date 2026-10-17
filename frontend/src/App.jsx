@@ -10,6 +10,7 @@ import Alerts from './pages/Alerts'
 import NetworkSecurity from './pages/NetworkSecurity'
 import RiskAnalytics from './pages/RiskAnalytics'
 import Simulation from './pages/Simulation'
+import Incidents from './pages/Incidents'
 import Configuration from './pages/Configuration'
 
 // ── Error boundary so crashes show a readable message, not a blank screen ──
@@ -101,6 +102,7 @@ export default function App() {
             <Route path="/sensors"     element={<Sensors />} />
             <Route path="/evacuation"  element={<Evacuation />} />
             <Route path="/alerts"      element={<Alerts />} />
+            <Route path="/incidents"   element={<Incidents />} />
             <Route path="/security"    element={<NetworkSecurity />} />
             <Route path="/risk"        element={<RiskAnalytics />} />
             <Route path="/simulation"  element={<Simulation />} />

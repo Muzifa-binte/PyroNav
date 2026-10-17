@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import * as api from '../services/api'
+import { LEVEL_STYLE, SENSOR_TYPES, loadThresholds, sensorLevel } from '../utils/hazard'
 
 /**
  * Hospital 2D Floor Map (Ground Floor)
@@ -741,22 +743,23 @@ export default function BuildingHeatmap({
 }) {
   const [hoveredRoom, setHoveredRoom] = useState(null)
   const [sensorsData, setSensorsData] = useState([])
+  const [thresholds, setThresholds] = useState(null)   // the decision engine's rules
 
   // Fetch sensor data when showSensors is enabled (only if not in rooms prop)
   useEffect(() => {
-    if (showSensors) {
-      // Check if sensors are already in rooms prop (demo mode or pre-loaded)
-      const hasSensorsInRooms = rooms && rooms.some(r => r.sensors && r.sensors.length > 0)
-      
-      if (!hasSensorsInRooms) {
-        // Fetch from API only if sensors not already provided
-        import('../services/api').then(api => {
-          api.getSensors()
-            .then(d => setSensorsData(d.sensors || []))
-            .catch(err => console.warn('Failed to load sensors:', err))
-        })
-      }
-    }
+    if (!showSensors) return
+    // Check if sensors are already in rooms prop (demo mode or pre-loaded)
+    const hasSensorsInRooms = rooms && rooms.some(r => r.sensors && r.sensors.length > 0)
+    if (hasSensorsInRooms) return
+    let cancelled = false
+    const load = () => api.getSensors()
+      .then(d => { if (!cancelled) setSensorsData(d.sensors || []) })
+      .catch(err => console.warn('Failed to load sensors:', err))
+    load()
+    loadThresholds().then(t => { if (!cancelled) setThresholds(t) }).catch(() => {})
+    // Readings and freshness change every few seconds
+    const timer = setInterval(load, 10000)
+    return () => { cancelled = true; clearInterval(timer) }
   }, [showSensors, rooms])
 
   // Group sensors by room - use sensors from rooms prop first, then fetched data
@@ -1185,60 +1188,56 @@ export default function BuildingHeatmap({
                   )
                 }
                 
-                // Show simplified sensor health dots: Green (working) vs Red (broken)
+                // One dot per sensor, coloured by TYPE (same colours as the 3D app and the
+                // Sensor Types legend). Hollow = no reading for 60 s or a sensor fault;
+                // a blinking ring in the severity colour = abnormal reading by the
+                // decision engine's rules.
                 return (
-                  <g transform={`translate(${room.x + room.w - (sensors.length * 7 + 8)}, ${room.y + room.h - 12})`}>
+                  <g transform={`translate(${room.x + room.w - (sensors.length * 9 + 8)}, ${room.y + room.h - 12})`}>
                     {sensors.map((sensor, idx) => {
-                      // Simple logic: FAILED or OFFLINE = RED, otherwise GREEN
-                      const isBroken = sensor.status === 'FAILED' || sensor.status === 'OFFLINE'
-                      const dotColor = isBroken ? '#EF4444' : '#10B981' // Red or Green
-                      
+                      const type = sensor.sensor_type || sensor.type
+                      const typeStyle = SENSOR_TYPES[type]
+                      const typeColor = typeStyle?.color || '#94A3B8'
+                      const values = sensor.latest_reading?.values
+                      const seen = sensor.last_seen_at || sensor.last_reading_at
+                      const ageSeconds = seen ? (Date.now() - new Date(seen).getTime()) / 1000 : Infinity
+                      const broken = ['FAILED', 'OFFLINE', 'inactive', 'error', 'offline'].includes(sensor.status)
+                      const silent = broken || ageSeconds > 60
+                      const level = sensorLevel(thresholds, sensor, values)
+                      const ring = LEVEL_STYLE[level]
+                      const reading = values
+                        ? Object.entries(values).map(([k, v]) => `${k} ${v}`).join(', ')
+                        : (sensor.value != null ? `${sensor.value} ${sensor.unit || ''}` : 'N/A')
+
                       return (
-                        <g key={sensor.sensor_id || idx} transform={`translate(${idx * 8}, 0)`}>
-                          {/* Simple colored dot */}
-                          <circle
-                            cx={0}
-                            cy={0}
-                            r={3.5}
-                            fill={dotColor}
-                            stroke="#FFF"
-                            strokeWidth={1.2}
-                            opacity={0.95}
-                          >
-                            <title>
-{`${sensor.sensor_id || 'Unknown'}
-Type: ${sensor.type || sensor.sensor_type || 'unknown'}
-Status: ${sensor.status || 'UNKNOWN'}
-Value: ${sensor.value !== null && sensor.value !== undefined ? sensor.value + ' ' + (sensor.unit || '') : 'N/A'}
-Last Reading: ${sensor.last_reading_at ? new Date(sensor.last_reading_at).toLocaleTimeString() : 'Never'}`}
-                            </title>
-                          </circle>
-                          
-                          {/* Pulse animation for broken sensors */}
-                          {isBroken && (
-                            <circle
-                              cx={0}
-                              cy={0}
-                              r={3.5}
-                              fill="none"
-                              stroke="#EF4444"
-                              strokeWidth={1.5}
-                              opacity={0.8}
-                            >
-                              <animate
-                                attributeName="r"
-                                values="3.5;6.5;3.5"
-                                dur="1.5s"
-                                repeatCount="indefinite"
-                              />
+                        <g key={sensor.sensor_id || idx} transform={`translate(${idx * 9}, 0)`}>
+                          {ring && (
+                            <circle cx={0} cy={0} r={6} fill="none" stroke={ring.color} strokeWidth={1.8}>
                               <animate
                                 attributeName="opacity"
-                                values="0.8;0;0.8"
-                                dur="1.5s"
+                                values="1;0.15;1"
+                                dur={level === 'CRITICAL' ? '0.8s' : '1.5s'}
                                 repeatCount="indefinite"
                               />
                             </circle>
                           )}
+                          <circle
+                            cx={0}
+                            cy={0}
+                            r={3.5}
+                            fill={silent ? '#FFFFFF' : typeColor}
+                            stroke={silent ? typeColor : '#FFF'}
+                            strokeWidth={silent ? 1.6 : 1.2}
+                            opacity={0.95}
+                          >
+                            <title>
+{`${sensor.sensor_id || 'Unknown'}
+Type: ${typeStyle?.label || type || 'unknown'}
+Reading: ${reading}
+Risk: ${level || '—'}
+Last seen: ${seen ? new Date(seen).toLocaleTimeString() : 'never'}${broken ? '\nSensor fault' : silent ? '\nNo reading for 60 s' : ''}`}
+                            </title>
+                          </circle>
                         </g>
                       )
                     })}
