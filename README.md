@@ -5,7 +5,7 @@
 <div align="center">
 
 <!-- ── HERO BANNER ──────────────────────────────────────────────────────────── -->
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0D1117,0F1923,1A2744,F97316&height=220&section=header&text=PyroNav&fontSize=85&fontColor=F97316&fontAlignY=40&desc=Predictive%20Fire%20Safety%20%C2%B7%20Cyber-Defended%20Emergency%20Egress&descAlignY=62&descColor=94A3B8&animation=fadeIn&stroke=F97316&strokeWidth=2" alt="PyroNav Banner" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0A1628&height=220&section=header&text=PyroNav&fontSize=85&fontColor=F97316&fontAlignY=40&desc=Predictive%20Fire%20Safety%20%C2%B7%20Cyber-Defended%20Emergency%20Egress&descAlignY=62&descColor=7EB8D4&animation=fadeIn" alt="PyroNav Banner" width="100%"/>
 
 <!-- ── ANIMATED TYPEWRITER ───────────────────────────────────────────────────── -->
 <img src="https://readme-typing-svg.demolab.com?font=Orbitron&weight=700&size=20&duration=3000&pause=800&color=F97316&center=true&vCenter=true&multiline=false&width=750&height=50&lines=Detect+Risk.+Defend+Telemetry.+Guide+Evacuation.;Real-Time+IoT+Fire+Safety+Monitoring;Cyber-Aware+Intrusion+Detection+System;Dijkstra+%2B+A*+%2B+BFS+Hazard-Aware+Routing;Hospital+Digital+Twin+%2B+Live+Dashboard" alt="Typing SVG" />
@@ -515,7 +515,7 @@ PyroNav/
 <!--  FOOTER                                                                       -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0D1117,0F1923,1A2744,F97316&height=120&section=footer" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0A1628&height=120&section=footer" width="100%"/>
 
 <div align="center">
 
