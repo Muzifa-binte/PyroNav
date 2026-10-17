@@ -124,17 +124,18 @@ const DEMO_ROOMS = [
   { room_id: 'records',           name: 'Records',                 current_hazard_level: 'UNKNOWN'   },
 ]
 
-// ── Risk score: 0-100 calculated from how far each sensor is above its threshold
+// ── Risk score: 0-100
+// Uses the WORST (highest) sensor score so one critical reading dominates.
+// Failed/offline sensors add an uncertainty penalty on top.
 function calcRiskScore(sensors = []) {
   if (!sensors.length) return 0
-  let totalScore = 0
-  let scoredCount = 0
+
+  let maxScore    = 0
+  let failPenalty = 0
 
   sensors.forEach(s => {
     if (s.value == null || s.status === 'FAILED' || s.status === 'OFFLINE') {
-      // Failed sensor adds uncertainty penalty
-      totalScore += 30
-      scoredCount++
+      failPenalty = Math.max(failPenalty, 25) // at least 25 for any failed sensor
       return
     }
     const key = SENSOR_TYPE_MAP[s.type]
@@ -143,16 +144,16 @@ function calcRiskScore(sensors = []) {
 
     const val = parseFloat(s.value)
     let score = 0
-    if (val >= thr.critical)     score = 80 + Math.min(20, ((val - thr.critical) / (thr.max - thr.critical)) * 20)
-    else if (val >= thr.high)    score = 55 + ((val - thr.high) / (thr.critical - thr.high)) * 25
-    else if (val >= thr.warning) score = 25 + ((val - thr.warning) / (thr.high - thr.warning)) * 30
-    else                          score = Math.max(0, (val / thr.warning) * 25)
+    if (val >= thr.critical)     score = 80 + Math.min(20, ((val - thr.critical) / Math.max(thr.max - thr.critical, 1)) * 20)
+    else if (val >= thr.high)    score = 55 + ((val - thr.high)    / (thr.critical - thr.high))    * 25
+    else if (val >= thr.warning) score = 25 + ((val - thr.warning) / (thr.high     - thr.warning)) * 30
+    else                          score = Math.max(0, (val / thr.warning) * 24)
 
-    totalScore += score
-    scoredCount++
+    maxScore = Math.max(maxScore, score)
   })
 
-  return scoredCount > 0 ? Math.round(totalScore / scoredCount) : 0
+  // Blend: worst sensor score + fail penalty, capped at 100
+  return Math.min(100, Math.round(maxScore + failPenalty))
 }
 
 function getRiskColor(score) {
