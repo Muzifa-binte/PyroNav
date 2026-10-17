@@ -54,13 +54,27 @@ class ThresholdEvaluator:
             if field_value is None:
                 continue
             
-            if self._check_condition(field_value, rule):
+            threshold = self._resolve_threshold(rule, reading)
+            if self._check_condition(field_value, {**rule, 'threshold': threshold}):
                 triggered_rule = dict(rule)
+                triggered_rule['threshold'] = threshold
                 triggered_rule['triggered_value'] = field_value
                 triggered_rule['sensor_id'] = reading.get('sensor_id')
                 triggered_rules.append(triggered_rule)
         
         return triggered_rules
+    
+    def _resolve_threshold(self, rule: Dict, reading: Dict) -> float:
+        """
+        Current rules scale with the circuit's rated current
+        (threshold_ratio_of_rated x rated_current_a); without a rating the
+        fixed threshold applies.
+        """
+        ratio = rule.get('threshold_ratio_of_rated')
+        rated = reading.get('rated_current_a')
+        if ratio is not None and rated:
+            return ratio * float(rated)
+        return rule['threshold']
     
     def _check_condition(self, value: float, rule: Dict) -> bool:
         """
@@ -222,6 +236,9 @@ class ThresholdEvaluator:
                 timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
             else:
                 return True
+        if timestamp.tzinfo is None:
+            # The database stores UTC timestamps without a zone
+            timestamp = timestamp.replace(tzinfo=timezone.utc)
         
         now = datetime.now(timezone.utc)
         age_seconds = (now - timestamp).total_seconds()

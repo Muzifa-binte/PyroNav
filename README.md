@@ -399,7 +399,10 @@ npm.cmd run dev
 ```
 
 1. **Start MQTT Broker:** `docker compose up -d mosquitto`
-2. **Verify:** `GET http://localhost:8000/api/v1/health` → `"mqtt": "connected"`
+   *Windows without Docker:* `winget install EclipseFoundation.Mosquitto`, then in an **administrator** PowerShell copy `backend\mqtt\mosquitto.windows.conf` over `C:\Program Files\mosquitto\mosquitto.conf` and run `Restart-Service mosquitto`.
+2. **Verify:** `GET http://localhost:8000/api/v1/health` → `"mqtt": "connected"` and `"decision_engine": "running"`
+
+MQTT ingestion and the Decision Engine run inside the API by default. An older `backend/.env` with a `BACKGROUND_SERVICES=` line overrides that: set it to `BACKGROUND_SERVICES=sensor_ingestion.service,decision_engine.service`.
 
 ---
 

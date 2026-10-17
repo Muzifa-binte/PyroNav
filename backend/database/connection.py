@@ -234,6 +234,10 @@ class DatabaseManager:
                 cursor.execute(query, params)
                 return cursor.rowcount
 
+    def execute(self, query: str, params: Optional[Sequence] = None) -> int:
+        """Alias of execute_write (used by the decision engine)."""
+        return self.execute_write(query, params)
+
     def execute_many(self, query: str, param_list: Iterable[Sequence]) -> None:
         """Execute the same statement for many parameter sets in one transaction."""
         with self.get_connection() as conn:

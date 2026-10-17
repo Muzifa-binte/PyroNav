@@ -87,7 +87,7 @@
     {
       "rule_id": "CO_WARNING",
       "sensor_type": "co",
-      "field": "co_level",
+      "field": "co",
       "condition": ">=",
       "threshold": 35,
       "unit": "ppm",
@@ -99,7 +99,7 @@
     {
       "rule_id": "CO_HIGH_RISK",
       "sensor_type": "co",
-      "field": "co_level",
+      "field": "co",
       "condition": ">=",
       "threshold": 100,
       "unit": "ppm",
@@ -111,7 +111,7 @@
     {
       "rule_id": "CO_CRITICAL",
       "sensor_type": "co",
-      "field": "co_level",
+      "field": "co",
       "condition": ">=",
       "threshold": 200,
       "unit": "ppm",
@@ -126,11 +126,12 @@
       "field": "current",
       "condition": ">=",
       "threshold": 15,
+      "threshold_ratio_of_rated": 0.8,
       "unit": "A",
       "hazard_level": "WARNING",
       "requires_notification": true,
       "message_template": "Abnormal electrical current in {room_name}",
-      "description": "Electrical overload detected"
+      "description": "Current at 80% or more of the circuit's rated current (15 A if no rating)"
     },
     {
       "rule_id": "CURRENT_CRITICAL",
@@ -138,11 +139,12 @@
       "field": "current",
       "condition": ">=",
       "threshold": 25,
+      "threshold_ratio_of_rated": 1.0,
       "unit": "A",
       "hazard_level": "HIGH_RISK",
       "requires_notification": true,
       "message_template": "Critical electrical overload in {room_name}",
-      "description": "Dangerous electrical current - fire risk"
+      "description": "Current at or above the circuit's rated current - overload, fire risk (25 A if no rating)"
     }
   ],
 

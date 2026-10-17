@@ -121,3 +121,8 @@ def setup_logging(level: str = "INFO", log_dir: Optional[str] = "logs",
         root.addHandler(handler)
     root.setLevel(numeric_level)
     return root
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Module logger; output goes wherever setup_logging() routed the root logger."""
+    return logging.getLogger(name)

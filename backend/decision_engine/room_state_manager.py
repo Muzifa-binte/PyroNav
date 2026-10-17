@@ -13,6 +13,9 @@ from database.connection import db_manager
 from .evaluator import ThresholdEvaluator
 from .rule_loader import get_recovery_policy
 
+SEVERITY = {'UNKNOWN': 0, 'NORMAL': 1, 'WARNING': 2, 'HIGH_RISK': 3, 'CRITICAL': 4}
+HAZARD_LEVELS = ('WARNING', 'HIGH_RISK', 'CRITICAL')
+
 
 class RoomStateManager:
     """
@@ -53,10 +56,21 @@ class RoomStateManager:
         
         old_hazard_level = current_state['current_hazard_level']
         
+        # Readings older than stale_data_policy.unknown_after_seconds no longer
+        # describe the room, so a room with nothing newer becomes UNKNOWN.
+        # Silence never LOWERS an active hazard, though: route planning treats
+        # UNKNOWN as passable, and a burning room whose detectors went quiet
+        # must stay blocked.
+        current_readings = [r for r in latest_readings if not self._too_old(r.get('timestamp'))]
+
         # Determine new hazard level
         new_hazard_level, reason_codes, source_sensor_ids = self.evaluator.determine_room_hazard_level(
-            latest_readings
+            current_readings
         )
+        if (len(current_readings) < len(latest_readings)
+                and old_hazard_level in HAZARD_LEVELS
+                and SEVERITY.get(new_hazard_level, 0) < SEVERITY[old_hazard_level]):
+            new_hazard_level, reason_codes, source_sensor_ids = old_hazard_level, [], []
         
         # Update data quality status
         data_quality = self._assess_data_quality(room_id, latest_readings)
@@ -75,20 +89,25 @@ class RoomStateManager:
         
         changed = old_hazard_level != new_hazard_level
         event_id = None
-        
+        event = None
+        resolved_events = []
+
         # Handle event lifecycle
         if changed:
             if new_hazard_level in ['WARNING', 'HIGH_RISK', 'CRITICAL']:
+                # The new level supersedes the room's events at other levels
+                resolved_events = self._resolve_active_events(room_id, keep_level=new_hazard_level)
                 # Create new hazard event
-                event_id = self._create_hazard_event(
+                event = self._create_hazard_event(
                     room_id, new_hazard_level, reason_codes, source_sensor_ids
                 )
+                event_id = event['event_id']
                 # Generate notification
                 self._create_notification(room_id, new_hazard_level, reason_codes, event_id)
             elif new_hazard_level == 'NORMAL':
                 # Resolve active events
-                self._resolve_active_events(room_id)
-        
+                resolved_events = self._resolve_active_events(room_id)
+
         return {
             'room_id': room_id,
             'old_hazard_level': old_hazard_level,
@@ -96,6 +115,9 @@ class RoomStateManager:
             'data_quality': data_quality,
             'changed': changed,
             'event_id': event_id,
+            'event_created': bool(event and event['created']),
+            'detected_at': event['detected_at'] if event else None,
+            'resolved_events': resolved_events,
             'reason_codes': reason_codes,
             'source_sensor_ids': source_sensor_ids
         }
@@ -119,15 +141,28 @@ class RoomStateManager:
                 sr.timestamp,
                 sr.values,
                 sr.units,
-                sr.validation_status
+                sr.validation_status,
+                s.metadata
             FROM latest_sensor_readings sr
             JOIN sensors s ON s.sensor_id = sr.sensor_id
             WHERE sr.room_id = %s
             """,
             (room_id,)
         )
+        for reading in readings:
+            # Current thresholds scale with the circuit's rating (thresholds.json)
+            reading['rated_current_a'] = (reading.pop('metadata') or {}).get('rated_current_a')
         return readings or []
     
+    def _too_old(self, timestamp) -> bool:
+        """Older than stale_data_policy.unknown_after_seconds (thresholds.json)."""
+        limit = self.evaluator.stale_policy.get('unknown_after_seconds')
+        if not limit or timestamp is None:
+            return False
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=timezone.utc)  # stored as UTC
+        return (datetime.now(timezone.utc) - timestamp).total_seconds() > limit
+
     def _assess_data_quality(self, room_id: str, latest_readings: List[Dict]) -> str:
         """
         Assess data quality for a room based on sensor freshness
@@ -164,7 +199,7 @@ class RoomStateManager:
         hazard_level: str, 
         reason_codes: List[str],
         source_sensor_ids: List[str]
-    ) -> str:
+    ) -> Dict:
         """
         Create a new hazard event in the database
         
@@ -175,12 +210,13 @@ class RoomStateManager:
             source_sensor_ids: List of sensor IDs involved
         
         Returns:
-            Event UUID as string
+            Dict with event_id (str), detected_at and created (False when an
+            ACTIVE event at this level already existed and was updated)
         """
         # Check if there's already an active event for this room at this level
         existing = db_manager.fetch_one(
             """
-            SELECT event_id FROM hazard_events 
+            SELECT event_id, detected_at FROM hazard_events 
             WHERE room_id = %s AND hazard_level = %s AND status = 'ACTIVE'
             ORDER BY detected_at DESC LIMIT 1
             """,
@@ -198,35 +234,42 @@ class RoomStateManager:
                 """,
                 (reason_codes, source_sensor_ids, event_id)
             )
-            return str(event_id)
+            return {'event_id': str(event_id), 'detected_at': existing['detected_at'], 'created': False}
         
         # Create new event
         event_id = str(uuid4())
-        db_manager.execute(
+        row = db_manager.fetch_one(
             """
-            INSERT INTO hazard_events 
+            INSERT INTO hazard_events
                 (event_id, room_id, hazard_level, reason_codes, source_sensor_ids, status)
             VALUES (%s, %s, %s, %s, %s, 'ACTIVE')
+            RETURNING detected_at
             """,
             (event_id, room_id, hazard_level, reason_codes, source_sensor_ids)
         )
-        
-        return event_id
+
+        return {'event_id': event_id, 'detected_at': row['detected_at'], 'created': True}
     
-    def _resolve_active_events(self, room_id: str):
+    def _resolve_active_events(self, room_id: str, keep_level: Optional[str] = None) -> List[Dict]:
         """
-        Mark all active events for a room as resolved
-        
+        Mark active events for a room as resolved
+
         Args:
             room_id: Room identifier
+            keep_level: Leave ACTIVE events at this level untouched
+
+        Returns:
+            List of {event_id, resolved_at} for the events resolved
         """
-        db_manager.execute(
+        return db_manager.fetch_all(
             """
-            UPDATE hazard_events 
+            UPDATE hazard_events
             SET status = 'RESOLVED', resolved_at = (now() AT TIME ZONE 'UTC')
             WHERE room_id = %s AND status = 'ACTIVE'
+              AND (%s::text IS NULL OR hazard_level::text <> %s::text)
+            RETURNING event_id, resolved_at
             """,
-            (room_id,)
+            (room_id, keep_level, keep_level)
         )
     
     def _create_notification(
@@ -292,15 +335,15 @@ class RoomStateManager:
         # Determine what triggered the alert
         conditions = []
         for code in reason_codes:
-            if 'SMOKE' in code:
+            if code.startswith('SMOKE'):
                 conditions.append('elevated smoke')
-            elif 'TEMP' in code:
+            elif code.startswith('TEMP'):
                 conditions.append('high temperature')
-            elif 'CO' in code:
+            elif code.startswith('CO_'):
                 conditions.append('carbon monoxide')
-            elif 'CURRENT' in code:
+            elif code.startswith('CURRENT'):
                 conditions.append('electrical overload')
-            elif 'COMBINED' in code:
+            elif code.startswith('COMBINED'):
                 conditions.append('multiple hazard indicators')
         
         if conditions:

@@ -80,6 +80,9 @@ class DecisionEngineProcessor:
         # Get initial room count
         room_count = db_manager.fetch_one("SELECT COUNT(*) as count FROM rooms")
         logger.info(f"Monitoring {room_count['count']} rooms")
+
+        # Bring every room up to date with the readings already stored
+        self._check_stale_data()
     
     def _run_main_loop(self):
         """Main processing loop"""
@@ -199,11 +202,37 @@ class DecisionEngineProcessor:
                 {
                     'room_id': result['room_id'],
                     'hazard_level': result['new_hazard_level'],
+                    'previous_level': result.get('old_hazard_level'),
                     'data_quality': result.get('data_quality'),
+                    'reason_codes': result.get('reason_codes', []),
                     'changed': result['changed'],
                     'timestamp': datetime.now(timezone.utc).isoformat()
                 }
             ))
+
+            # Events superseded by the new level, or cleared on return to NORMAL
+            for resolved in result.get('resolved_events') or []:
+                event_bus.publish_sync(Event(
+                    ev.HAZARD_EVENT_RESOLVED,
+                    {
+                        'event_id': resolved['event_id'],
+                        'room_id': result['room_id'],
+                        'resolved_at': resolved['resolved_at'],
+                    }
+                ))
+
+            if result.get('event_created'):
+                event_bus.publish_sync(Event(
+                    ev.HAZARD_EVENT_CREATED,
+                    {
+                        'event_id': result['event_id'],
+                        'room_id': result['room_id'],
+                        'hazard_level': result['new_hazard_level'],
+                        'reason_codes': result.get('reason_codes', []),
+                        'source_sensor_ids': result.get('source_sensor_ids', []),
+                        'detected_at': result.get('detected_at'),
+                    }
+                ))
             
             # If a new event was created, publish notification
             if result.get('event_id'):
