@@ -21,7 +21,7 @@ const PAGE_META = {
   '/security':   { title: 'IoT Security Centre',       subtitle: 'IDS events and cyber-defence'         },
   '/risk':       { title: 'Risk Analytics',            subtitle: 'Room state and hazard assessment'     },
   '/simulation': { title: 'Simulation',                subtitle: 'Controlled test scenarios'            },
-  '/settings':   { title: 'Configuration',             subtitle: 'System settings and mappings'         },
+  '/settings':   { title: 'Settings & Administration', subtitle: 'Fine-tune hazard decision thresholds, evacuation egress policies, system health, and alerts' },
   '/incidents':  { title: 'Incidents',                 subtitle: 'History and replay'                   },
 }
 

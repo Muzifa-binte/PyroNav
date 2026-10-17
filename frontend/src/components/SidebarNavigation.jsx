@@ -54,17 +54,14 @@ const ITEM_ABBR = {
 const NAV_ITEMS = [
   { path: '/overview',   label: 'Command Overview' },
   { path: '/map',        label: 'Heat Map'         },
+  { path: '/evacuation', label: 'Evacuation'       },
   { path: '/sensors',    label: 'Sensors'          },
   { path: '/security',   label: 'IoT Security'     },
   { path: '/risk',       label: 'Risk Analytics'   },
   { path: '/alerts',     label: 'Alerts'           },
   { path: '/incidents',  label: 'Incidents'        },
-]
-
-const TOOL_ITEMS = [
-  { path: '/simulation', label: 'Simulation'   },
-  { path: '/settings',   label: 'Settings'     },
-  { path: '/evacuation', label: 'Evacuation'   },
+  { path: '/simulation', label: 'Simulation'       },
+  { path: '/settings',   label: 'Settings'         },
 ]
 
 function NavItem({ item, collapsed }) {
@@ -251,33 +248,6 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
         scrollbarWidth: 'none',
       }}>
         {NAV_ITEMS.map(item => (
-          <NavItem key={item.path} item={item} collapsed={collapsed} />
-        ))}
-
-        {/* Divider before tools */}
-        {!collapsed && (
-          <div style={{
-            margin:     '10px 4px 6px',
-            borderTop:  '1px solid var(--border-subtle)',
-          }} />
-        )}
-        {collapsed && <div style={{ height: 14 }} />}
-
-        {/* Tools section label */}
-        {!collapsed && (
-          <div style={{
-            fontSize:      10,
-            fontWeight:    700,
-            letterSpacing: '0.09em',
-            textTransform: 'uppercase',
-            color:         'var(--ink-400)',
-            padding:       '0 4px 2px',
-          }}>
-            Tools
-          </div>
-        )}
-
-        {TOOL_ITEMS.map(item => (
           <NavItem key={item.path} item={item} collapsed={collapsed} />
         ))}
       </div>
