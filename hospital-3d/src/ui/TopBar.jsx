@@ -1,4 +1,5 @@
 import { useSimStore } from '../state/useSimStore'
+import LogoSvg from '../assets/Logo.svg'   // same logo as the PyroNav dashboard
 
 const MQTT_STATE = {
   idle: ['#94A3B8', 'Idle'],
@@ -26,7 +27,9 @@ export default function TopBar() {
   return (
     <div className="overlay topbar">
       <div className="glass brand">
-        <div className="brand-logo" aria-hidden="true">🔥</div>
+        <div className="brand-logo">
+          <img src={LogoSvg} alt="PyroNav" />
+        </div>
         <div>
           <div className="brand-title">PyroNav · 3D Hospital</div>
           <div className="brand-sub">Ground floor · sensor input for the Decision Engine</div>
