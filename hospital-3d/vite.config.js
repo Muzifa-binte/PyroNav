@@ -23,12 +23,13 @@ export default defineConfig(({ mode }) => {
       alias: { '@contracts': contracts },
     },
     server: {
+      host: '0.0.0.0',
       port: Number(env.PORT || 5173),
       // Serve only this app and shared-contracts (dev server file access)
       fs: { allow: [here, contracts] },
       proxy,
     },
-    preview: { port: Number(env.PORT || 5173), proxy },
+    preview: { host: '0.0.0.0', port: Number(env.PORT || 5173), proxy },
     build: { chunkSizeWarningLimit: 2000 },
   }
 })
