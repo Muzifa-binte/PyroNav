@@ -484,7 +484,14 @@ export default function RiskAnalytics() {
   const allSensors    = isDemoMode ? DEMO_SENSORS : sensorsNorm
   const failedSensors = allSensors.filter(s => s.status === 'FAILED' || s.status === 'OFFLINE')
   const staleSensors  = allSensors.filter(s => s.status === 'STALE')
-  const top3          = roomsScored.slice(0, 3)
+  // Spotlight = rooms really at risk: the decision engine's level first
+  // (CRITICAL > HIGH_RISK > WARNING), then the risk score. Independent of the
+  // list's sort order, and NORMAL / UNKNOWN rooms never fill it.
+  const top3 = useMemo(() => roomsScored
+    .filter(r => (HAZARD_ORDER[r.current_hazard_level] || 0) >= HAZARD_ORDER.WARNING)
+    .sort((a, b) => (HAZARD_ORDER[b.current_hazard_level] - HAZARD_ORDER[a.current_hazard_level])
+                    || (b.riskScore - a.riskScore))
+    .slice(0, 3), [roomsScored])
   const maxBar        = Math.max(...Object.values(counts), 1)
 
   const selectedFull  = selected ? roomsScored.find(r => r.room_id === selected.room_id) : null
@@ -529,6 +536,14 @@ export default function RiskAnalytics() {
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
           🔺 Highest Risk Rooms Right Now
         </div>
+        {top3.length === 0 && (
+          <div style={{
+            padding: '18px 20px', borderRadius: 14, background: HAZARD_BG.NORMAL,
+            border: `2px solid ${HAZARD_COLOR.NORMAL}40`, color: 'var(--ink-700)', fontSize: 13, fontWeight: 600,
+          }}>
+            ✅ No room is at risk right now — every room is within the decision engine's thresholds.
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
           {top3.map((room, idx) => {
             const col   = HAZARD_COLOR[room.current_hazard_level] || HAZARD_COLOR.UNKNOWN
