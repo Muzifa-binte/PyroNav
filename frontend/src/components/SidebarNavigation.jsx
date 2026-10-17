@@ -242,6 +242,43 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
         ))}
       </div>
 
+      {/* ── 3D Hospital Model Shortcut ── */}
+      <div style={{ padding: collapsed ? '8px 10px' : '8px 14px' }}>
+        <a
+          href="http://localhost:5173"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open 3D Hospital Model (Sensor Input Simulator)"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            gap: 10,
+            padding: collapsed ? '10px 0' : '10px 14px',
+            background: 'linear-gradient(135deg, rgba(255,106,26,0.15) 0%, rgba(255,178,122,0.10) 100%)',
+            border: '1px solid rgba(255,106,26,0.35)',
+            borderRadius: 'var(--sidebar-item-radius, 12px)',
+            color: 'var(--orange-500)',
+            textDecoration: 'none',
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: 'var(--font-sans)',
+            transition: 'all var(--transition-fast)',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'var(--orange-500)'
+            e.currentTarget.style.color = '#fff'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,106,26,0.15) 0%, rgba(255,178,122,0.10) 100%)'
+            e.currentTarget.style.color = 'var(--orange-500)'
+          }}
+        >
+          <span style={{ fontSize: 16 }}>🧊</span>
+          {!collapsed && <span>3D Model Input ↗</span>}
+        </a>
+      </div>
+
       {/* ── Footer status pill ── */}
       {!collapsed && (
         <div style={{

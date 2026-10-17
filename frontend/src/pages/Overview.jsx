@@ -232,11 +232,11 @@ export default function Overview() {
   const navigate = useNavigate()
 
   const [rooms,    setRooms]    = useState([])
+  const [sensors,  setSensors]  = useState([])
   const [building, setBuilding] = useState(null)
   const [route,    setRoute]    = useState(null)
   const [alerts,   setAlerts]   = useState([])
   const [loading,  setLoading]  = useState(true)
-  const [sensors,  setSensors]  = useState([])
   const [now,      setNow]      = useState(Date.now())
 
   // Sensor health: re-read every 10 s so freshness follows the live feed
@@ -253,13 +253,18 @@ export default function Overview() {
   useEffect(() => {
     async function load() {
       try {
-        const [r, b, rt, al] = await Promise.all([
-          api.getRooms(), api.getBuilding(), api.getCurrentRoute(), api.getAlerts(),
+        const [r, b, rt, al, sn] = await Promise.all([
+          api.getRooms().catch(() => ({ rooms: [] })),
+          api.getBuilding().catch(() => null),
+          api.getCurrentRoute().catch(() => null),
+          api.getAlerts().catch(() => ({ alerts: [] })),
+          api.getSensors().catch(() => ({ sensors: [] })),
         ])
         setRooms(r.rooms || [])
         setBuilding(b)
         setRoute(rt)
         setAlerts(al.alerts || [])
+        setSensors(sn?.sensors || [])
       } catch {
         // backend not running — demo mode, leave defaults
       } finally {
@@ -293,15 +298,33 @@ export default function Overview() {
       const { event_id } = e.detail?.data ?? e.detail ?? {}
       if (event_id) setAlerts(prev => prev.filter(a => a.event_id !== event_id))
     }
-    wsEventBus.addEventListener('room_status_changed',  onRoom)
-    wsEventBus.addEventListener('hazard_event_created', onAlert)
-    wsEventBus.addEventListener('hazard_event_resolved', onResolved)
-    wsEventBus.addEventListener('route_updated',        onRoute)
+    const onSensorReading = (e) => {
+      const d = e.detail?.data ?? e.detail ?? {}
+      const { sensor_id, status } = d
+      if (!sensor_id) return
+      setSensors(prev => prev.map(s =>
+        s.sensor_id === sensor_id
+          ? {
+              ...s,
+              status: status || s.status,
+              last_seen_at: d.last_seen_at || d.received_at || d.timestamp || s.last_seen_at,
+            }
+          : s
+      ))
+    }
+    wsEventBus.addEventListener('room_status_changed',    onRoom)
+    wsEventBus.addEventListener('hazard_event_created',   onAlert)
+    wsEventBus.addEventListener('hazard_event_resolved',  onResolved)
+    wsEventBus.addEventListener('route_updated',          onRoute)
+    wsEventBus.addEventListener('sensor_reading_updated', onSensorReading)
+    wsEventBus.addEventListener('sensor_status_changed',  onSensorReading)
     return () => {
-      wsEventBus.removeEventListener('room_status_changed',  onRoom)
-      wsEventBus.removeEventListener('hazard_event_created', onAlert)
-      wsEventBus.removeEventListener('hazard_event_resolved', onResolved)
-      wsEventBus.removeEventListener('route_updated',        onRoute)
+      wsEventBus.removeEventListener('room_status_changed',    onRoom)
+      wsEventBus.removeEventListener('hazard_event_created',   onAlert)
+      wsEventBus.removeEventListener('hazard_event_resolved',  onResolved)
+      wsEventBus.removeEventListener('route_updated',          onRoute)
+      wsEventBus.removeEventListener('sensor_reading_updated', onSensorReading)
+      wsEventBus.removeEventListener('sensor_status_changed',  onSensorReading)
     }
   }, [])
 
