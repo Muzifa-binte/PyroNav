@@ -149,8 +149,17 @@ export default function Alerts() {
       const ev = e.detail?.data ?? e.detail
       if (ev) setAlerts(prev => [ev, ...prev])
     }
+    // The page lists ACTIVE alerts: drop a hazard once it has ended
+    const onHazardResolved = (e) => {
+      const { event_id } = e.detail?.data ?? e.detail ?? {}
+      if (event_id) setAlerts(prev => prev.filter(a => a.event_id !== event_id))
+    }
     wsEventBus.addEventListener('hazard_event_created', onHazardEvent)
-    return () => wsEventBus.removeEventListener('hazard_event_created', onHazardEvent)
+    wsEventBus.addEventListener('hazard_event_resolved', onHazardResolved)
+    return () => {
+      wsEventBus.removeEventListener('hazard_event_created', onHazardEvent)
+      wsEventBus.removeEventListener('hazard_event_resolved', onHazardResolved)
+    }
   }, [])
 
   // Real acknowledge — calls API then marks resolved locally

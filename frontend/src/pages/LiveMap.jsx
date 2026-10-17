@@ -164,11 +164,16 @@ export default function LiveMap() {
   }
 
   useEffect(() => {
+    let cancelled = false
+    let retryTimer = null
+    let demoShown = false
     async function load() {
       try {
         const [b, r, rt] = await Promise.all([
           api.getBuilding(), api.getRooms(), api.getCurrentRoute(),
         ])
+        if (cancelled) return
+        setIsDemoMode(false)
         setBuilding(b)
         setRooms(r.rooms || [])
         setCurrentRoute(rt)
@@ -184,6 +189,13 @@ export default function LiveMap() {
           console.warn('Failed to load alerts:', e)
         }
       } catch {
+        if (cancelled) return
+        // API not reachable (not started yet, or restarting): keep retrying and
+        // replace the demo rooms with the real ones as soon as it answers.
+        // Without this the page stayed on the demo data (ICU CRITICAL, ...) for good.
+        retryTimer = setTimeout(load, 5000)
+        if (demoShown) return
+        demoShown = true
         setIsDemoMode(true)
         setCurrentRoute(DEMO_ROUTE)
         
@@ -215,10 +227,14 @@ export default function LiveMap() {
         
         setRooms(demoRooms)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     load()
+    return () => {
+      cancelled = true
+      clearTimeout(retryTimer)
+    }
   }, [])
 
   useEffect(() => {

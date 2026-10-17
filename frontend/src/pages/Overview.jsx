@@ -276,12 +276,19 @@ export default function Overview() {
       const r = d?.route || d
       if (r?.status) setRoute(r)
     }
+    // A hazard that ended must stop counting towards the building state
+    const onResolved = (e) => {
+      const { event_id } = e.detail?.data ?? e.detail ?? {}
+      if (event_id) setAlerts(prev => prev.filter(a => a.event_id !== event_id))
+    }
     wsEventBus.addEventListener('room_status_changed',  onRoom)
     wsEventBus.addEventListener('hazard_event_created', onAlert)
+    wsEventBus.addEventListener('hazard_event_resolved', onResolved)
     wsEventBus.addEventListener('route_updated',        onRoute)
     return () => {
       wsEventBus.removeEventListener('room_status_changed',  onRoom)
       wsEventBus.removeEventListener('hazard_event_created', onAlert)
+      wsEventBus.removeEventListener('hazard_event_resolved', onResolved)
       wsEventBus.removeEventListener('route_updated',        onRoute)
     }
   }, [])

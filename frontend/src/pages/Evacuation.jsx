@@ -115,6 +115,9 @@ function AlgoResultPanel({ label, route, color, accentBg }) {
   )
 }
 
+// Hazard levels that block a room for evacuation routes (Member 3's default policy)
+const BLOCKING_LEVELS = ['CRITICAL', 'HIGH_RISK']
+
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function Evacuation() {
   const [building,      setBuilding]      = useState(null)
@@ -143,12 +146,12 @@ export default function Evacuation() {
     setTimeout(() => setToast(null), 4000)
   }, [])
 
-  const autoCalculateOnAlarm = useCallback(async () => {
+  const autoCalculateOnAlarm = useCallback(async (message = '🔥 Fire alarm — routes auto-calculated!') => {
     try {
       const result = await api.compareRoutes(origin)
       setCompareResult(result)
       setViewMode(VIEW_MODES.COMPARE)
-      showToast('🔥 Fire alarm — routes auto-calculated!')
+      showToast(message)
     } catch (_) {}
   }, [origin, showToast])
 
@@ -168,9 +171,16 @@ export default function Evacuation() {
     }
     const onRoomStatus = (e) => {
       const data = e.detail?.data ?? e.detail
-      if (data?.hazard_level === 'CRITICAL' || data?.hazard_level === 'HIGH_RISK') {
-        setFireAlarm(true)
+      if (!data?.room_id || !data.hazard_level) return
+      // Keep the map's room colours live (they were only read at page load)
+      setRooms(prev => prev.map(r =>
+        r.room_id === data.room_id ? { ...r, current_hazard_level: data.hazard_level } : r
+      ))
+      if (BLOCKING_LEVELS.includes(data.hazard_level)) {
         autoCalculateOnAlarm()
+      } else if (BLOCKING_LEVELS.includes(data.previous_level)) {
+        // The hazard cleared: routes may use that room again
+        autoCalculateOnAlarm('✅ Hazard cleared — routes recalculated')
       }
     }
     wsEventBus.addEventListener('route_updated', onRouteUpdate)
@@ -180,6 +190,11 @@ export default function Evacuation() {
       wsEventBus.removeEventListener('room_status_changed', onRoomStatus)
     }
   }, [origin, showToast, autoCalculateOnAlarm])
+
+  // Fire alarm while any room is HIGH_RISK or CRITICAL; off again once they recover
+  useEffect(() => {
+    setFireAlarm(rooms.some(r => BLOCKING_LEVELS.includes(r.current_hazard_level)))
+  }, [rooms])
 
   // Initial load
   useEffect(() => {
