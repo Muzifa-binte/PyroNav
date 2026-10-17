@@ -29,6 +29,28 @@ const SENSOR_TYPE_MAP = {
   temperature: 'temperature', smoke_heat: 'smoke', co: 'co', electrical: 'current', current: 'current',
 }
 
+// Normalize sensor from either live API (sensor_type, status: 'active') or demo (type, status: 'OPERATIONAL')
+function normalizeSensor(s) {
+  return {
+    ...s,
+    type:   s.type || s.sensor_type,
+    value:  s.value ?? s.latest_reading?.values?.smoke
+         ?? s.latest_reading?.values?.temperature
+         ?? s.latest_reading?.values?.co_level
+         ?? s.latest_reading?.values?.current
+         ?? null,
+    // normalize status to uppercase for consistent checks
+    status: (() => {
+      const raw = (s.status || '').toLowerCase()
+      if (raw === 'active')   return 'OPERATIONAL'
+      if (raw === 'inactive') return 'OFFLINE'
+      if (raw === 'error')    return 'FAILED'
+      if (raw === 'stale')    return 'STALE'
+      return s.status || 'UNKNOWN'   // already uppercase from demo data
+    })(),
+  }
+}
+
 const HAZARD_COLOR = {
   NORMAL:    '#10B981',
   WARNING:   '#FBBF24',
@@ -269,16 +291,17 @@ export default function RiskAnalytics() {
     async function load() {
       try {
         const [r, s] = await Promise.all([api.getRooms(), api.getSensors()])
+        const normalizedSensors = (s.sensors || []).map(normalizeSensor)
         setRooms(r.rooms || [])
-        setSensors(s.sensors || [])
+        setSensors(normalizedSensors)
       } catch {
         setIsDemoMode(true)
         const withSensors = DEMO_ROOMS.map(room => ({
           ...room,
-          sensors: DEMO_SENSORS.filter(s => s.room_id === room.room_id),
+          sensors: DEMO_SENSORS.filter(s => s.room_id === room.room_id).map(normalizeSensor),
         }))
         setRooms(withSensors)
-        setSensors(DEMO_SENSORS)
+        setSensors(DEMO_SENSORS.map(normalizeSensor))
       } finally {
         setLoading(false)
       }
