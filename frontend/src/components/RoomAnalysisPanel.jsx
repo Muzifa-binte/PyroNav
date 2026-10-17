@@ -17,6 +17,40 @@ export default function RoomAnalysisPanel({ roomId, roomData, onClose }) {
     async function fetchRoomDetails() {
       setLoading(true)
       try {
+        // First, check if roomData already has sensors (demo mode)
+        if (roomData?.sensors && roomData.sensors.length > 0) {
+          // Use sensors from roomData prop (demo mode or pre-loaded)
+          const latest_readings = {}
+          
+          roomData.sensors.forEach(sensor => {
+            const rawType = sensor.type || sensor.sensor_type
+            
+            // Normalize sensor type names to match expected keys
+            let normalizedType = rawType
+            if (rawType === 'smoke_heat') normalizedType = 'smoke'
+            if (rawType === 'electrical' || rawType === 'current') normalizedType = 'current'
+            
+            if (sensor.value !== null && sensor.value !== undefined) {
+              latest_readings[normalizedType] = {
+                value: sensor.value,
+                unit: sensor.unit,
+                timestamp: sensor.last_reading_at,
+                status: sensor.status
+              }
+            }
+          })
+          
+          setSensorData({
+            room_id: roomId,
+            latest_readings: latest_readings,
+            data_quality: roomData.sensors.every(s => s.status === 'OPERATIONAL') ? 'FRESH' : 'STALE'
+          })
+          
+          setLoading(false)
+          return
+        }
+        
+        // Otherwise, fetch from API
         const data = await api.getRoomDetails(roomId)
         setSensorData(data)
         
@@ -29,11 +63,11 @@ export default function RoomAnalysisPanel({ roomId, roomData, onClose }) {
         }
       } catch (error) {
         console.error('Failed to fetch room details:', error)
-        // Use fallback mock data
+        // On error, set empty data (don't pretend data is fresh)
         setSensorData({
           room_id: roomId,
           latest_readings: {},
-          data_quality: 'FRESH'
+          data_quality: 'NO_DATA'
         })
       } finally {
         setLoading(false)
@@ -44,7 +78,7 @@ export default function RoomAnalysisPanel({ roomId, roomData, onClose }) {
     // Refresh every 3 seconds
     const interval = setInterval(fetchRoomDetails, 3000)
     return () => clearInterval(interval)
-  }, [roomId])
+  }, [roomId, roomData])
 
   if (!roomId || !roomData) return null
 

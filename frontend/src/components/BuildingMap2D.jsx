@@ -494,20 +494,6 @@ function FireAlarmCallPoint({ x, y }) {
   )
 }
 
-function EvacuationArrow({ x, y, direction = 'right' }) {
-  const rot = direction === 'right' ? 0 : direction === 'down' ? 90 : direction === 'up' ? -90 : 180
-  return (
-    <g transform={`translate(${x},${y}) rotate(${rot})`} filter="drop-shadow(0 1px 1px rgba(0,0,0,0.2))">
-      <path
-        d="M-10,-3.5 L0,-3.5 L0,-7 L10,0 L0,7 L0,3.5 L-10,3.5 Z"
-        fill="#15803D"
-        stroke="#065F46"
-        strokeWidth={0.8}
-      />
-    </g>
-  )
-}
-
 function ArchitecturalDoor({ x, y, size = 24, orientation = 'bottom', swing = 'left' }) {
   // Draws authentic architectural door leaf and circular swing arc
   let leafX2, leafY2, arcPath
@@ -586,6 +572,45 @@ function CompassRose({ cx, cy, size = 36 }) {
   )
 }
 
+// ── Helper: Get Sensor Health Color ────────────────────────────────────────
+function getSensorHealthColor(sensor) {
+  if (!sensor) return '#94A3B8' // Gray - No sensor
+  
+  const now = new Date()
+  const lastReading = sensor.last_reading_at ? new Date(sensor.last_reading_at) : null
+  
+  if (sensor.status === 'FAILED' || sensor.status === 'OFFLINE') {
+    return '#EF4444' // Red - Failed/Offline
+  }
+  
+  if (lastReading) {
+    const ageSeconds = (now - lastReading) / 1000
+    if (ageSeconds > 60) {
+      return '#FBBF24' // Yellow - Stale data (>60 seconds)
+    }
+  }
+  
+  if (sensor.status === 'OPERATIONAL') {
+    return '#10B981' // Green - Operational
+  }
+  
+  return '#94A3B8' // Gray - Unknown/No data
+}
+
+// ── Helper: Get Sensor Icon Position ───────────────────────────────────────
+function getSensorIconColor(sensorType) {
+  const typeMap = {
+    'temperature': '#FF6A1A',  // Orange
+    'smoke': '#666666',         // Gray
+    'smoke_heat': '#666666',    // Gray
+    'electrical': '#FFB800',    // Yellow
+    'current': '#FFB800',       // Yellow
+    'flame': '#9333EA',         // Purple
+    'co': '#DC2626',            // Red for CO
+  }
+  return typeMap[sensorType] || '#94A3B8'
+}
+
 // ── Main Map Component ──────────────────────────────────────────────────────
 export default function BuildingMap2D({
   building,
@@ -596,6 +621,11 @@ export default function BuildingMap2D({
   onRoomSelect,
   selectedRoom,
   compact = false,
+  showSensors = false,
+  showIDS = false,
+  showFire = true,
+  showBlocked = false,
+  showRoute = false,
 }) {
   const [hoveredRoom, setHoveredRoom] = useState(null)
 
@@ -657,17 +687,18 @@ export default function BuildingMap2D({
       style={{
         position: 'relative',
         width: '100%',
-        aspectRatio: compact ? '16/10' : `${VW}/${VH}`,
+        height: '100%',
         background: 'var(--map-canvas-bg, #F8FAFC)',
         borderRadius: 14,
-        overflow: 'hidden',
+        overflow: 'visible',
         border: '1px solid var(--border-subtle, #CBD5E1)',
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
       }}
     >
       <svg
         viewBox={`0 0 ${VW} ${VH}`}
-        style={{ width: '100%', height: '100%', display: 'block' }}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ width: '100%', height: '100%', display: 'block', maxHeight: '100%' }}
         role="img"
         aria-label="Hospital Ground Floor 2D Plan"
       >
@@ -681,6 +712,73 @@ export default function BuildingMap2D({
           <pattern id="redHatch" patternUnits="userSpaceOnUse" width="8" height="8">
             <line x1="0" y1="8" x2="8" y2="0" stroke="#D62828" strokeWidth="1.5" opacity="0.6"/>
           </pattern>
+
+          {/* 🎨 BEAUTIFUL GRADIENT OVERLAYS - Non-color-changing depth effects */}
+          <linearGradient id="roomSheen" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.4" />
+            <stop offset="40%" stopColor="transparent" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0.08" />
+          </linearGradient>
+
+          {/* Soft inner glow for premium look */}
+          <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="transparent" />
+          </radialGradient>
+
+          {/* 🔥 BEAUTIFUL HAZARD LEVEL GRADIENTS */}
+          {/* CRITICAL - Intense Red Gradient with Fire Glow */}
+          <linearGradient id="criticalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FCA5A5" />
+            <stop offset="30%" stopColor="#F87171" />
+            <stop offset="60%" stopColor="#EF4444" />
+            <stop offset="100%" stopColor="#DC2626" />
+          </linearGradient>
+          <radialGradient id="criticalRadial" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#FEE2E2" stopOpacity="0.8" />
+            <stop offset="50%" stopColor="#FCA5A5" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#DC2626" stopOpacity="0.9" />
+          </radialGradient>
+
+          {/* HIGH RISK - Bold Orange Gradient */}
+          <linearGradient id="highRiskGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FDBA74" />
+            <stop offset="30%" stopColor="#FB923C" />
+            <stop offset="70%" stopColor="#F97316" />
+            <stop offset="100%" stopColor="#EA580C" />
+          </linearGradient>
+
+          {/* WARNING - Warm Yellow/Amber Gradient */}
+          <linearGradient id="warningGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FDE68A" />
+            <stop offset="40%" stopColor="#FCD34D" />
+            <stop offset="70%" stopColor="#FBBF24" />
+            <stop offset="100%" stopColor="#F59E0B" />
+          </linearGradient>
+
+          {/* NORMAL - Subtle Green/Original Color Enhancement */}
+          <linearGradient id="normalGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0.05" />
+          </linearGradient>
+
+          {/* Frosted glass effect for corridors */}
+          <filter id="frostGlass">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+            <feComponentTransfer>
+              <feFuncA type="discrete" tableValues="0.6" />
+            </feComponentTransfer>
+          </filter>
+
+          {/* Soft drop shadow for depth */}
+          <filter id="softShadow">
+            <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#000000" floodOpacity="0.12" />
+          </filter>
+
+          {/* Premium elevated shadow for hover */}
+          <filter id="elevatedShadow">
+            <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#000000" floodOpacity="0.18" />
+          </filter>
 
           {/* Animations */}
           <style>{`
@@ -698,9 +796,19 @@ export default function BuildingMap2D({
               0%, 100% { r: 22; opacity: 0.5; }
               50%       { r: 28; opacity: 0.2; }
             }
+            @keyframes smoothFloat {
+              0%, 100% { transform: translateY(0px); }
+              50% { transform: translateY(-2px); }
+            }
             @media (prefers-reduced-motion: reduce) {
               .route-dash { animation: none !important; }
               .arrow-flow { animation: none !important; opacity: 1 !important; }
+              .smooth-float { animation: none !important; }
+            }
+            
+            /* Smooth transitions for all interactive elements */
+            .room-interactive {
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             }
           `}</style>
         </defs>
@@ -709,29 +817,43 @@ export default function BuildingMap2D({
         <rect x={0} y={0} width={VW} height={VH} fill="var(--map-canvas-bg, #F8FAFC)" />
 
         {/* ── Outer Building Envelope & Corridor Base ── */}
-        {/* The entire interior walkable corridor */}
+        {/* The entire interior walkable corridor with frosted glass effect */}
         <rect
           x={38} y={78} width={744} height={494}
-          fill="var(--map-corridor-bg, #FFFFFF)"
+          fill="rgba(255, 255, 255, 0.95)"
           stroke="var(--map-corridor-border, #1E293B)"
           strokeWidth={4}
-          rx={2}
+          rx={8}
+          filter="url(#softShadow)"
+          style={{
+            backdropFilter: 'blur(8px)',
+          }}
         />
 
         {/* ── Room Rectangles ── */}
         {ROOMS_DATA.map((room) => {
           const hazard = hazardMap[room.id] || 'NORMAL'
           const isCritical = hazard === 'CRITICAL'
-          const isWarning  = hazard === 'WARNING' || hazard === 'HIGH_RISK'
+          const isHighRisk = hazard === 'HIGH_RISK'
+          const isWarning  = hazard === 'WARNING'
           const isSelected = selectedRoom === room.id
           const isHovered  = hoveredRoom === room.id
           const isOnRoute  = routeNodes.has(room.id)
           const isOnBfs    = bfsRouteNodes.has(room.id)
 
-          // Use original room colors, only override on hazard
+          // 🎨 BEAUTIFUL GRADIENTS - Use gradient fills for hazards
           let roomFill = room.fill
-          if (isCritical) roomFill = 'rgba(254, 205, 211, 0.85)'
-          else if (isWarning) roomFill = 'rgba(254, 240, 138, 0.85)'
+          let useGradient = null
+          if (isCritical) {
+            roomFill = 'url(#criticalRadial)'
+            useGradient = 'criticalRadial'
+          } else if (isHighRisk) {
+            roomFill = 'url(#highRiskGradient)'
+            useGradient = 'highRiskGradient'
+          } else if (isWarning) {
+            roomFill = 'url(#warningGradient)'
+            useGradient = 'warningGradient'
+          }
 
           return (
             <g
@@ -745,35 +867,95 @@ export default function BuildingMap2D({
               aria-label={`${room.name} — Hazard: ${hazard}`}
               onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onRoomSelect?.(room.id)}
             >
-              {/* Room Body */}
+              {/* Room Body - BEAUTIFUL ROUNDED CORNERS WITH GRADIENT */}
               <rect
                 x={room.x}
                 y={room.y}
                 width={room.w}
                 height={room.h}
                 fill={roomFill}
-                stroke={isSelected ? '#0284C7' : room.borderColor || '#1E293B'}
-                strokeWidth={isSelected ? 3.5 : room.borderWidth || 2.5}
+                stroke={isSelected ? '#0284C7' : (isCritical ? '#B91C1C' : isHighRisk ? '#C2410C' : isWarning ? '#D97706' : room.borderColor || '#1E293B')}
+                strokeWidth={isSelected ? 3.5 : (isCritical || isHighRisk || isWarning ? 3 : room.borderWidth || 2.5)}
+                rx={12}
+                ry={12}
+                filter={isHovered ? "url(#elevatedShadow)" : "url(#softShadow)"}
+                className="room-interactive"
                 style={{
-                  transition: 'fill 0.2s ease, stroke 0.2s ease',
-                  ...(isCritical ? { animation: 'hazardPulse 1.8s infinite' } : {}),
-                  ...(isWarning ? { animation: 'warningPulse 2.2s infinite' } : {}),
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  ...(isCritical ? { animation: 'hazardPulse 1.8s infinite', filter: 'drop-shadow(0 0 12px rgba(239, 68, 68, 0.6))' } : {}),
+                  ...(isHighRisk ? { animation: 'highRiskPulse 2.0s infinite', filter: 'drop-shadow(0 0 10px rgba(249, 115, 22, 0.5))' } : {}),
+                  ...(isWarning ? { animation: 'warningPulse 2.2s infinite', filter: 'drop-shadow(0 0 10px rgba(251, 191, 36, 0.5))' } : {}),
                 }}
               />
 
-              {/* Selection / Route Glow Ring */}
+              {/* GRADIENT SHEEN OVERLAY - Adds glossy depth (only for non-hazard rooms) */}
+              {!useGradient && (
+                <>
+                  <rect
+                    x={room.x}
+                    y={room.y}
+                    width={room.w}
+                    height={room.h}
+                    fill="url(#roomSheen)"
+                    rx={12}
+                    ry={12}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                  <rect
+                    x={room.x + 1}
+                    y={room.y + 1}
+                    width={room.w - 2}
+                    height={room.h - 2}
+                    fill="url(#innerGlow)"
+                    rx={11}
+                    ry={11}
+                    style={{ pointerEvents: 'none' }}
+                    opacity={0.5}
+                  />
+                </>
+              )}
+
+              {/* HAZARD GRADIENT TOP SHINE - Extra glossy effect for hazards */}
+              {useGradient && (
+                <rect
+                  x={room.x}
+                  y={room.y}
+                  width={room.w}
+                  height={room.h * 0.4}
+                  fill="linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%)"
+                  rx={12}
+                  ry={12}
+                  style={{ pointerEvents: 'none' }}
+                  opacity={0.6}
+                >
+                  <animate
+                    attributeName="opacity"
+                    values="0.4;0.7;0.4"
+                    dur="2s"
+                    repeatCount="indefinite"
+                  />
+                </rect>
+              )}
+
+              {/* Selection / Route Glow Ring - ENHANCED with rounded corners */}
               {(isSelected || isOnRoute || isOnBfs) && (
                 <rect
-                  x={room.x - 3}
-                  y={room.y - 3}
-                  width={room.w + 6}
-                  height={room.h + 6}
+                  x={room.x - 4}
+                  y={room.y - 4}
+                  width={room.w + 8}
+                  height={room.h + 8}
                   fill="none"
                   stroke={isSelected ? '#0284C7' : isOnRoute ? '#FF6A1A' : '#2F6FDE'}
-                  strokeWidth={3}
-                  strokeDasharray={(isOnRoute || isOnBfs) && !isSelected ? '6 4' : 'none'}
-                  rx={2}
-                  opacity={0.8}
+                  strokeWidth={isSelected ? 4 : 3}
+                  strokeDasharray={(isOnRoute || isOnBfs) && !isSelected ? '8 4' : 'none'}
+                  rx={14}
+                  ry={14}
+                  opacity={0.85}
+                  filter="drop-shadow(0 0 8px currentColor)"
+                  style={{
+                    transition: 'all 0.3s ease',
+                    animation: isSelected ? 'none' : 'smoothFloat 3s ease-in-out infinite',
+                  }}
                 />
               )}
 
@@ -826,6 +1008,90 @@ export default function BuildingMap2D({
                   {room.label[1]}
                 </text>
               )}
+
+              {/* ── Sensor Health Heatmap (Filter: 📡 Sensors) ── */}
+              {showSensors && (() => {
+                // Find room data with sensors from the rooms prop
+                const roomData = rooms.find(r => r.room_id === room.id)
+                const sensors = roomData?.sensors || []
+                
+                if (sensors.length === 0) {
+                  // No sensors assigned - show single small gray dot
+                  return (
+                    <g transform={`translate(${room.x + room.w - 12}, ${room.y + room.h - 10})`}>
+                      <circle
+                        cx={0}
+                        cy={0}
+                        r={3}
+                        fill="#94A3B8"
+                        stroke="#FFF"
+                        strokeWidth={1}
+                        opacity={0.5}
+                      />
+                    </g>
+                  )
+                }
+                
+                // Show simplified sensor health dots: Green (working) vs Red (broken)
+                return (
+                  <g transform={`translate(${room.x + room.w - (sensors.length * 7 + 8)}, ${room.y + room.h - 12})`}>
+                    {sensors.map((sensor, idx) => {
+                      // Simple logic: FAILED or OFFLINE = RED, otherwise GREEN
+                      const isBroken = sensor.status === 'FAILED' || sensor.status === 'OFFLINE'
+                      const dotColor = isBroken ? '#EF4444' : '#10B981' // Red or Green
+                      
+                      return (
+                        <g key={sensor.sensor_id || idx} transform={`translate(${idx * 8}, 0)`}>
+                          {/* Simple colored dot */}
+                          <circle
+                            cx={0}
+                            cy={0}
+                            r={3.5}
+                            fill={dotColor}
+                            stroke="#FFF"
+                            strokeWidth={1.2}
+                            opacity={0.95}
+                          >
+                            <title>
+{`${sensor.sensor_id || 'Unknown'}
+Type: ${sensor.type || sensor.sensor_type || 'unknown'}
+Status: ${sensor.status || 'UNKNOWN'}
+Value: ${sensor.value !== null && sensor.value !== undefined ? sensor.value + ' ' + (sensor.unit || '') : 'N/A'}
+Last Reading: ${sensor.last_reading_at ? new Date(sensor.last_reading_at).toLocaleTimeString() : 'Never'}`}
+                            </title>
+                          </circle>
+                          
+                          {/* Pulse animation for broken sensors */}
+                          {isBroken && (
+                            <circle
+                              cx={0}
+                              cy={0}
+                              r={3.5}
+                              fill="none"
+                              stroke="#EF4444"
+                              strokeWidth={1.5}
+                              opacity={0.8}
+                            >
+                              <animate
+                                attributeName="r"
+                                values="3.5;6.5;3.5"
+                                dur="1.5s"
+                                repeatCount="indefinite"
+                              />
+                              <animate
+                                attributeName="opacity"
+                                values="0.8;0;0.8"
+                                dur="1.5s"
+                                repeatCount="indefinite"
+                              />
+                            </circle>
+                          )}
+                        </g>
+                      )
+                    })}
+                  </g>
+                )
+              })()}
 
               {/* ── Room Specific Architectural Furniture / Icons ── */}
               {/* ICU: 4 Beds */}
@@ -1062,30 +1328,6 @@ export default function BuildingMap2D({
         })}
 
         {/* ── Corridors & Safety Infrastructure Overlays ── */}
-
-        {/* Static Green Evacuation Arrows — shown only when no live route is active */}
-        {!hasRoute && !hasBfsRoute && (
-          <g id="evacuation-arrows" opacity={0.92}>
-            {/* Top Corridor: Moving right toward NE Exit */}
-            <EvacuationArrow x={175} y={218} direction="right" />
-            <EvacuationArrow x={345} y={218} direction="right" />
-            <EvacuationArrow x={570} y={218} direction="right" />
-
-            {/* Right Corridor: Moving down toward SE Exit */}
-            <EvacuationArrow x={578} y={305} direction="down" />
-            <EvacuationArrow x={578} y={415} direction="down" />
-
-            {/* Left Corridor: Moving up */}
-            <EvacuationArrow x={172} y={305} direction="up" />
-
-            {/* Bottom Corridor: Moving right */}
-            <EvacuationArrow x={235} y={515} direction="right" />
-            <EvacuationArrow x={605} y={515} direction="right" />
-
-            {/* Main Entrance: Moving up into Lobby */}
-            <EvacuationArrow x={365} y={588} direction="up" />
-          </g>
-        )}
 
         {/* Fire Extinguishers (Mounted on Walls) */}
         <g id="fire-extinguishers">

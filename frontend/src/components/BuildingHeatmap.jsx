@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 /**
  * Hospital 2D Floor Map (Ground Floor)
@@ -586,6 +586,143 @@ function CompassRose({ cx, cy, size = 36 }) {
   )
 }
 
+// ── Sensor Health Indicator ─────────────────────────────────────────────────
+// Shows sensor status with colored dots: green=online, yellow=stale, red=offline
+function SensorIndicator({ sensors, x, y }) {
+  if (!sensors || sensors.length === 0) return null
+
+  const getSensorColor = (sensor) => {
+    const status = sensor.status?.toUpperCase()
+    const lastSeen = sensor.last_seen_at
+    const now = Date.now()
+    const staleThreshold = 60000 // 60 seconds
+
+    if (status === 'OFFLINE' || status === 'ERROR') return '#EF4444' // Red
+    if (status === 'STALE' || (lastSeen && (now - new Date(lastSeen).getTime()) > staleThreshold)) return '#F59E0B' // Amber
+    return '#22C55E' // Green
+  }
+
+  const getSensorIcon = (sensorType) => {
+    switch (sensorType) {
+      case 'smoke_heat': return '💨'
+      case 'current': return '⚡'
+      case 'co': return '☁️'
+      default: return '📡'
+    }
+  }
+
+  return (
+    <g transform={`translate(${x}, ${y})`}>
+      {sensors.slice(0, 4).map((sensor, idx) => {
+        const color = getSensorColor(sensor)
+        const icon = getSensorIcon(sensor.sensor_type)
+        const spacing = 10
+        const dotX = (idx % 2) * spacing
+        const dotY = Math.floor(idx / 2) * spacing
+
+        return (
+          <g key={sensor.sensor_id} transform={`translate(${dotX}, ${dotY})`}>
+            {/* Sensor dot with glow */}
+            <circle 
+              cx={0} 
+              cy={0} 
+              r={3.5} 
+              fill={color}
+              stroke="#FFFFFF"
+              strokeWidth={1}
+              filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))"
+            >
+              <animate
+                attributeName="opacity"
+                values="0.7;1;0.7"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            </circle>
+            {/* Pulse effect for online sensors */}
+            {color === '#22C55E' && (
+              <circle 
+                cx={0} 
+                cy={0} 
+                r={3.5}
+                fill="none"
+                stroke={color}
+                strokeWidth={1}
+                opacity={0.6}
+              >
+                <animate
+                  attributeName="r"
+                  values="3.5;6;3.5"
+                  dur="2s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0.6;0;0.6"
+                  dur="2s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+            )}
+          </g>
+        )
+      })}
+      {/* Sensor count badge if more than 4 */}
+      {sensors.length > 4 && (
+        <text
+          x={22}
+          y={5}
+          fontSize={8}
+          fontWeight={700}
+          fill="#64748B"
+          textAnchor="middle"
+        >
+          +{sensors.length - 4}
+        </text>
+      )}
+    </g>
+  )
+}
+
+// ── Helper: Get Sensor Health Color ────────────────────────────────────────
+function getSensorHealthColor(sensor) {
+  if (!sensor) return '#94A3B8' // Gray - No sensor
+  
+  const now = new Date()
+  const lastReading = sensor.last_reading_at ? new Date(sensor.last_reading_at) : null
+  
+  if (sensor.status === 'FAILED' || sensor.status === 'OFFLINE') {
+    return '#EF4444' // Red - Failed/Offline
+  }
+  
+  if (lastReading) {
+    const ageSeconds = (now - lastReading) / 1000
+    if (ageSeconds > 60) {
+      return '#FBBF24' // Yellow - Stale data (>60 seconds)
+    }
+  }
+  
+  if (sensor.status === 'OPERATIONAL') {
+    return '#10B981' // Green - Operational
+  }
+  
+  return '#94A3B8' // Gray - Unknown/No data
+}
+
+// ── Helper: Get Sensor Icon Color ───────────────────────────────────────────
+function getSensorIconColor(sensorType) {
+  const typeMap = {
+    'temperature': '#FF6A1A',  // Orange
+    'smoke': '#666666',         // Gray
+    'smoke_heat': '#666666',    // Gray
+    'electrical': '#FFB800',    // Yellow
+    'current': '#FFB800',       // Yellow
+    'flame': '#9333EA',         // Purple
+    'co': '#DC2626',            // Red for CO
+  }
+  return typeMap[sensorType] || '#94A3B8'
+}
+
 // ── Main Map Component ──────────────────────────────────────────────────────
 export default function BuildingHeatmap({
   building,
@@ -597,8 +734,54 @@ export default function BuildingHeatmap({
   selectedRoom,
   compact = false,
   useHeatmapColors = false, // NEW: Only use green heatmap colors when true
+  showSensors = false,
+  showIDS = false,
+  showFire = true,
+  showBlocked = false,
 }) {
   const [hoveredRoom, setHoveredRoom] = useState(null)
+  const [sensorsData, setSensorsData] = useState([])
+
+  // Fetch sensor data when showSensors is enabled (only if not in rooms prop)
+  useEffect(() => {
+    if (showSensors) {
+      // Check if sensors are already in rooms prop (demo mode or pre-loaded)
+      const hasSensorsInRooms = rooms && rooms.some(r => r.sensors && r.sensors.length > 0)
+      
+      if (!hasSensorsInRooms) {
+        // Fetch from API only if sensors not already provided
+        import('../services/api').then(api => {
+          api.getSensors()
+            .then(d => setSensorsData(d.sensors || []))
+            .catch(err => console.warn('Failed to load sensors:', err))
+        })
+      }
+    }
+  }, [showSensors, rooms])
+
+  // Group sensors by room - use sensors from rooms prop first, then fetched data
+  const sensorsByRoom = {}
+  
+  // First, add sensors from rooms prop (demo mode or pre-loaded)
+  if (rooms) {
+    rooms.forEach(room => {
+      if (room.sensors && room.sensors.length > 0) {
+        sensorsByRoom[room.room_id] = room.sensors
+      }
+    })
+  }
+  
+  // Then, add any sensors from API fetch (if rooms didn't have them)
+  sensorsData.forEach(sensor => {
+    const roomId = sensor.room_id
+    if (!sensorsByRoom[roomId]) {
+      sensorsByRoom[roomId] = []
+    }
+    // Only add if not already present
+    if (!sensorsByRoom[roomId].some(s => s.sensor_id === sensor.sensor_id)) {
+      sensorsByRoom[roomId].push(sensor)
+    }
+  })
 
   // Map hazard levels by room_id
   const hazardMap = Object.fromEntries(
@@ -658,17 +841,18 @@ export default function BuildingHeatmap({
       style={{
         position: 'relative',
         width: '100%',
-        aspectRatio: compact ? '16/10' : `${VW}/${VH}`,
+        height: '100%',
         background: '#F8FAFC',
         borderRadius: 14,
-        overflow: 'hidden',
+        overflow: 'visible',
         border: '1px solid #CBD5E1',
         boxShadow: '0 4px 20px rgba(15, 23, 42, 0.06)',
       }}
     >
       <svg
         viewBox={`0 0 ${VW} ${VH}`}
-        style={{ width: '100%', height: '100%', display: 'block' }}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ width: '100%', height: '100%', display: 'block', maxHeight: '100%' }}
         role="img"
         aria-label="Hospital Ground Floor 2D Plan"
       >
@@ -682,6 +866,73 @@ export default function BuildingHeatmap({
           <pattern id="redHatch" patternUnits="userSpaceOnUse" width="8" height="8">
             <line x1="0" y1="8" x2="8" y2="0" stroke="#D62828" strokeWidth="1.5" opacity="0.6"/>
           </pattern>
+
+          {/* 🎨 BEAUTIFUL GRADIENT OVERLAYS - Non-color-changing depth effects */}
+          <linearGradient id="roomSheen" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.4" />
+            <stop offset="40%" stopColor="transparent" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0.08" />
+          </linearGradient>
+
+          {/* Soft inner glow for premium look */}
+          <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="transparent" />
+          </radialGradient>
+
+          {/* 🔥 BEAUTIFUL HAZARD LEVEL GRADIENTS */}
+          {/* CRITICAL - Intense Red Gradient with Fire Glow */}
+          <linearGradient id="criticalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FCA5A5" />
+            <stop offset="30%" stopColor="#F87171" />
+            <stop offset="60%" stopColor="#EF4444" />
+            <stop offset="100%" stopColor="#DC2626" />
+          </linearGradient>
+          <radialGradient id="criticalRadial" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#FEE2E2" stopOpacity="0.8" />
+            <stop offset="50%" stopColor="#FCA5A5" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#DC2626" stopOpacity="0.9" />
+          </radialGradient>
+
+          {/* HIGH RISK - Bold Orange Gradient */}
+          <linearGradient id="highRiskGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FDBA74" />
+            <stop offset="30%" stopColor="#FB923C" />
+            <stop offset="70%" stopColor="#F97316" />
+            <stop offset="100%" stopColor="#EA580C" />
+          </linearGradient>
+
+          {/* WARNING - Warm Yellow/Amber Gradient */}
+          <linearGradient id="warningGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FDE68A" />
+            <stop offset="40%" stopColor="#FCD34D" />
+            <stop offset="70%" stopColor="#FBBF24" />
+            <stop offset="100%" stopColor="#F59E0B" />
+          </linearGradient>
+
+          {/* NORMAL - Subtle Green/Original Color Enhancement */}
+          <linearGradient id="normalGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0.05" />
+          </linearGradient>
+
+          {/* Frosted glass effect for corridors */}
+          <filter id="frostGlass">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+            <feComponentTransfer>
+              <feFuncA type="discrete" tableValues="0.6" />
+            </feComponentTransfer>
+          </filter>
+
+          {/* Soft drop shadow for depth */}
+          <filter id="softShadow">
+            <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#000000" floodOpacity="0.12" />
+          </filter>
+
+          {/* Premium elevated shadow for hover */}
+          <filter id="elevatedShadow">
+            <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#000000" floodOpacity="0.18" />
+          </filter>
 
           {/* Animations */}
           <style>{`
@@ -699,9 +950,19 @@ export default function BuildingHeatmap({
               0%, 100% { r: 22; opacity: 0.5; }
               50%       { r: 28; opacity: 0.2; }
             }
+            @keyframes smoothFloat {
+              0%, 100% { transform: translateY(0px); }
+              50% { transform: translateY(-2px); }
+            }
             @media (prefers-reduced-motion: reduce) {
               .route-dash { animation: none !important; }
               .arrow-flow { animation: none !important; opacity: 1 !important; }
+              .smooth-float { animation: none !important; }
+            }
+            
+            /* Smooth transitions for all interactive elements */
+            .room-interactive {
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             }
           `}</style>
         </defs>
@@ -710,30 +971,43 @@ export default function BuildingHeatmap({
         <rect x={0} y={0} width={VW} height={VH} fill="#F8FAFC" />
 
         {/* ── Outer Building Envelope & Corridor Base ── */}
-        {/* The entire interior walkable corridor is crisp white */}
+        {/* The entire interior walkable corridor with frosted glass effect */}
         <rect
           x={38} y={78} width={744} height={494}
-          fill="#FFFFFF"
+          fill="rgba(255, 255, 255, 0.95)"
           stroke="#1E293B"
           strokeWidth={4}
-          rx={2}
+          rx={8}
+          filter="url(#softShadow)"
+          style={{
+            backdropFilter: 'blur(8px)',
+          }}
         />
 
         {/* ── Room Rectangles ── */}
         {ROOMS_DATA.map((room) => {
           const hazard = hazardMap[room.id] || 'NORMAL'
           const isCritical = hazard === 'CRITICAL'
-          const isWarning  = hazard === 'WARNING' || hazard === 'HIGH_RISK'
+          const isHighRisk = hazard === 'HIGH_RISK'
+          const isWarning  = hazard === 'WARNING'
           const isSelected = selectedRoom === room.id
           const isHovered  = hoveredRoom === room.id
           const isOnRoute  = routeNodes.has(room.id)
           const isOnBfs    = bfsRouteNodes.has(room.id)
 
-          // HEATMAP: ALL ROOMS GREEN, only change on hazard
-          let roomFill = '#D5EEDB' // Light green for NORMAL/safe
-          if (isCritical) roomFill = '#FECDD3' // Light red for CRITICAL
-          else if (isWarning) roomFill = '#FED7AA' // Light orange for HIGH_RISK/WARNING
-          else if (hazard === 'WARNING') roomFill = '#FEF08A' // Light yellow for WARNING
+          // 🎨 BEAUTIFUL GRADIENTS - Use gradient fills for hazards
+          let roomFill = '#C6F6D5' // Soft bright green for NORMAL/safe
+          let useGradient = null
+          if (isCritical) {
+            roomFill = 'url(#criticalRadial)'
+            useGradient = 'criticalRadial'
+          } else if (isHighRisk) {
+            roomFill = 'url(#highRiskGradient)'
+            useGradient = 'highRiskGradient'
+          } else if (isWarning) {
+            roomFill = 'url(#warningGradient)'
+            useGradient = 'warningGradient'
+          }
 
           return (
             <g
@@ -747,35 +1021,95 @@ export default function BuildingHeatmap({
               aria-label={`${room.name} — Hazard: ${hazard}`}
               onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onRoomSelect?.(room.id)}
             >
-              {/* Room Body */}
+              {/* Room Body - BEAUTIFUL ROUNDED CORNERS WITH GRADIENT */}
               <rect
                 x={room.x}
                 y={room.y}
                 width={room.w}
                 height={room.h}
                 fill={roomFill}
-                stroke={isSelected ? '#0284C7' : room.borderColor || '#1E293B'}
-                strokeWidth={isSelected ? 3.5 : room.borderWidth || 2.5}
+                stroke={isSelected ? '#0284C7' : (isCritical ? '#B91C1C' : isHighRisk ? '#C2410C' : isWarning ? '#D97706' : room.borderColor || '#1E293B')}
+                strokeWidth={isSelected ? 3.5 : (isCritical || isHighRisk || isWarning ? 3 : room.borderWidth || 2.5)}
+                rx={12}
+                ry={12}
+                filter={isHovered ? "url(#elevatedShadow)" : "url(#softShadow)"}
+                className="room-interactive"
                 style={{
-                  transition: 'fill 0.2s ease, stroke 0.2s ease',
-                  ...(isCritical ? { animation: 'hazardPulse 1.8s infinite' } : {}),
-                  ...(isWarning ? { animation: 'warningPulse 2.2s infinite' } : {}),
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  ...(isCritical ? { animation: 'hazardPulse 1.8s infinite', filter: 'drop-shadow(0 0 12px rgba(239, 68, 68, 0.6))' } : {}),
+                  ...(isHighRisk ? { animation: 'highRiskPulse 2.0s infinite', filter: 'drop-shadow(0 0 10px rgba(249, 115, 22, 0.5))' } : {}),
+                  ...(isWarning ? { animation: 'warningPulse 2.2s infinite', filter: 'drop-shadow(0 0 10px rgba(251, 191, 36, 0.5))' } : {}),
                 }}
               />
 
-              {/* Selection / Route Glow Ring */}
+              {/* GRADIENT SHEEN OVERLAY - Adds glossy depth (only for non-hazard rooms) */}
+              {!useGradient && (
+                <>
+                  <rect
+                    x={room.x}
+                    y={room.y}
+                    width={room.w}
+                    height={room.h}
+                    fill="url(#roomSheen)"
+                    rx={12}
+                    ry={12}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                  <rect
+                    x={room.x + 1}
+                    y={room.y + 1}
+                    width={room.w - 2}
+                    height={room.h - 2}
+                    fill="url(#innerGlow)"
+                    rx={11}
+                    ry={11}
+                    style={{ pointerEvents: 'none' }}
+                    opacity={0.5}
+                  />
+                </>
+              )}
+
+              {/* HAZARD GRADIENT TOP SHINE - Extra glossy effect for hazards */}
+              {useGradient && (
+                <rect
+                  x={room.x}
+                  y={room.y}
+                  width={room.w}
+                  height={room.h * 0.4}
+                  fill="linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%)"
+                  rx={12}
+                  ry={12}
+                  style={{ pointerEvents: 'none' }}
+                  opacity={0.6}
+                >
+                  <animate
+                    attributeName="opacity"
+                    values="0.4;0.7;0.4"
+                    dur="2s"
+                    repeatCount="indefinite"
+                  />
+                </rect>
+              )}
+
+              {/* Selection / Route Glow Ring - ENHANCED with rounded corners */}
               {(isSelected || isOnRoute || isOnBfs) && (
                 <rect
-                  x={room.x - 3}
-                  y={room.y - 3}
-                  width={room.w + 6}
-                  height={room.h + 6}
+                  x={room.x - 4}
+                  y={room.y - 4}
+                  width={room.w + 8}
+                  height={room.h + 8}
                   fill="none"
                   stroke={isSelected ? '#0284C7' : isOnRoute ? '#FF6A1A' : '#2F6FDE'}
-                  strokeWidth={3}
-                  strokeDasharray={(isOnRoute || isOnBfs) && !isSelected ? '6 4' : 'none'}
-                  rx={2}
-                  opacity={0.8}
+                  strokeWidth={isSelected ? 4 : 3}
+                  strokeDasharray={(isOnRoute || isOnBfs) && !isSelected ? '8 4' : 'none'}
+                  rx={14}
+                  ry={14}
+                  opacity={0.85}
+                  filter="drop-shadow(0 0 8px currentColor)"
+                  style={{
+                    transition: 'all 0.3s ease',
+                    animation: isSelected ? 'none' : 'smoothFloat 3s ease-in-out infinite',
+                  }}
                 />
               )}
 
@@ -828,6 +1162,89 @@ export default function BuildingHeatmap({
                   {room.label[1]}
                 </text>
               )}
+
+              {/* ── Sensor Health Heatmap (Filter: 📡 Sensors) ── */}
+              {showSensors && (() => {
+                // Get sensors for this room
+                const sensors = sensorsByRoom[room.id] || []
+                
+                if (sensors.length === 0) {
+                  // No sensors assigned - show single small gray dot
+                  return (
+                    <g transform={`translate(${room.x + room.w - 12}, ${room.y + room.h - 10})`}>
+                      <circle
+                        cx={0}
+                        cy={0}
+                        r={3}
+                        fill="#94A3B8"
+                        stroke="#FFF"
+                        strokeWidth={1}
+                        opacity={0.5}
+                      />
+                    </g>
+                  )
+                }
+                
+                // Show simplified sensor health dots: Green (working) vs Red (broken)
+                return (
+                  <g transform={`translate(${room.x + room.w - (sensors.length * 7 + 8)}, ${room.y + room.h - 12})`}>
+                    {sensors.map((sensor, idx) => {
+                      // Simple logic: FAILED or OFFLINE = RED, otherwise GREEN
+                      const isBroken = sensor.status === 'FAILED' || sensor.status === 'OFFLINE'
+                      const dotColor = isBroken ? '#EF4444' : '#10B981' // Red or Green
+                      
+                      return (
+                        <g key={sensor.sensor_id || idx} transform={`translate(${idx * 8}, 0)`}>
+                          {/* Simple colored dot */}
+                          <circle
+                            cx={0}
+                            cy={0}
+                            r={3.5}
+                            fill={dotColor}
+                            stroke="#FFF"
+                            strokeWidth={1.2}
+                            opacity={0.95}
+                          >
+                            <title>
+{`${sensor.sensor_id || 'Unknown'}
+Type: ${sensor.type || sensor.sensor_type || 'unknown'}
+Status: ${sensor.status || 'UNKNOWN'}
+Value: ${sensor.value !== null && sensor.value !== undefined ? sensor.value + ' ' + (sensor.unit || '') : 'N/A'}
+Last Reading: ${sensor.last_reading_at ? new Date(sensor.last_reading_at).toLocaleTimeString() : 'Never'}`}
+                            </title>
+                          </circle>
+                          
+                          {/* Pulse animation for broken sensors */}
+                          {isBroken && (
+                            <circle
+                              cx={0}
+                              cy={0}
+                              r={3.5}
+                              fill="none"
+                              stroke="#EF4444"
+                              strokeWidth={1.5}
+                              opacity={0.8}
+                            >
+                              <animate
+                                attributeName="r"
+                                values="3.5;6.5;3.5"
+                                dur="1.5s"
+                                repeatCount="indefinite"
+                              />
+                              <animate
+                                attributeName="opacity"
+                                values="0.8;0;0.8"
+                                dur="1.5s"
+                                repeatCount="indefinite"
+                              />
+                            </circle>
+                          )}
+                        </g>
+                      )
+                    })}
+                  </g>
+                )
+              })()}
 
               {/* ── Room Specific Architectural Furniture / Icons ── */}
               {/* ICU: 4 Beds */}
@@ -1046,7 +1463,7 @@ export default function BuildingHeatmap({
                 <g transform={`translate(${room.x + room.w - 38},${room.y + 6})`}>
                   <rect
                     x={0} y={0} width={32} height={15} rx={3}
-                    fill={isCritical ? '#E11D48' : '#D97706'}
+                    fill={isCritical ? '#E11D48' : isHighRisk ? '#EA580C' : '#D97706'}
                     stroke="#FFFFFF" strokeWidth={1}
                   />
                   <text
@@ -1055,7 +1472,7 @@ export default function BuildingHeatmap({
                     fontSize={8.5} fontWeight={800} fill="#FFFFFF"
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
                   >
-                    {isCritical ? 'CRIT' : 'WARN'}
+                    {isCritical ? 'CRIT' : isHighRisk ? 'HIGH' : 'WARN'}
                   </text>
                 </g>
               )}
@@ -1407,116 +1824,6 @@ export default function BuildingHeatmap({
           )
         })()}
 
-        {/* ── Top Title Box ── */}
-        <g transform="translate(260, 15)">
-          <rect
-            x={0} y={0} width={300} height={46} rx={8}
-            fill="#EFF6FF"
-            stroke="#2563EB"
-            strokeWidth={2}
-            filter="drop-shadow(0 2px 6px rgba(37, 99, 235, 0.15))"
-          />
-          <text
-            x={150} y={20}
-            textAnchor="middle"
-            fontFamily="'Inter', system-ui, sans-serif"
-            fontSize={15} fontWeight={800} fill="#1E3A8A"
-          >
-            Hospital – 2D Floor Map
-          </text>
-          <text
-            x={150} y={36}
-            textAnchor="middle"
-            fontFamily="'Inter', system-ui, sans-serif"
-            fontSize={12} fontWeight={700} fill="#1E40AF"
-          >
-            (Ground Floor)
-          </text>
-        </g>
-
-        {/* ── Legend Box (Right Side) ── */}
-        <g transform="translate(820, 75)">
-          {/* Legend Border Card */}
-          <rect
-            x={0} y={0} width={180} height={460} rx={8}
-            fill="#FFFFFF"
-            stroke="#2563EB"
-            strokeWidth={2}
-            filter="drop-shadow(0 4px 12px rgba(37, 99, 235, 0.10))"
-          />
-          <text
-            x={14} y={25}
-            fontFamily="'Inter', system-ui, sans-serif"
-            fontSize={15} fontWeight={800} fill="#1E3A8A"
-          >
-            Legend
-          </text>
-
-          {/* Legend Items */}
-          {[
-            { label: 'Patient Room / Ward', color: '#FDD9CC' },
-            { label: 'ICU / Critical Care', color: '#BEE3F8' },
-            { label: 'Operating Theatre', color: '#D5EEDB' },
-            { label: 'Diagnostic (Imaging / Lab)', color: '#EAD6F4' },
-            { label: 'Administration / Records', color: '#FFF2D1' },
-            { label: 'Support Services', color: '#CCEBFB' },
-            { label: 'Emergency / Trauma', color: '#E2DAF7' },
-            { label: 'Food / Cafeteria', color: '#D5EEDB' },
-            { label: 'Stairs', color: '#CBD5E1' },
-          ].map((item, i) => (
-            <g key={item.label} transform={`translate(14, ${45 + i * 24})`}>
-              <rect x={0} y={0} width={20} height={14} rx={2} fill={item.color} stroke="#1E293B" strokeWidth={0.8} />
-              <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">
-                {item.label}
-              </text>
-            </g>
-          ))}
-
-          {/* Emergency Exit icon item */}
-          <g transform="translate(14, 265)">
-            <rect x={0} y={0} width={20} height={14} rx={2} fill="#15803D" />
-            <path d="M4,10 L2,12 L5,12 L6,9 L8,12 L11,12 L9,7 Z" fill="#FFFFFF" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Emergency Exit</text>
-          </g>
-
-          {/* Evacuation Route arrow item */}
-          <g transform="translate(14, 290)">
-            <line x1={0} y1={7} x2={16} y2={7} stroke="#FF6A1A" strokeWidth={3} strokeLinecap="round" />
-            <polygon points="14,3 20,7 14,11" fill="#FF6A1A" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Dijkstra Route</text>
-          </g>
-
-          {/* BFS Route item */}
-          <g transform="translate(14, 315)">
-            <line x1={0} y1={7} x2={14} y2={7} stroke="#2F6FDE" strokeWidth={3} strokeDasharray="4 2" strokeLinecap="round" />
-            <circle cx={20} cy={7} r={3} fill="#2F6FDE" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">BFS Route</text>
-          </g>
-
-          {/* Outer perimeter path item */}
-          <g transform="translate(14, 340)">
-            <line x1={0} y1={7} x2={20} y2={7} stroke="#2E8B57" strokeWidth={2.5} strokeDasharray="5 4" strokeLinecap="round" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Outer Path</text>
-          </g>
-
-          {/* Fire Extinguisher icon item */}
-          <g transform="translate(14, 365)">
-            <rect x={6} y={0} width={8} height={14} rx={2} fill="#DC2626" />
-            <line x1={7} y1={-2} x2={13} y2={-2} stroke="#0F172A" strokeWidth={1} />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Fire Extinguisher</text>
-          </g>
-
-          {/* Fire Alarm icon item */}
-          <g transform="translate(14, 390)">
-            <circle cx={10} cy={7} r={6.5} fill="#DC2626" stroke="#991B1B" strokeWidth={1} />
-            <circle cx={10} cy={7} r={4} fill="#FFFFFF" />
-            <circle cx={10} cy={7} r={2} fill="#DC2626" />
-            <text x={28} y={11} fontSize={10.5} fontWeight={600} fill="#1E293B">Fire Alarm</text>
-          </g>
-        </g>
-
-        {/* ── Compass Rose (Bottom Right) ── */}
-        <CompassRose cx={910} cy={565} size={34} />
       </svg>
 
       {/* Floating Selected Room Info Toast */}

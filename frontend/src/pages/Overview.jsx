@@ -374,7 +374,7 @@ export default function Overview() {
               🌡️ Live Heatmap
             </span>
             <button
-              onClick={() => navigate('/live-map')}
+              onClick={() => navigate('/map')}
               style={{
                 padding:      '6px 14px',
                 background:   'var(--bg-raised)',
