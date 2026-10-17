@@ -841,7 +841,7 @@ export default function Configuration() {
                 {healthStatus?.components?.database?.latency_ms ? `${healthStatus.components.database.latency_ms} ms` : '< 2 ms'}
               </div>
               <div style={{ fontSize: 11, color: 'var(--ink-400)' }}>
-                Pool: {systemStats?.database?.pool?.active || (healthStatus?.components?.database?.status === 'connected' ? 2 : 0)} active / {systemStats?.database?.pool?.idle || 8} idle connections
+                Pool: {systemStats?.database?.pool?.in_use ?? '—'} active / {systemStats?.database?.pool?.idle ?? '—'} idle connections
               </div>
             </div>
 
@@ -852,10 +852,10 @@ export default function Configuration() {
                 <StatusPill status="NORMAL" label="Live Hub" />
               </div>
               <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--ink-900)', fontFamily: 'var(--font-mono)', marginBottom: 6 }}>
-                {systemStats?.websocket?.connected_clients ?? (healthStatus?.components?.websocket?.connected_clients ?? 2)} Clients
+                {systemStats?.websocket?.connected_clients ?? healthStatus?.components?.websocket?.connected_clients ?? '—'} Clients
               </div>
               <div style={{ fontSize: 11, color: 'var(--ink-400)' }}>
-                {systemStats?.websocket?.messages_broadcast ?? (healthStatus?.components?.event_bus?.total_published || 418)} events broadcasted
+                {systemStats?.websocket?.messages_broadcast ?? healthStatus?.components?.event_bus?.total_published ?? '—'} events broadcasted
               </div>
             </div>
 
@@ -883,7 +883,7 @@ export default function Configuration() {
                 Healthy
               </div>
               <div style={{ fontSize: 11, color: 'var(--ink-400)' }}>
-                Event Bus: {healthStatus?.components?.event_bus?.total_published || 128} published
+                Event Bus: {healthStatus?.components?.event_bus?.total_published ?? '—'} published
               </div>
             </div>
 
@@ -897,20 +897,20 @@ export default function Configuration() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
               <div style={{ padding: 12, background: 'var(--bg-inset)', borderRadius: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--ink-400)', marginBottom: 2 }}>Registered Rooms</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>{rooms.length || 16}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>{rooms.length || '—'}</div>
               </div>
               <div style={{ padding: 12, background: 'var(--bg-inset)', borderRadius: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--ink-400)', marginBottom: 2 }}>Physical Sensors</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>{sensors.length || 62}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>{sensors.length || '—'}</div>
               </div>
               <div style={{ padding: 12, background: 'var(--bg-inset)', borderRadius: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--ink-400)', marginBottom: 2 }}>Designated Exits</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>{exits.length || 4}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>{exits.length || '—'}</div>
               </div>
               <div style={{ padding: 12, background: 'var(--bg-inset)', borderRadius: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--ink-400)', marginBottom: 2 }}>Telemetry Stream (24h)</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)' }}>
-                  {systemStats?.database?.readings_24h || '4,280+'}
+                  {systemStats?.database?.readings_24h?.toLocaleString() ?? '—'}
                 </div>
               </div>
             </div>

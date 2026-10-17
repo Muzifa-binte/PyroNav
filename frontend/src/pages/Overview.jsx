@@ -236,6 +236,18 @@ export default function Overview() {
   const [route,    setRoute]    = useState(null)
   const [alerts,   setAlerts]   = useState([])
   const [loading,  setLoading]  = useState(true)
+  const [sensors,  setSensors]  = useState([])
+  const [now,      setNow]      = useState(Date.now())
+
+  // Sensor health: re-read every 10 s so freshness follows the live feed
+  useEffect(() => {
+    const loadSensors = () => api.getSensors()
+      .then(d => { setSensors(d.sensors || []); setNow(Date.now()) })
+      .catch(() => {})
+    loadSensors()
+    const timer = setInterval(loadSensors, 10000)
+    return () => clearInterval(timer)
+  }, [])
 
   // Initial data load
   useEffect(() => {
@@ -297,7 +309,17 @@ export default function Overview() {
   const buildingState  = worstSeverity(rooms, alerts)
   const affectedRooms  = rooms.filter(r => ['CRITICAL','HIGH_RISK','WARNING'].includes(r.current_hazard_level))
   const criticalRooms  = rooms.filter(r => r.current_hazard_level === 'CRITICAL')
-  const sensorsTotal   = rooms.length || 16
+  // Same windows as the decision engine (thresholds.json stale_data_policy):
+  // online = reading in the last 60 s, stale = in the last 5 min,
+  // offline = older, never seen, or reported faulty
+  const sensorStats = sensors.reduce((acc, s) => {
+    const age = s.last_seen_at ? (now - new Date(s.last_seen_at).getTime()) / 1000 : Infinity
+    if (['inactive', 'error', 'offline'].includes(s.status) || age > 300) acc.offline++
+    else if (age > 60) acc.stale++
+    else acc.online++
+    return acc
+  }, { online: 0, stale: 0, offline: 0 })
+  const sensorsTotal   = sensors.length
   // Count untrusted rooms (placeholder — replace with real sensor trust data when available)
   const untrustedCount = 0
   const avgRisk        = affectedRooms.length > 0
@@ -341,7 +363,7 @@ export default function Overview() {
           />
           <KpiCard
             label="Sensors online"
-            value={`${sensorsTotal - 1}/${sensorsTotal}`}
+            value={sensorsTotal ? `${sensorStats.online}/${sensorsTotal}` : '—'}
             valueColor="var(--ink-900)"
             onClick={() => navigate('/sensors')}
           />
@@ -594,16 +616,16 @@ export default function Overview() {
           }}>
             <div style={{
               height:     '100%',
-              width:      `${Math.round(((sensorsTotal - 1) / sensorsTotal) * 100)}%`,
+              width:      `${sensorsTotal ? Math.round((sensorStats.online / sensorsTotal) * 100) : 0}%`,
               background: 'var(--green-600)',
               borderRadius: 4,
               transition: 'width 0.6s ease',
             }} />
           </div>
           <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
-            <span style={{ color: 'var(--green-600)', fontWeight: 600 }}>● {sensorsTotal - 1} Online</span>
-            <span style={{ color: 'var(--amber-500)', fontWeight: 600 }}>● 0 Stale</span>
-            <span style={{ color: 'var(--red-600)',   fontWeight: 600 }}>● 1 Offline</span>
+            <span style={{ color: 'var(--green-600)', fontWeight: 600 }}>● {sensorStats.online} Online</span>
+            <span style={{ color: 'var(--amber-500)', fontWeight: 600 }}>● {sensorStats.stale} Stale</span>
+            <span style={{ color: 'var(--red-600)',   fontWeight: 600 }}>● {sensorStats.offline} Offline</span>
           </div>
         </div>
 
