@@ -182,7 +182,7 @@ function HeroCard({ buildingState, affectedRooms, topAlert, route, loading, navi
       {/* Action buttons */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
         <button
-          onClick={() => navigate('/map')}
+          onClick={() => navigate('/evacuation')}
           style={{
             padding:      '11px 22px',
             background:   'var(--orange-500)',
@@ -400,7 +400,7 @@ export default function Overview() {
                 route={null}
                 compact
                 showRoute={false}
-                onRoomSelect={() => navigate('/live-map')}
+                onRoomSelect={() => navigate('/map')}
                 style={{ height: 340 }}
               />
             )}
@@ -564,86 +564,7 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* ── Row 3: Mini floor map (full width) ── */}
-      <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-        {/* Card header */}
-        <div style={{
-          display:        'flex',
-          justifyContent: 'space-between',
-          alignItems:     'center',
-          padding:        '13px 18px',
-          borderBottom:   '1px solid var(--border-subtle)',
-        }}>
-          <div>
-            <span style={{
-              fontFamily:    'var(--font-display)',
-              fontWeight:    700,
-              fontSize:      16,
-              color:         'var(--ink-900)',
-            }}>
-              Live Floor Plan
-            </span>
-            <span style={{
-              marginLeft: 10,
-              fontSize:   12,
-              color:      'var(--ink-400)',
-            }}>
-              Click a room to inspect
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {route?.status === 'ROUTE_FOUND' && (
-              <span style={{
-                padding:      '4px 12px',
-                background:   'var(--orange-100)',
-                color:        'var(--orange-600)',
-                borderRadius: 'var(--radius-full)',
-                fontSize:     12,
-                fontWeight:   600,
-              }}>
-                → {route.exit_id}
-              </span>
-            )}
-            <button
-              onClick={() => navigate('/map')}
-              style={{
-                padding:      '8px 18px',
-                background:   'var(--orange-500)',
-                border:       'none',
-                color:        '#fff',
-                borderRadius: 'var(--radius-md)',
-                fontSize:     13,
-                fontWeight:   700,
-                cursor:       'pointer',
-                fontFamily:   'var(--font-sans)',
-                transition:   'background var(--transition-fast)',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--orange-600)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'var(--orange-500)'}
-            >
-              Full Map →
-            </button>
-          </div>
-        </div>
-
-        {/* Map */}
-        <div style={{ padding: 16 }}>
-          {loading
-            ? <LoadingSkeleton type="map" height={280} />
-            : (
-              <BuildingMap2D
-                building={building}
-                rooms={rooms}
-                route={route}
-                compact
-                onRoomSelect={() => navigate('/map')}
-              />
-            )}
-        </div>
-      </div>
-
-      {/* ── Row 4: Sensor coverage + Route status ── */}
+      {/* ── Row 3: Sensor coverage + Route status ── */}
       <div style={{ display: 'flex', gap: 16 }}>
 
         {/* Sensor coverage */}

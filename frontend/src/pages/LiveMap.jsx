@@ -309,7 +309,7 @@ export default function LiveMap() {
               margin: 0,
               marginBottom: 4,
             }}>
-              Live Floor Map
+              Heat Map
             </h1>
             <p style={{
               color: 'var(--ink-600)',
