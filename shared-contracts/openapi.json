@@ -574,6 +574,26 @@
         }
       }
     },
+    "/api/v1/thresholds": {
+      "get": {
+        "tags": [
+          "Rooms & Hazards"
+        ],
+        "summary": "Decision engine thresholds (read-only)",
+        "description": "The rules Member 2's decision engine applies (decision_engine/config/thresholds.json),\nso dashboards classify readings exactly as the engine does. Current rules may carry\nthreshold_ratio_of_rated: multiply by the sensor's metadata.rated_current_a.",
+        "operationId": "get_thresholds_api_v1_thresholds_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/events": {
       "get": {
         "tags": [
@@ -1443,6 +1463,46 @@
           }
         }
       }
+    },
+    "/api/v1/system/simulate/reading": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Publish a sensor reading over MQTT (development only)",
+        "description": "Publishes a reading in the shared-contracts format, exactly as the 3D app\ndoes, so it goes broker -> ingestion (validation, storage) -> decision engine\n-> WebSocket. `invalid: true` breaks the contract on purpose: ingestion must\nreject it. Disabled when ENABLE_DEV_ENDPOINTS=false.",
+        "operationId": "simulate_reading_api_v1_system_simulate_reading_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulatedReading"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1584,6 +1644,51 @@
           "sensor_type"
         ],
         "title": "SensorCreate"
+      },
+      "SimulatedReading": {
+        "properties": {
+          "sensor_id": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Sensor Id",
+            "examples": [
+              "SMOKE-OT-01"
+            ]
+          },
+          "values": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Values",
+            "description": "Measurements to send; anything omitted keeps the sensor's baseline",
+            "examples": [
+              {
+                "smoke": 120,
+                "temperature": 70
+              }
+            ]
+          },
+          "invalid": {
+            "type": "boolean",
+            "title": "Invalid",
+            "description": "Send a malformed reading (validation test)",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "sensor_id"
+        ],
+        "title": "SimulatedReading"
       },
       "ValidationError": {
         "properties": {

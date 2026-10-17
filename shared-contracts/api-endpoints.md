@@ -49,6 +49,7 @@ The frontend's `services/api.js` already reads `detail || error`.
 | GET | `/rooms/{room_id}` | Member 2 | Includes `latest_readings` and `active_events` |
 | GET | `/rooms/{room_id}/hazard` | Member 2 | Current hazard detail |
 | GET | `/rooms/{room_id}/data-quality` | Member 2 | Sensor freshness counts |
+| GET | `/thresholds` | Member 2 | The decision engine's rules (`thresholds.json`), so dashboards classify readings like the engine. Current rules: `threshold_ratio_of_rated` × the sensor's `metadata.rated_current_a` |
 | GET | `/events` | Member 2 | `status` (ACTIVE/RESOLVED/ALL), `room_id`, `limit` |
 | GET | `/events/{event_id}` | Member 2 | Includes `notifications` |
 | GET | `/notifications` | Member 2 | `status` (ACTIVE/ACKNOWLEDGED/DISMISSED/ALL), `since`, `limit` |
@@ -67,6 +68,7 @@ The frontend's `services/api.js` already reads `detail || error`.
 | GET | `/system/audit` | Member 4 | `min_status`, `endpoint` (prefix), `limit` |
 | GET | `/system/migrations` | Member 4 | Applied and pending migrations |
 | POST | `/system/events/publish` | Member 4 | **Dev only.** Inject an event |
+| POST | `/system/simulate/reading` | Member 4 | **Dev only.** Publish a sensor reading over MQTT (`{sensor_id, values?, invalid?}`; omitted values = baseline). Goes through ingestion → decision engine like a real reading. Used by the Simulation page |
 | WS | `/ws/v1/live` | Member 4 | See `websocket-events.json` |
 
 ---

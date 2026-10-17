@@ -6,20 +6,24 @@ GET  /api/v1/system/logs               — recent system_logs rows
 GET  /api/v1/system/audit              — recent api_audit_log rows
 GET  /api/v1/system/migrations         — applied / pending migrations
 POST /api/v1/system/events/publish     — inject an event (development only)
+POST /api/v1/system/simulate/reading   — publish a sensor reading over MQTT (development only)
 """
-from datetime import datetime
-from typing import Literal, Optional
+import json
+import uuid
+from datetime import datetime, timezone
+from typing import Dict, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from api.dependencies import require_dev_endpoints
+from api.dependencies import not_found, require_dev_endpoints
 from database.connection import DatabaseUnavailableError, db_manager
 from database.migrations.migrate import MigrationRunner
 from events.event_bus import Event, event_bus
 from events.event_types import all_event_types
 from monitoring.background_writer import db_writer
 from monitoring.metrics import request_metrics
+from sensor_ingestion.config import get_ingestion_settings
 from utils.serialization import to_jsonable, utc_now_iso
 from websocket.connection_manager import manager
 
@@ -163,3 +167,83 @@ async def publish_event(body: PublishRequest):
         "websocket_clients": manager.connection_count,
         "timestamp": utc_now_iso(),
     }
+
+
+# ---------------------------------------------------------------------------
+# Simulation: readings through the REAL pipeline (dashboard Simulation page)
+# ---------------------------------------------------------------------------
+
+READING_TOPIC = "pyronav/v1/sensors/{room_id}/{sensor_id}/reading"
+
+
+class SimulatedReading(BaseModel):
+    sensor_id: str = Field(min_length=1, max_length=50, examples=["SMOKE-OT-01"])
+    values: Optional[Dict[str, float]] = Field(
+        default=None, examples=[{"smoke": 120, "temperature": 70}],
+        description="Measurements to send; anything omitted keeps the sensor's baseline",
+    )
+    invalid: bool = Field(default=False, description="Send a malformed reading (validation test)")
+
+
+def _publish_mqtt(topic: str, payload: str) -> None:
+    """One QoS 1 publish to the broker the ingestion service listens on."""
+    import paho.mqtt.client as mqtt  # in requirements.txt; imported lazily like the ingestion
+
+    settings = get_ingestion_settings()
+    client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+                         client_id=f"pyronav-simulator-{uuid.uuid4().hex[:6]}")
+    if settings.mqtt_username:
+        client.username_pw_set(settings.mqtt_username, settings.mqtt_password)
+    try:
+        client.connect(settings.mqtt_broker, settings.mqtt_port, keepalive=10)
+    except OSError as exc:
+        raise HTTPException(status_code=503,
+                            detail=f"MQTT broker {settings.broker_label} unreachable: {exc}")
+    client.loop_start()
+    try:
+        info = client.publish(topic, payload, qos=1)
+        info.wait_for_publish(timeout=5)
+        if not info.is_published():
+            raise HTTPException(status_code=504, detail="MQTT broker did not acknowledge the reading")
+    finally:
+        client.loop_stop()
+        client.disconnect()
+
+
+@router.post(
+    "/system/simulate/reading",
+    summary="Publish a sensor reading over MQTT (development only)",
+    dependencies=[Depends(require_dev_endpoints)],
+)
+def simulate_reading(body: SimulatedReading):
+    """Publishes a reading in the shared-contracts format, exactly as the 3D app
+    does, so it goes broker -> ingestion (validation, storage) -> decision engine
+    -> WebSocket. `invalid: true` breaks the contract on purpose: ingestion must
+    reject it. Disabled when ENABLE_DEV_ENDPOINTS=false."""
+    sensor = db_manager.fetch_one(
+        "SELECT sensor_id, room_id, sensor_type, unit_config, metadata FROM sensors WHERE sensor_id = %s",
+        (body.sensor_id,),
+    )
+    if sensor is None:
+        raise not_found("Sensor", body.sensor_id)
+
+    baseline = (sensor.get("metadata") or {}).get("baseline") or {}
+    values = {**baseline, **(body.values or {})}
+    message_id = f"sim-{uuid.uuid4()}"
+    message = {
+        "message_id": message_id,
+        "sensor_id": sensor["sensor_id"],
+        "room_id": sensor["room_id"],
+        "sensor_type": sensor["sensor_type"],
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+        "values": ({field: "not-a-number" for field in values} or {"value": "not-a-number"})
+                  if body.invalid else values,
+        "units": sensor["unit_config"] or {},
+        "source": "dashboard-simulation",
+        "trigger": "simulation",
+        "schema_version": "1.0",
+    }
+    topic = READING_TOPIC.format(room_id=sensor["room_id"], sensor_id=sensor["sensor_id"])
+    _publish_mqtt(topic, json.dumps(message))
+    return {"published": True, "message_id": message_id, "topic": topic,
+            "values": message["values"], "invalid": body.invalid}

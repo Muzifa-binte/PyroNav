@@ -5,12 +5,14 @@ GET /api/v1/rooms
 GET /api/v1/rooms/{room_id}
 GET /api/v1/rooms/{room_id}/hazard
 GET /api/v1/rooms/{room_id}/data-quality
+GET /api/v1/thresholds                 — the decision engine's rules (read-only)
 """
 from typing import Dict, List
 
 from fastapi import APIRouter
 
 from api.dependencies import not_found, with_fallback
+from decision_engine.rule_loader import load_rules
 from database import demo_data
 from database.connection import db_manager
 from utils.serialization import to_jsonable
@@ -164,3 +166,13 @@ def get_room_data_quality(room_id: str):
         }
 
     return with_fallback(query, fallback)
+
+
+@router.get("/thresholds", summary="Decision engine thresholds (read-only)")
+def get_thresholds():
+    """The rules Member 2's decision engine applies (decision_engine/config/thresholds.json),
+    so dashboards classify readings exactly as the engine does. Current rules may carry
+    threshold_ratio_of_rated: multiply by the sensor's metadata.rated_current_a."""
+    config = load_rules()
+    return {key: config[key] for key in
+            ("version", "rules", "room_level_rules", "stale_data_policy") if key in config}
