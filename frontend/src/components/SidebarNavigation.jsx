@@ -40,7 +40,7 @@ function FlameIcon({ size = 22 }) {
 // Collapsed-mode mini icon (emoji initials)
 const ITEM_ABBR = {
   '/overview':   'OV',
-  '/map':        'MP',
+  '/map':        'HM',
   '/sensors':    'SN',
   '/security':   'IS',
   '/risk':       'RA',
@@ -53,7 +53,7 @@ const ITEM_ABBR = {
 
 const NAV_ITEMS = [
   { path: '/overview',   label: 'Command Overview' },
-  { path: '/map',        label: 'Live Floor Map'   },
+  { path: '/map',        label: 'Heat Map'         },
   { path: '/sensors',    label: 'Sensors'          },
   { path: '/security',   label: 'IoT Security'     },
   { path: '/risk',       label: 'Risk Analytics'   },

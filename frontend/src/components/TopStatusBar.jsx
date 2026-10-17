@@ -14,7 +14,7 @@ import ThemeSwitcher from './ThemeSwitcher'
 
 const PAGE_META = {
   '/overview':   { title: 'Command Overview',         subtitle: 'Hospital prototype building, Block A' },
-  '/map':        { title: 'Live Floor Map',            subtitle: 'Real-time 2D situational awareness'  },
+  '/map':        { title: 'Heat Map',                  subtitle: 'Real-time 2D situational awareness'  },
   '/sensors':    { title: 'Sensors & Monitoring',      subtitle: 'Measurement and data quality'         },
   '/evacuation': { title: 'Evacuation & Pathfinding',  subtitle: 'Current route and exit status'        },
   '/alerts':     { title: 'Alerts & Incidents',        subtitle: 'Active and historical events'          },
