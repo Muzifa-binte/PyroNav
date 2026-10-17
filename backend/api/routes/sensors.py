@@ -1,6 +1,7 @@
 """
 Sensor endpoints (Member 1's domain — data written by the MQTT ingestion service).
 GET  /api/v1/sensors
+GET  /api/v1/sensors/readings              — recent readings across sensors (filter by room)
 GET  /api/v1/sensors/{sensor_id}
 GET  /api/v1/sensors/{sensor_id}/readings
 POST /api/v1/sensors                       — register a sensor
@@ -77,6 +78,38 @@ def get_all_sensors(
         rows = [{**s, "latest_reading": None} for s in _demo_sensors()
                 if all(val is None or s.get(col) == val for col, val in filters.items())]
         return {"sensors": rows, "total": len(rows), "demo_data": True}
+
+    return with_fallback(query, fallback)
+
+
+# Declared before /sensors/{sensor_id}, which would otherwise match "readings"
+@router.get("/sensors/readings", summary="Recent readings across sensors (newest first)")
+def get_recent_readings(
+    room_id: Optional[str] = None,
+    sensor_id: Optional[str] = None,
+    limit: int = Query(default=100, ge=1, le=1000),
+    from_time: Optional[datetime] = Query(default=None, description="ISO-8601, inclusive"),
+):
+    def query():
+        clauses, params = [], []
+        for column, value in (("room_id", room_id), ("sensor_id", sensor_id)):
+            if value is not None:
+                clauses.append(f"{column} = %s")
+                params.append(value)
+        if from_time is not None:
+            clauses.append('"timestamp" >= %s')
+            params.append(from_time)
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        rows = db_manager.fetch_all(
+            f'SELECT * FROM sensor_readings {where} ORDER BY "timestamp" DESC LIMIT %s',
+            (*params, limit),
+        )
+        return {"room_id": room_id, "sensor_id": sensor_id, "readings": to_jsonable(rows),
+                "count": len(rows), "demo_data": False}
+
+    def fallback():
+        return {"room_id": room_id, "sensor_id": sensor_id, "readings": [], "count": 0,
+                "demo_data": True}
 
     return with_fallback(query, fallback)
 

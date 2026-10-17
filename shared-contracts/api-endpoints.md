@@ -41,6 +41,7 @@ The frontend's `services/api.js` already reads `detail || error`.
 | GET | `/health/live` | System | Liveness probe |
 | GET | `/health/ready` | System | Readiness probe: 503 until the DB is reachable |
 | GET | `/sensors` | Member 1 | Filters: `room_id`, `sensor_type`, `status`. Each sensor includes `latest_reading` (same shape as below) |
+| GET | `/sensors/readings` | Member 1 | Recent readings across sensors, newest first. Filters: `room_id`, `sensor_id`, `limit`, `from_time` |
 | GET | `/sensors/{sensor_id}` | Member 1 | Includes `latest_reading` |
 | GET | `/sensors/{sensor_id}/readings` | Member 1 | `limit` (1–1000, default 100), `from_time`, `to_time` |
 | POST | `/sensors` | Member 1 | Register a sensor |
@@ -176,7 +177,7 @@ This returns the room fields plus:
                      "source_sensor_ids": ["SMOKE-OT-01"], "detected_at": "…"}]
 }
 ```
-`latest_readings` merges the newest value for each measurement across all of the room's sensors.
+`latest_readings` takes each sensor's latest reading and, per measurement, keeps the **highest** value across the room's sensors (the worst case, as the decision engine sees it).
 
 ### `GET /rooms/{room_id}/hazard`
 ```json

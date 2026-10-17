@@ -27,6 +27,7 @@ NOTIFICATION_COLUMNS = "n.*, r.name AS room_name"
 def get_notifications(
     status: Literal["ACTIVE", "ACKNOWLEDGED", "DISMISSED", "ALL"] = "ACTIVE",
     since: Optional[datetime] = Query(default=None, description="Only notifications created after this ISO-8601 time"),
+    room_id: Optional[str] = None,
     limit: int = Query(default=100, ge=1, le=500),
 ):
     def query():
@@ -37,6 +38,9 @@ def get_notifications(
         if since is not None:
             clauses.append("n.created_at > %s")
             params.append(since)
+        if room_id is not None:
+            clauses.append("n.room_id = %s")
+            params.append(room_id)
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         rows = db_manager.fetch_all(
             f"SELECT {NOTIFICATION_COLUMNS} FROM notifications n "

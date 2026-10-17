@@ -50,12 +50,17 @@ def _room_or_404(room_id: str) -> Dict:
 
 
 def _latest_readings_by_measurement(rows: List[Dict]) -> Dict:
-    """Flatten per-sensor rows into {measurement: {value, unit, timestamp, sensor_id}},
-    keeping the most recent value when several sensors measure the same thing."""
+    """Flatten each sensor's latest reading into {measurement: {value, unit,
+    timestamp, sensor_id}}. When several sensors measure the same thing (ICU has
+    two smoke detectors) the HIGHEST value wins, as in the decision engine, so a
+    room in alarm never shows a reassuring value from its other sensor."""
     result: Dict[str, Dict] = {}
     for row in sorted(rows, key=lambda r: r["timestamp"]):
         units = row.get("units") or {}
         for measurement, value in (row.get("values") or {}).items():
+            current = result.get(measurement)
+            if current is not None and isinstance(value, (int, float)) and value < current["value"]:
+                continue
             result[measurement] = {
                 "value": value,
                 "unit": units.get(measurement),

@@ -125,6 +125,9 @@ def test_sensor_readings_newest_first_with_time_filter(client, database):
 
     sensor = client.get(f"{API}/sensors/SMOKE-OT-01").json()
     assert sensor["latest_reading"]["values"] == {"smoke": 30}
+    room = client.get(f"{API}/sensors/readings",
+                      params={"room_id": "operation_theater", "limit": 2}).json()
+    assert [r["values"]["smoke"] for r in room["readings"]] == [30, 20]
     listed = client.get(f"{API}/sensors", params={"room_id": "operation_theater"}).json()["sensors"]
     by_id = {s["sensor_id"]: s for s in listed}
     assert by_id["SMOKE-OT-01"]["latest_reading"]["values"] == {"smoke": 30}
@@ -151,6 +154,28 @@ def test_room_detail_merges_latest_readings_by_measurement(client, database):
     assert quality["sensor_count"] == 2
     assert quality["fresh_sensors"] == 2
     assert quality["status"] == "FRESH"
+
+
+def test_room_detail_shows_the_worst_value_across_sensors(client, database):
+    database.execute_write(
+        "INSERT INTO sensors (sensor_id, room_id, sensor_type, unit_config) "
+        "VALUES ('SMOKE-OT-02', 'operation_theater', 'smoke_heat', %s)",
+        ({"smoke": "ppm", "temperature": "degC"},),
+    )
+    try:
+        now = _utcnow()
+        units = {"smoke": "ppm", "temperature": "degC"}
+        _insert_reading(database, "SMOKE-OT-01", "operation_theater",
+                        {"smoke": 120, "temperature": 80}, units, at=now - timedelta(seconds=10))
+        _insert_reading(database, "SMOKE-OT-02", "operation_theater",
+                        {"smoke": 3, "temperature": 22}, units, at=now)
+
+        readings = client.get(f"{API}/rooms/operation_theater").json()["latest_readings"]
+        assert (readings["smoke"]["value"], readings["smoke"]["sensor_id"]) == (120, "SMOKE-OT-01")
+        assert readings["temperature"]["value"] == 80
+    finally:
+        database.execute_write("DELETE FROM sensor_readings WHERE sensor_id = 'SMOKE-OT-02'")
+        database.execute_write("DELETE FROM sensors WHERE sensor_id = 'SMOKE-OT-02'")
 
 
 def test_hazard_alert_and_notification_acknowledgement(client, database):
