@@ -376,11 +376,11 @@ export default function LiveMap() {
         })}
       </div>
 
-      {/* Main Content - More space for map */}
-      <div style={{ display: 'flex', gap: 20, height: 'calc(100vh - 200px)', minHeight: '600px' }}>
-        
-        {/* Left: Map - Maximized */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      {/* Main Content — map + chart on left, sidebar on right */}
+      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+
+        {/* Left: Map card + Chart below */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="glass-card" style={{
             padding: 16,
             position: 'relative',
@@ -389,10 +389,10 @@ export default function LiveMap() {
             boxShadow: 'var(--neo-raised)',
             borderRadius: 16,
             overflow: 'visible',
-            flex: 1,
+            height: 'calc(100vh - 280px)',
+            minHeight: 520,
             display: 'flex',
             flexDirection: 'column',
-            minHeight: 0,
           }}>
             {/* Scan line on data update */}
             {lastUpdate && (
@@ -466,10 +466,10 @@ export default function LiveMap() {
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--ink-400)', marginBottom: 2 }}>
-                    Critical
+                    Affected
                   </div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: '#EF4444' }}>
-                    {rooms.filter(r => r.current_hazard_level === 'CRITICAL').length}
+                    {rooms.filter(r => ['CRITICAL', 'HIGH_RISK', 'WARNING'].includes(r.current_hazard_level)).length}
                   </div>
                 </div>
                 <div>
@@ -508,7 +508,6 @@ export default function LiveMap() {
           {/* No valid route banner */}
           {noValidRoute && (
             <div className="glass-card" style={{
-              marginTop: 16,
               background: 'rgba(239, 68, 68, 0.12)',
               border: '2px solid rgba(239, 68, 68, 0.3)',
               padding: '16px 20px',
@@ -528,10 +527,261 @@ export default function LiveMap() {
               </div>
             </div>
           )}
+
+          {/* ── Hazard Distribution Analysis Chart ─────────────────────── */}
+          <div className="glass-card" style={{
+            padding: '20px 24px',
+            background: 'var(--glass-bg)',
+            border: '1px solid var(--border-subtle)',
+            boxShadow: 'var(--neo-raised)',
+            borderRadius: 16,
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 36, height: 36,
+                  background: 'linear-gradient(135deg, var(--orange-500) 0%, #FF8C42 100%)',
+                  borderRadius: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 18,
+                  boxShadow: '0 4px 12px rgba(255,106,26,0.3)',
+                }}>
+                  📊
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--ink-900)' }}>
+                    Hazard Level Analysis
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-400)', marginTop: 2 }}>
+                    Room status distribution — {rooms.length} rooms monitored
+                  </div>
+                </div>
+              </div>
+              {/* Affected count badge */}
+              {(() => {
+                const affected = rooms.filter(r => ['CRITICAL','HIGH_RISK','WARNING'].includes(r.current_hazard_level)).length
+                return affected > 0 ? (
+                  <div style={{
+                    padding: '6px 14px',
+                    background: 'rgba(239,68,68,0.1)',
+                    border: '1.5px solid rgba(239,68,68,0.3)',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#DC2626',
+                  }}>
+                    ⚠️ {affected} affected
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: '6px 14px',
+                    background: 'rgba(16,185,129,0.1)',
+                    border: '1.5px solid rgba(16,185,129,0.3)',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#059669',
+                  }}>
+                    ✅ All clear
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* Chart body: bar chart + per-room breakdown side by side */}
+            <div style={{ display: 'flex', gap: 24, alignItems: 'stretch' }}>
+
+              {/* Left: Bar chart */}
+              <div style={{ flex: '0 0 55%' }}>
+                {/* Y-axis labels + bars */}
+                <div style={{ display: 'flex', gap: 0 }}>
+                  {/* Y-axis */}
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                    paddingBottom: 40, width: 28, flexShrink: 0,
+                  }}>
+                    {[rooms.length, Math.ceil(rooms.length * 0.5), 0].map((v, i) => (
+                      <span key={i} style={{ fontSize: 10, color: 'var(--ink-400)', textAlign: 'right', lineHeight: 1 }}>{v}</span>
+                    ))}
+                  </div>
+
+                  {/* Bars area */}
+                  <div style={{ flex: 1, position: 'relative' }}>
+                    {/* Grid lines */}
+                    {[0, 50, 100].map((pct, i) => (
+                      <div key={i} style={{
+                        position: 'absolute',
+                        left: 0, right: 0,
+                        bottom: `calc(40px + ${pct}% * (100% - 40px) / 100)`,
+                        height: 1,
+                        background: i === 0 ? 'var(--border-subtle)' : 'rgba(0,0,0,0.06)',
+                        zIndex: 0,
+                      }} />
+                    ))}
+
+                    {/* Bars row */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      gap: 10,
+                      height: 180,
+                      paddingBottom: 40,
+                      paddingTop: 20,
+                      position: 'relative',
+                      zIndex: 1,
+                    }}>
+                      {[
+                        { level: 'CRITICAL',  label: 'Critical',  shortLabel: 'CRIT', color: '#EF4444', bg: 'linear-gradient(180deg,#FCA5A5 0%,#EF4444 50%,#DC2626 100%)' },
+                        { level: 'HIGH_RISK', label: 'High Risk', shortLabel: 'HIGH', color: '#F97316', bg: 'linear-gradient(180deg,#FDBA74 0%,#F97316 50%,#EA580C 100%)' },
+                        { level: 'WARNING',   label: 'Warning',   shortLabel: 'WARN', color: '#FBBF24', bg: 'linear-gradient(180deg,#FDE68A 0%,#FBBF24 50%,#D97706 100%)' },
+                        { level: 'NORMAL',    label: 'Normal',    shortLabel: 'SAFE', color: '#10B981', bg: 'linear-gradient(180deg,#6EE7B7 0%,#10B981 50%,#059669 100%)' },
+                        { level: 'UNKNOWN',   label: 'Unknown',   shortLabel: 'N/A',  color: '#94A3B8', bg: 'linear-gradient(180deg,#CBD5E1 0%,#94A3B8 50%,#64748B 100%)' },
+                      ].map((item) => {
+                        const count = rooms.filter(r => r.current_hazard_level === item.level).length
+                        const maxCount = Math.max(...['CRITICAL','HIGH_RISK','WARNING','NORMAL','UNKNOWN'].map(l =>
+                          rooms.filter(r => r.current_hazard_level === l).length
+                        ), 1)
+                        // bar height as % of available area (140px = 180px - 40px padding)
+                        const barHeightPct = count === 0 ? 4 : Math.max((count / maxCount) * 100, 8)
+
+                        return (
+                          <div key={item.level} style={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            height: '100%',
+                            justifyContent: 'flex-end',
+                            gap: 0,
+                          }}>
+                            {/* Count above bar */}
+                            <div style={{
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: count === 0 ? 'var(--ink-400)' : item.color,
+                              marginBottom: 4,
+                              minHeight: 18,
+                            }}>
+                              {count}
+                            </div>
+
+                            {/* The bar */}
+                            <div
+                              title={`${item.label}: ${count} room${count !== 1 ? 's' : ''}`}
+                              style={{
+                                width: '100%',
+                                height: `${barHeightPct}%`,
+                                background: count === 0 ? 'rgba(148,163,184,0.2)' : item.bg,
+                                borderRadius: '6px 6px 0 0',
+                                boxShadow: count > 0 ? `0 4px 14px ${item.color}50` : 'none',
+                                border: count > 0 ? `1px solid ${item.color}40` : '1px dashed rgba(148,163,184,0.4)',
+                                transition: 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+                                cursor: 'default',
+                                position: 'relative',
+                                overflow: 'hidden',
+                              }}
+                              onMouseEnter={e => {
+                                if (count > 0) {
+                                  e.currentTarget.style.filter = 'brightness(1.1)'
+                                  e.currentTarget.style.transform = 'scaleX(1.06)'
+                                }
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.filter = ''
+                                e.currentTarget.style.transform = ''
+                              }}
+                            >
+                              {/* Sheen overlay */}
+                              {count > 0 && (
+                                <div style={{
+                                  position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
+                                  background: 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%)',
+                                  pointerEvents: 'none',
+                                }} />
+                              )}
+                            </div>
+
+                            {/* X-axis label */}
+                            <div style={{
+                              marginTop: 8,
+                              textAlign: 'center',
+                            }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: count > 0 ? item.color : 'var(--ink-400)' }}>
+                                {item.shortLabel}
+                              </div>
+                              <div style={{ fontSize: 9, color: 'var(--ink-400)', marginTop: 1 }}>
+                                {Math.round((count / (rooms.length || 1)) * 100)}%
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div style={{ width: 1, background: 'var(--border-subtle)', flexShrink: 0 }} />
+
+              {/* Right: per-level breakdown list */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
+                {[
+                  { level: 'CRITICAL',  label: 'Critical',  color: '#EF4444', bg: 'rgba(239,68,68,0.08)',  border: 'rgba(239,68,68,0.2)'  },
+                  { level: 'HIGH_RISK', label: 'High Risk', color: '#F97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)' },
+                  { level: 'WARNING',   label: 'Warning',   color: '#D97706', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.2)' },
+                  { level: 'NORMAL',    label: 'Normal',    color: '#059669', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' },
+                  { level: 'UNKNOWN',   label: 'Unknown',   color: '#64748B', bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.2)' },
+                ].map((item) => {
+                  const count = rooms.filter(r => r.current_hazard_level === item.level).length
+                  const pct = rooms.length > 0 ? Math.round((count / rooms.length) * 100) : 0
+                  return (
+                    <div key={item.level} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '8px 12px',
+                      background: item.bg,
+                      border: `1px solid ${item.border}`,
+                      borderRadius: 8,
+                    }}>
+                      {/* Colour dot */}
+                      <div style={{
+                        width: 10, height: 10, borderRadius: '50%',
+                        background: item.color,
+                        flexShrink: 0,
+                        boxShadow: `0 0 6px ${item.color}80`,
+                      }} />
+                      {/* Label */}
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-700)', flex: 1 }}>
+                        {item.label}
+                      </span>
+                      {/* Progress bar */}
+                      <div style={{
+                        width: 60, height: 6, borderRadius: 3,
+                        background: 'var(--bg-inset)',
+                        overflow: 'hidden', flexShrink: 0,
+                      }}>
+                        <div style={{
+                          width: `${pct}%`, height: '100%',
+                          background: item.color,
+                          borderRadius: 3,
+                          transition: 'width 0.5s ease',
+                        }} />
+                      </div>
+                      {/* Count + pct */}
+                      <span style={{ fontSize: 12, fontWeight: 700, color: item.color, minWidth: 32, textAlign: 'right' }}>
+                        {count} <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--ink-400)' }}>{pct}%</span>
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right: Sidebar */}
-        <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 20, alignSelf: 'flex-start', maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
           
           {/* Active Alerts */}
           {alerts.length > 0 && (

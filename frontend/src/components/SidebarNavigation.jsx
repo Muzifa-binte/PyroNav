@@ -13,27 +13,18 @@
  */
 import React from 'react'
 import { NavLink } from 'react-router-dom'
+import LogoSvg from '../assets/Logo.svg'
 
-// SVG flame icon — matches the reference screenshot's orange flame mark
-function FlameIcon({ size = 22 }) {
+// PyroNav logo — uses the actual SVG logo asset
+function FlameIcon({ size = 30 }) {
   return (
-    <svg
-      width={size} height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      style={{ flexShrink: 0 }}
-    >
-      <path
-        d="M12 2C12 2 7 7.5 7 12.5C7 15.537 9.239 18 12 18C14.761 18 17 15.537 17 12.5C17 10.5 15.5 9 15.5 9C15.5 9 15 11 13.5 11C12.672 11 12 10.328 12 9.5C12 8 13 6.5 13 5C13 3.7 12 2 12 2Z"
-        fill="var(--orange-500)"
-      />
-      <path
-        d="M12 14C12 14 10 12.5 10 10.5C10 9.7 10.3 9 10.3 9C10.3 9 10 11.5 12 11.5C12.828 11.5 13.5 10.828 13.5 10C13.5 10 14.5 11 14.5 12.5C14.5 13.5 13.381 15 12 15C12 15 12 14 12 14Z"
-        fill="var(--orange-300)"
-        opacity="0.7"
-      />
-    </svg>
+    <img
+      src={LogoSvg}
+      alt="PyroNav"
+      width={size}
+      height={size}
+      style={{ display: 'block', objectFit: 'contain' }}
+    />
   )
 }
 
@@ -150,17 +141,16 @@ export default function SidebarNavigation({ collapsed, onToggle }) {
       }}>
         {/* Flame mark */}
         <div style={{
-          width:          38,
-          height:         38,
+          width:          42,
+          height:         42,
           borderRadius:   12,
-          background:     'var(--bg-raised)',
-          boxShadow:      'var(--neo-raised-sm)',
           display:        'flex',
           alignItems:     'center',
           justifyContent: 'center',
           flexShrink:     0,
+          overflow:       'hidden',
         }}>
-          <FlameIcon size={22} />
+          <FlameIcon size={42} />
         </div>
 
         {/* "PyroNav" wordmark */}
