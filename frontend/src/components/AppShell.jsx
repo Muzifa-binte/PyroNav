@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from 'react'
+import React, { useState, useEffect, useRef, createContext, useContext } from 'react'
 import '../styles/tokens.css'
 import '../styles/global.css'
 import SidebarNavigation from './SidebarNavigation'
@@ -6,6 +6,7 @@ import TopStatusBar from './TopStatusBar'
 import ThemeSwitcher from './ThemeSwitcher'
 import EmergencyBanner from './EmergencyBanner'
 import { useWebSocket, wsEventBus } from '../hooks/useWebSocket'
+import * as api from '../services/api'
 
 export const EmergencyContext = createContext(false)
 export const useEmergency = () => useContext(EmergencyContext)
@@ -35,31 +36,53 @@ export default function AppShell({ children }) {
   const [emergencyExit, setEmergencyExit]        = useState('nearest exit')
   const [alertCount,    setAlertCount]           = useState(0)
   const { connectionState, lastUpdate } = useWebSocket()
+  const roomLevels = useRef({})   // room_id -> current hazard level
+
+  // Banner on while any room is CRITICAL; off again once they all recover
+  const refreshEmergency = () => {
+    const critical = Object.keys(roomLevels.current)
+      .filter(id => ['CRITICAL', 'DANGER'].includes(roomLevels.current[id]))
+    setEmergencyMode(critical.length > 0)
+    if (critical.length) setEmergencyRoom(critical[0].replace(/_/g, ' '))
+  }
+  // Active alerts = ACTIVE hazard events, re-read whenever one is created or resolved
+  const refreshAlertCount = () => {
+    api.getAlerts('ACTIVE').then(d => setAlertCount((d.alerts || []).length)).catch(() => {})
+  }
+
+  useEffect(() => {
+    api.getRooms().then(d => {
+      for (const r of d.rooms || []) roomLevels.current[r.room_id] = r.current_hazard_level
+      refreshEmergency()
+    }).catch(() => {})
+    refreshAlertCount()
+  }, [])
 
   useEffect(() => {
     const handleRoomStatus = (e) => {
       const data = e.detail?.data ?? e.detail ?? {}
       const level = data.hazard_level || data.current_hazard_level
-      if (level === 'CRITICAL' || level === 'DANGER') {
-        setEmergencyMode(true)
-        if (data.room_id) setEmergencyRoom(data.room_id.replace(/_/g, ' '))
-      }
+      if (!data.room_id || !level) return
+      roomLevels.current[data.room_id] = level
+      refreshEmergency()
     }
     const handleRouteUpdate = (e) => {
       const data = e.detail?.data ?? e.detail ?? {}
       const route = data?.route || data
       if (route?.exit_id) setEmergencyExit(route.exit_id)
     }
-    const handleHazardEvent = () => setAlertCount(c => c + 1)
+    const handleHazardEvent = () => refreshAlertCount()
     wsEventBus.addEventListener('room_status_changed', handleRoomStatus)
     wsEventBus.addEventListener('route_updated',       handleRouteUpdate)
     wsEventBus.addEventListener('hazard_event_created', handleHazardEvent)
+    wsEventBus.addEventListener('hazard_event_resolved', handleHazardEvent)
     return () => {
       wsEventBus.removeEventListener('room_status_changed', handleRoomStatus)
       wsEventBus.removeEventListener('route_updated',       handleRouteUpdate)
       wsEventBus.removeEventListener('hazard_event_created', handleHazardEvent)
+      wsEventBus.removeEventListener('hazard_event_resolved', handleHazardEvent)
     }
-  }, [emergencyMode])
+  }, [])
 
   const orbs = emergencyMode ? ORB_STYLES_EMERGENCY : ORB_STYLES_NORMAL
 

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react'
 import BuildingHeatmap from '../components/BuildingHeatmap'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import RoomAnalysisPanel from '../components/RoomAnalysisPanel'
-import EmergencyBanner from '../components/EmergencyBanner'
 import * as api from '../services/api'
 import { wsEventBus } from '../hooks/useWebSocket'
 
@@ -174,10 +173,13 @@ export default function LiveMap() {
         setRooms(r.rooms || [])
         setCurrentRoute(rt)
         
-        // Load alerts
+        // Load alerts: notifications whose hazard event is still active
         try {
-          const alertsData = await api.getNotifications({ status: 'ACTIVE' })
-          setAlerts(alertsData.notifications || [])
+          const [alertsData, activeData] = await Promise.all([
+            api.getNotifications({ status: 'ACTIVE' }), api.getAlerts('ACTIVE'),
+          ])
+          const activeIds = new Set((activeData.alerts || []).map(a => a.event_id))
+          setAlerts((alertsData.notifications || []).filter(n => !n.event_id || activeIds.has(n.event_id)))
         } catch (e) {
           console.warn('Failed to load alerts:', e)
         }
@@ -228,10 +230,6 @@ export default function LiveMap() {
       setRooms(prev => prev.map(r =>
         r.room_id === room_id ? { ...r, current_hazard_level: level } : r
       ))
-      if (level === 'CRITICAL' || level === 'HIGH_RISK') {
-        setEmergencyMode(true)
-        setEmergencyMessage(`Hazard detected in room ${room_id.replace(/_/g, ' ')}`)
-      }
       setLastUpdate(new Date().toISOString())
     }
     const handleRouteUpdate = (e) => {
@@ -248,15 +246,29 @@ export default function LiveMap() {
         setAlerts(prev => [notification, ...prev].slice(0, 10))
       }
     }
+    // A hazard that has ended (room back to normal, or superseded by a new level)
+    const handleResolved = (e) => {
+      const { event_id } = e.detail?.data ?? e.detail ?? {}
+      if (event_id) setAlerts(prev => prev.filter(a => a.event_id !== event_id))
+    }
     wsEventBus.addEventListener('room_status_changed', handleRoomStatus)
     wsEventBus.addEventListener('route_updated', handleRouteUpdate)
     wsEventBus.addEventListener('notification_created', handleNotification)
+    wsEventBus.addEventListener('hazard_event_resolved', handleResolved)
     return () => {
       wsEventBus.removeEventListener('room_status_changed', handleRoomStatus)
       wsEventBus.removeEventListener('route_updated', handleRouteUpdate)
       wsEventBus.removeEventListener('notification_created', handleNotification)
+      wsEventBus.removeEventListener('hazard_event_resolved', handleResolved)
     }
   }, [])
+
+  // Map border alarm while any room is HIGH_RISK or CRITICAL, cleared on recovery
+  useEffect(() => {
+    const hot = rooms.filter(r => ['CRITICAL', 'HIGH_RISK'].includes(r.current_hazard_level))
+    setEmergencyMode(hot.length > 0)
+    if (hot.length) setEmergencyMessage(`Hazard detected in room ${hot[0].room_id.replace(/_/g, ' ')}`)
+  }, [rooms])
 
   const roomMap = Object.fromEntries((rooms || []).map(r => [r.room_id, r]))
   const selectedRoomData = selected ? roomMap[selected] : null
@@ -270,12 +282,7 @@ export default function LiveMap() {
       minHeight: '100vh',
     }}>
       
-      {/* Emergency Banner */}
-      <EmergencyBanner
-        active={emergencyMode}
-        message={emergencyMessage}
-        exitId={route?.exit_id || 'nearest exit'}
-      />
+      {/* The emergency banner is AppShell's (shown on every page) */}
 
       {/* Header with gradient accent */}
       <div style={{ 

@@ -32,16 +32,20 @@ export function useWebSocket() {
     try {
       const ws = new WebSocket(getWsUrl())
       wsRef.current = ws
+      // Only the current socket may update state, dispatch or reconnect. Without
+      // this, the socket closed by React StrictMode's remount (or any replaced
+      // socket) reconnected in onclose, and every event was dispatched twice.
+      const isCurrent = () => mountedRef.current && wsRef.current === ws
 
       ws.onopen = () => {
-        if (!mountedRef.current) return
+        if (!isCurrent()) return
         console.log('✅ WebSocket connected to FastAPI at ws://localhost:8000/ws/v1/live')
         setConnectionState('connected')
         setLastUpdate(new Date().toISOString())
       }
 
       ws.onmessage = (ev) => {
-        if (!mountedRef.current) return
+        if (!isCurrent()) return
         try {
           const msg = JSON.parse(ev.data)
           const timestamp = msg.timestamp || new Date().toISOString()
@@ -62,13 +66,13 @@ export function useWebSocket() {
       }
 
       ws.onerror = (error) => {
-        if (!mountedRef.current) return
+        if (!isCurrent()) return
         console.error('❌ WebSocket error:', error)
         setConnectionState('disconnected')
       }
 
       ws.onclose = () => {
-        if (!mountedRef.current) return
+        if (!isCurrent()) return
         console.log('🔌 WebSocket connection closed')
         setConnectionState('disconnected')
         // Reconnect after 3 seconds
@@ -87,7 +91,9 @@ export function useWebSocket() {
     return () => {
       mountedRef.current = false
       clearTimeout(reconnectTimer.current)
-      wsRef.current?.close()
+      const ws = wsRef.current
+      wsRef.current = null
+      ws?.close()
     }
   }, [connect])
 

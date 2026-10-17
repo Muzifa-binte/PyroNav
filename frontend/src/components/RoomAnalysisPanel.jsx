@@ -121,7 +121,7 @@ export default function RoomAnalysisPanel({ roomId, roomData, onClose }) {
 
   // Determine sensor status
   const getSensorStatus = () => {
-    const dataQuality = sensorData?.data_quality
+    const dataQuality = sensorData?.data_quality ?? sensorData?.data_quality_status
     if (dataQuality === 'STALE') return 'Stale'
     if (dataQuality === 'NO_DATA') return 'No Data'
     return 'Online'

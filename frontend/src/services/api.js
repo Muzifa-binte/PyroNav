@@ -29,7 +29,12 @@ export const getRoomDetails = (id) => request(`/rooms/${id}`)
 // ── Sensors ────────────────────────────────────────────────
 export const getSensors        = () => request('/sensors')
 export const getSensor         = (id) => request(`/sensors/${id}`)
-export const getSensorReadings = (params = {}) => {
+export const getSensorReadings = (params = {}, limit) => {
+  // getSensorReadings('SMOKE-ICU-01', 10) → one sensor's history
+  if (typeof params === 'string') {
+    return request(`/sensors/${params}/readings?limit=${limit || 100}`)
+  }
+  // getSensorReadings({ room_id, sensor_id, limit }) → recent readings across sensors
   const queryParams = new URLSearchParams()
   if (params.sensor_id) queryParams.append('sensor_id', params.sensor_id)
   if (params.room_id) queryParams.append('room_id', params.room_id)
