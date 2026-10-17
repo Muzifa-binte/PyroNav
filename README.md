@@ -5,10 +5,10 @@
 <div align="center">
 
 <!-- ── HERO BANNER ──────────────────────────────────────────────────────────── -->
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=200&section=header&text=PyroNav&fontSize=80&fontColor=F97316&fontAlignY=38&desc=Predictive%20Fire%20Safety%20%C2%B7%20Cyber-Defended%20Emergency%20Egress&descAlignY=60&descColor=94A3B8&animation=fadeIn" alt="PyroNav Banner" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0D1117,0F1923,1A2744,F97316&height=220&section=header&text=PyroNav&fontSize=85&fontColor=F97316&fontAlignY=40&desc=Predictive%20Fire%20Safety%20%C2%B7%20Cyber-Defended%20Emergency%20Egress&descAlignY=62&descColor=94A3B8&animation=fadeIn&stroke=F97316&strokeWidth=2" alt="PyroNav Banner" width="100%"/>
 
 <!-- ── ANIMATED TYPEWRITER ───────────────────────────────────────────────────── -->
-<img src="https://readme-typing-svg.demolab.com?font=Orbitron&weight=700&size=22&pause=900&color=F97316&center=true&vCenter=true&width=800&lines=🔥+Detect+Risk.+Defend+Telemetry.+Guide+Evacuation.;📡+Real-Time+IoT+Fire+Safety+Monitoring;🛡️+Cyber-Aware+Intrusion+Detection+System;🧭+Dijkstra+%C2%B7+A*+%C2%B7+BFS+Hazard-Aware+Routing;🏥+Hospital+Digital+Twin+%2B+Live+Dashboard" alt="PyroNav animated typewriter" />
+<img src="https://readme-typing-svg.demolab.com?font=Orbitron&weight=700&size=20&duration=3000&pause=800&color=F97316&center=true&vCenter=true&multiline=false&width=750&height=50&lines=Detect+Risk.+Defend+Telemetry.+Guide+Evacuation.;Real-Time+IoT+Fire+Safety+Monitoring;Cyber-Aware+Intrusion+Detection+System;Dijkstra+%2B+A*+%2B+BFS+Hazard-Aware+Routing;Hospital+Digital+Twin+%2B+Live+Dashboard" alt="Typing SVG" />
 
 <!-- ── BADGE ROW ──────────────────────────────────────────────────────────────── -->
 <br/>
@@ -25,8 +25,9 @@
 
 <!-- ── STATS BADGES ───────────────────────────────────────────────────────────── -->
 ![GitHub last commit](https://img.shields.io/github/last-commit/Muzifa-binte/PyroNav?style=flat-square&color=F97316&label=Last+Commit)
-![GitHub repo size](https://img.shields.io/github/repo-size/Muzifa-binte/PyroNav?style=flat-square&color=0891B2&label=Repo+Size)
-![GitHub contributors](https://img.shields.io/github/contributors/Muzifa-binte/PyroNav?style=flat-square&color=10B981&label=Contributors)
+![Made with Python](https://img.shields.io/badge/Made%20with-Python%203.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)
+![License](https://img.shields.io/badge/License-Academic%20Research-10B981?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Active%20Development-F97316?style=flat-square)
 
 </div>
 
@@ -241,12 +242,17 @@ Live Dashboard
 ### 🖥️ 1. Command Overview
 - **Dynamic Hero Card** — live severity banner (`NORMAL` → `CRITICAL`) with one-click evacuation navigation
 - **2×2 KPI Grid** — Rooms at Risk, Sensors Online ratio, Untrusted Sensors, Avg Risk Score
-- **Side-by-Side Map View** — Live heatmap + active evacuation route panel
+- **Side-by-Side Map View** — Live heatmap + active evacuation route panel with route algorithm badge
+- **Sensor Coverage Bar** — visual progress bar tracking online, stale, and offline devices
 
 ### 🌡️ 2. Live Heat Map `/map`
-- Full 2D architectural blueprint with color-coded hazard gradients
-- Layer toggles: Fire · Sensors · Blocked Paths · IDS Alerts
-- **Room Analysis Panel** — click-to-inspect sensor readings (temp `°C`, smoke `ppm`, current `A`, CO `ppm`)
+- Full 2D architectural blueprint with **color-coded hazard gradients** (Normal → Warning → High Risk → Critical)
+- **Layer toggles**: Fire 🔥 · Sensors 📡 · Blocked Paths 🚫 · IDS Security 🛡️
+- **Sensor Health Dots** — green (operational) vs red pulsing (failed/offline) per room
+- **Hazard Level Analysis Chart** — real-time bar chart + breakdown panel showing count and % per hazard level
+- **Room Analysis Panel** — click-to-inspect drawer with temp `°C`, smoke `ppm`, current `A`, CO `ppm`, data quality, and timestamps
+- **Emergency Banner** — full-width alert strip with exit guidance during critical events
+- **Demo Mode** — 16-room hospital simulation with realistic multi-sensor hazard scenarios
 
 ### 🧭 3. Evacuation & Pathfinding `/evacuation`
 - Multi-algorithm engine: **Dijkstra · A\* · BFS** side-by-side comparison
@@ -469,8 +475,8 @@ PyroNav/
 </tr>
 <tr>
 <td align="center">🔴 <b>Member 2</b></td>
-<td>Heatmap UI &amp; Decision Engine</td>
-<td><code>BuildingHeatmap</code> · <code>RoomAnalysisPanel</code> · Hazard classification engine</td>
+<td>2D Heatmap Dashboard &amp; Decision Engine</td>
+<td><code>BuildingHeatmap</code> · <code>RoomAnalysisPanel</code> · Hazard classification engine · Neumorphic UI design system</td>
 </tr>
 <tr>
 <td align="center">🔵 <b>Member 3</b></td>
@@ -509,7 +515,7 @@ PyroNav/
 <!--  FOOTER                                                                       -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=100&section=footer" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0D1117,0F1923,1A2744,F97316&height=120&section=footer" width="100%"/>
 
 <div align="center">
 
@@ -519,6 +525,6 @@ PyroNav/
 
 <br/>
 
-![Visitors](https://visitor-badge.laobi.icu/badge?page_id=Muzifa-binte.PyroNav&style=flat-square&color=F97316)
+![Built with ❤️](https://img.shields.io/badge/Built%20with-%E2%9D%A4%EF%B8%8F%20for%20Safety-F97316?style=flat-square)
 
 </div>
